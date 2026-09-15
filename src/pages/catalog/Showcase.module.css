@@ -103,6 +103,9 @@
   align-items: center;
   justify-items: center;
   gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-paper);
+  background: var(--color-bg-primary);
 }
 
 .tooltipGrid {
@@ -174,7 +177,6 @@
 
 .table {
   width: 100%;
-  min-width: 848px;
   border-spacing: 0;
   border-collapse: separate;
   color: var(--color-text-primary);
@@ -184,10 +186,17 @@
   text-align: left;
 }
 
-.propertyColumn,
-.descriptionColumn {
-  width: 1%;
+.table tr > :nth-child(1),
+.table tr > :nth-child(2) {
   white-space: nowrap;
+}
+
+.valuesColumn {
+  width: 100%;
+}
+
+.table tr > :nth-child(3) {
+  min-width: 240px;
 }
 
 .table th,

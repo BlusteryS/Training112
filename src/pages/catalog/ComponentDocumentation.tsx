@@ -19,9 +19,9 @@ export function ComponentDocumentation({ componentName, rows }: ComponentDocumen
         <table className={styles.table}>
           <caption className={styles.visuallyHidden}>Свойства компонента {componentName}</caption>
           <colgroup>
-            <col className={styles.propertyColumn} />
-            <col className={styles.descriptionColumn} />
             <col />
+            <col />
+            <col className={styles.valuesColumn} />
           </colgroup>
           <thead>
             <tr>
