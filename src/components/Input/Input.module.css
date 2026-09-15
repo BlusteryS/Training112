@@ -1,0 +1,80 @@
+.root {
+  display: flex;
+  width: 260px;
+  max-width: 100%;
+  height: 36px;
+  padding: 7px;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--color-icon);
+  background: var(--color-bg-secondary);
+  cursor: text;
+}
+
+.root:has(.input:placeholder-shown) {
+  color: var(--color-icon-tertiary);
+}
+
+.root:focus-within {
+  border-color: var(--color-border-selected);
+}
+
+.root[data-status='valid'] {
+  border-color: var(--color-border-handoff-strong);
+  background: var(--color-bg-handoff-tertiary);
+}
+
+.root[data-status='error'] {
+  border-color: var(--color-border-measure-strong);
+  background: var(--color-bg-measure-tertiary);
+}
+
+.root[data-disabled='true'] {
+  border-color: transparent;
+  color: var(--color-icon-disabled);
+  background: var(--color-bg-disabled);
+  cursor: not-allowed;
+}
+
+.input {
+  min-width: 0;
+  height: 20px;
+  flex: 1 1 auto;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: var(--color-text);
+  background: transparent;
+  caret-color: var(--color-border-strong);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.input:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  -webkit-text-fill-color: var(--color-text-disabled);
+}
+
+.icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+}
+
+.icon > :where(svg, img) {
+  width: 16px;
+  height: 16px;
+}

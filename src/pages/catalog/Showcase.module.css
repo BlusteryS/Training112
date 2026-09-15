@@ -84,6 +84,11 @@
   gap: 6px 8px;
 }
 
+.inputList {
+  display: grid;
+  gap: 12px;
+}
+
 .buttonCanvas {
   display: flex;
   width: max-content;
