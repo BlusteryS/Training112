@@ -2,10 +2,25 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f7f7f8;
   --color-bg-tertiary: #e6e6e6;
+  --color-bg-brand: #0d99ff;
+  --color-bg-inverse: #2c2c2c;
+  --color-bg-success: #14ae5c;
+  --color-bg-danger: #f24822;
+  --color-bg-warning: #ffcd29;
+  --color-border: #e6e6e6;
   --color-border-subtle: rgba(0, 0, 0, 0.08);
+  --color-border-brand: #bde3ff;
+  --color-border-success: #aff4c6;
+  --color-border-danger: #ffc7c2;
+  --color-border-warning: #ffe8a3;
   --color-text-primary: rgba(0, 0, 0, 0.9);
   --color-text-secondary: rgba(0, 0, 0, 0.55);
   --color-text-on-accent: #ffffff;
+  --color-text-on-inverse: rgba(255, 255, 255, 0.9);
+  --color-text-brand: #007be5;
+  --color-text-success: #009951;
+  --color-text-danger: #dc3412;
+  --color-text-warning: #b86200;
   --color-multiplayer-grey: #667799;
 
   --radius-control: 8px;

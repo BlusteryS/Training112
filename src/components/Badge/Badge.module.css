@@ -1,0 +1,94 @@
+.badge {
+  display: inline-flex;
+  width: fit-content;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.badge[data-variant='fill'][data-color='white'] {
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+  background: var(--color-bg-primary);
+}
+
+.badge[data-variant='fill'][data-color='blue'] {
+  color: var(--color-text-on-accent);
+  background: var(--color-bg-brand);
+}
+
+.badge[data-variant='fill'][data-color='inverted'] {
+  color: var(--color-text-on-inverse);
+  background: var(--color-bg-inverse);
+}
+
+.badge[data-variant='fill'][data-color='success'] {
+  color: var(--color-text-on-accent);
+  background: var(--color-bg-success);
+}
+
+.badge[data-variant='fill'][data-color='error'] {
+  color: var(--color-text-on-accent);
+  background: var(--color-bg-danger);
+}
+
+.badge[data-variant='fill'][data-color='warning'] {
+  color: var(--color-text-primary);
+  background: var(--color-bg-warning);
+}
+
+.badge[data-variant='outline'] {
+  background: transparent;
+}
+
+.badge[data-variant='outline'][data-color='blue'] {
+  color: var(--color-text-brand);
+  border-color: var(--color-border-brand);
+}
+
+.badge[data-variant='outline'][data-color='inverted'] {
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.badge[data-variant='outline'][data-color='success'] {
+  color: var(--color-text-success);
+  border-color: var(--color-border-success);
+}
+
+.badge[data-variant='outline'][data-color='error'] {
+  color: var(--color-text-danger);
+  border-color: var(--color-border-danger);
+}
+
+.badge[data-variant='outline'][data-color='warning'] {
+  color: var(--color-text-warning);
+  border-color: var(--color-border-warning);
+}
+
+.icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon > :where(svg, img) {
+  width: 16px;
+  height: 16px;
+}
+
+.label {
+  min-width: 0;
+}
