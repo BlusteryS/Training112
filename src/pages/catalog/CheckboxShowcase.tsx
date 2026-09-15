@@ -11,6 +11,21 @@ const states = [
 ] as const;
 const documentation: DocumentationRow[] = [
   {
+    name: 'children',
+    description: 'Основной текст',
+    values: ['ReactNode'],
+  },
+  {
+    name: 'subtitle',
+    description: 'Дополнительный текст',
+    values: ['ReactNode'],
+  },
+  {
+    name: 'padding',
+    description: 'Горизонтальный отступ',
+    values: ['boolean'],
+  },
+  {
     name: 'variant',
     description: 'Форма контрола',
     values: ['checkbox', 'radio'],
@@ -38,40 +53,49 @@ const documentation: DocumentationRow[] = [
 ];
 const codeExample = `
 <Checkbox
-  aria-label="Выбрать элемент"
   checked
-/>
+  padding
+  subtitle="Subtitle"
+>
+  Title
+</Checkbox>
 `;
 
 export default function CheckboxShowcase() {
   return (
     <ComponentShowcase code={codeExample} documentation={documentation} name="Checkbox">
-      <div className={styles.checkboxCanvas}>
-        {variants.map((variant) => (
-          <div className={styles.checkboxGroup} key={variant}>
-            {states.map(({ checked, indeterminate, name }) => (
-              <Checkbox
-                aria-label={`${variant} ${name}`}
-                checked={checked}
-                indeterminate={indeterminate}
-                key={`${variant}-${name}-active`}
-                readOnly
-                variant={variant}
-              />
-            ))}
-            {states.map(({ checked, indeterminate, name }) => (
-              <Checkbox
-                aria-label={`${variant} ${name} disabled`}
-                checked={checked}
-                disabled
-                indeterminate={indeterminate}
-                key={`${variant}-${name}-disabled`}
-                readOnly
-                variant={variant}
-              />
-            ))}
-          </div>
-        ))}
+      <div className={styles.checkboxShowcase}>
+        <div className={styles.checkboxCanvas}>
+          {variants.map((variant) => (
+            <div className={styles.checkboxGroup} key={variant}>
+              {states.map(({ checked, indeterminate, name }) => (
+                <Checkbox
+                  aria-label={`${variant} ${name}`}
+                  checked={checked}
+                  indeterminate={indeterminate}
+                  key={`${variant}-${name}-active`}
+                  readOnly
+                  variant={variant}
+                />
+              ))}
+              {states.map(({ checked, indeterminate, name }) => (
+                <Checkbox
+                  aria-label={`${variant} ${name} disabled`}
+                  checked={checked}
+                  disabled
+                  indeterminate={indeterminate}
+                  key={`${variant}-${name}-disabled`}
+                  readOnly
+                  variant={variant}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <Checkbox checked readOnly subtitle="Subtitle">
+          Title
+        </Checkbox>
       </div>
     </ComponentShowcase>
   );

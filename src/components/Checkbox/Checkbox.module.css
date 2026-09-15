@@ -1,11 +1,27 @@
 .root {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 12px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.root[data-padding='true'] {
+  padding: 8px;
+}
+
+.root[data-has-text='true'][data-padding='false'] {
+  padding-block: 8px;
+}
+
+.control {
   position: relative;
   display: inline-grid;
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
   place-items: center;
-  vertical-align: middle;
 }
 
 .input {
@@ -65,6 +81,10 @@
   cursor: not-allowed;
 }
 
+.root[data-disabled='true'] {
+  cursor: not-allowed;
+}
+
 .input:disabled + .visual {
   border-color: var(--color-border-disabled);
   color: var(--color-icon-disabled);
@@ -74,4 +94,37 @@
 .input:focus-visible + .visual {
   outline: 2px solid var(--color-border-selected-strong);
   outline-offset: 2px;
+}
+
+.text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  text-align: left;
+}
+
+.title,
+.subtitle {
+  overflow-wrap: anywhere;
+}
+
+.title {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+}
+
+.subtitle {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.root[data-disabled='true'] .title,
+.root[data-disabled='true'] .subtitle {
+  color: var(--color-text-disabled);
 }
