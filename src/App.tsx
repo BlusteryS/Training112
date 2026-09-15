@@ -1,3 +1,5 @@
+import { ComponentCatalogPage } from './pages/ComponentCatalogPage';
+
 export function App() {
-  return <main />;
+  return <ComponentCatalogPage />;
 }
