@@ -1,10 +1,10 @@
-import { ExternalLink } from 'lucide-react';
 import {
   Button,
   type ButtonAppearance,
   type ButtonMode,
   type ButtonSize,
 } from '../../components/Button';
+import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -21,7 +21,7 @@ const buttonRows: Array<{
   { appearance: 'positive', mode: 'outline' },
 ];
 const buttonSizes: ButtonSize[] = ['medium', 'large'];
-const demoIcon = <ExternalLink size={16} strokeWidth={1.5} />;
+const demoIcon = <PlaceholderIcon />;
 const documentation: DocumentationRow[] = [
   {
     name: 'children',

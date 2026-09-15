@@ -1,5 +1,5 @@
-import { ExternalLink } from 'lucide-react';
 import { Badge, type BadgeColor } from '../../components/Badge';
+import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -12,7 +12,7 @@ const badgeVariants: Array<{ color: BadgeColor; label: string }> = [
   { color: 'error', label: 'Error' },
   { color: 'warning', label: 'Warning' },
 ];
-const demoIcon = <ExternalLink size={16} strokeWidth={1.5} />;
+const demoIcon = <PlaceholderIcon />;
 const documentation: DocumentationRow[] = [
   {
     name: 'children',
