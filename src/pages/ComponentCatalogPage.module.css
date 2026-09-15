@@ -1,127 +1,15 @@
-.page {
+.shell {
+  display: grid;
   min-height: 100vh;
-  padding: 48px clamp(16px, 4vw, 64px) 64px;
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
-.header {
-  max-width: 720px;
-  margin-bottom: 32px;
+.content {
+  min-width: 0;
 }
 
-.eyebrow,
-.title {
-  margin: 0;
-}
-
-.eyebrow {
-  margin-bottom: 8px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.title {
-  font-size: clamp(32px, 4vw, 48px);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-}
-
-.componentSection {
-  margin-top: 64px;
-}
-
-.componentTitle {
-  margin: 0 0 24px;
-  font-size: clamp(32px, 4vw, 48px);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-}
-
-.specimen {
-  overflow-x: auto;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-paper);
-  background: var(--color-bg-primary);
-}
-
-.canvas {
-  display: flex;
-  width: max-content;
-  min-width: 100%;
+.loading {
   padding: 16px;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.shapeRow {
-  display: flex;
-  min-height: 88px;
-  align-items: center;
-  gap: 8px;
-}
-
-.shapeRow[data-shape='square'] {
-  align-items: flex-start;
-}
-
-.sizeGroup {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.badgeSpecimen {
-  width: fit-content;
-  max-width: 100%;
-}
-
-.badgeCanvas {
-  display: grid;
-  grid-template-columns: max-content max-content;
-  grid-template-rows: repeat(6, 26px);
-  gap: 8px 18px;
-  width: 232px;
-  height: 236px;
-  padding: 20px;
-}
-
-.buttonSpecimen {
-  width: fit-content;
-  max-width: 100%;
-}
-
-.buttonCanvas {
-  display: flex;
-  width: 710px;
-  height: 350px;
-  gap: 32px;
-  padding: 20px;
-}
-
-.buttonSizeGroup {
-  display: grid;
-  grid-template-rows: repeat(7, 36px);
-  row-gap: 10px;
-}
-
-.buttonSizeGroup[data-size='medium'] {
-  grid-template-columns: repeat(3, max-content);
-  column-gap: 13px;
-}
-
-.buttonSizeGroup[data-size='large'] {
-  grid-template-columns: repeat(3, max-content);
-  column-gap: 5px;
-}
-
-@media (max-width: 640px) {
-  .page {
-    padding-top: 32px;
-  }
-
-  .header {
-    margin-bottom: 24px;
-  }
+  color: var(--color-text-secondary);
+  font-size: 14px;
 }

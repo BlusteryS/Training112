@@ -1,6 +1,6 @@
 :root {
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f7f7f8;
+  --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e6e6e6;
   --color-bg-brand: #0d99ff;
   --color-bg-brand-pressed: #007be5;
@@ -29,6 +29,8 @@
   --color-text-warning: #b86200;
   --color-text-disabled: rgba(0, 0, 0, 0.3);
   --color-multiplayer-grey: #667799;
+  --color-code-primary: #8638e5;
+  --color-code-attribute: #009951;
 
   --radius-control: 8px;
   --radius-paper: 12px;
