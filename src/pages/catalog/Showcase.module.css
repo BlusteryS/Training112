@@ -56,7 +56,7 @@
   overflow: auto;
   border-radius: var(--radius-paper);
   background-color: var(--color-bg-secondary);
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.055) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(circle, var(--color-grid-dot) 1.5px, transparent 1.5px);
   background-position: 13px 13px;
   background-size: 19px 19px;
 }

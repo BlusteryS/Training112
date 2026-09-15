@@ -1,7 +1,131 @@
+@property --color-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ffffff;
+}
+
+@property --color-bg-secondary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f5f5f5;
+}
+
+@property --color-bg-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e6e6e6;
+}
+
+@property --color-bg-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f5f5f5;
+}
+
+@property --color-bg-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #d9d9d9;
+}
+
+@property --color-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e6e6e6;
+}
+
+@property --color-border-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.08);
+}
+
+@property --color-border-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e6e6e6;
+}
+
+@property --color-text {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.9);
+}
+
+@property --color-text-secondary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.55);
+}
+
+@property --color-text-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.3);
+}
+
+@property --color-icon {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #000000e5;
+}
+
+@property --color-icon-secondary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #00000080;
+}
+
+@property --color-icon-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0000004d;
+}
+
+@property --color-icon-success {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #14ae5c;
+}
+
+@property --color-grid-dot {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.055);
+}
+
+@property --color-code-primary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8638e5;
+}
+
+@property --color-code-attribute {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #009951;
+}
+
 :root {
-  --color-bg-primary: #ffffff;
+  color-scheme: light;
+
+  --color-bg: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e6e6e6;
+  --color-bg-hover: #f5f5f5;
+  --color-border: #e6e6e6;
+  --color-text: rgba(0, 0, 0, 0.9);
+  --color-text-secondary: rgba(0, 0, 0, 0.55);
+  --color-icon: #000000e5;
+  --color-icon-secondary: #00000080;
+  --color-icon-tertiary: #0000004d;
+  --color-icon-success: #14ae5c;
+  --color-icon-onbrand: #ffffff;
+  --color-grid-dot: rgba(0, 0, 0, 0.055);
+  --color-code-primary: #8638e5;
+  --color-code-attribute: #009951;
+
+  --color-bg-primary: var(--color-bg);
   --color-bg-brand: #0d99ff;
   --color-bg-brand-pressed: #007be5;
   --color-bg-inverse: #2c2c2c;
@@ -10,17 +134,15 @@
   --color-bg-danger: #f24822;
   --color-bg-danger-pressed: #dc3412;
   --color-bg-warning: #ffcd29;
-  --color-bg-pressed: #f5f5f5;
+  --color-bg-pressed: var(--color-bg-hover);
   --color-bg-disabled: #d9d9d9;
-  --color-border: #e6e6e6;
   --color-border-subtle: rgba(0, 0, 0, 0.08);
   --color-border-brand: #bde3ff;
   --color-border-success: #aff4c6;
   --color-border-danger: #ffc7c2;
   --color-border-warning: #ffe8a3;
   --color-border-disabled: #e6e6e6;
-  --color-text-primary: rgba(0, 0, 0, 0.9);
-  --color-text-secondary: rgba(0, 0, 0, 0.55);
+  --color-text-primary: var(--color-text);
   --color-text-on-accent: #ffffff;
   --color-text-on-inverse: rgba(255, 255, 255, 0.9);
   --color-text-brand: #007be5;
@@ -29,8 +151,6 @@
   --color-text-warning: #b86200;
   --color-text-disabled: rgba(0, 0, 0, 0.3);
   --color-multiplayer-grey: #667799;
-  --color-code-primary: #8638e5;
-  --color-code-attribute: #009951;
 
   --radius-control: 8px;
   --radius-paper: 12px;
@@ -39,4 +159,55 @@
 
   --font-family-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-weight-medium: 500;
+
+  transition-property:
+    --color-bg,
+    --color-bg-secondary,
+    --color-bg-tertiary,
+    --color-bg-hover,
+    --color-bg-disabled,
+    --color-border,
+    --color-border-subtle,
+    --color-border-disabled,
+    --color-text,
+    --color-text-secondary,
+    --color-text-disabled,
+    --color-icon,
+    --color-icon-secondary,
+    --color-icon-tertiary,
+    --color-icon-success,
+    --color-grid-dot,
+    --color-code-primary,
+    --color-code-attribute;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg: #2c2c2c;
+  --color-bg-secondary: #383838;
+  --color-bg-tertiary: #444444;
+  --color-bg-hover: #383838;
+  --color-border: #444444;
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-icon: #ffffff;
+  --color-icon-secondary: #ffffffb2;
+  --color-icon-tertiary: #ffffff66;
+  --color-icon-success: #198f51;
+  --color-grid-dot: rgba(255, 255, 255, 0.08);
+  --color-code-primary: #c5b2dc;
+  --color-code-attribute: #79d297;
+  --color-bg-disabled: #444444;
+  --color-border-disabled: #444444;
+  --color-text-disabled: rgba(255, 255, 255, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    transition: none;
+  }
 }

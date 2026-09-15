@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
-import githubIconUrl from '../../assets/github-invertocat.svg';
 import { Badge } from '../../components/Badge';
+import { GithubIcon } from '../../icons/GithubIcon';
 import { CodeExample } from './CodeExample';
 import { ComponentDocumentation, type DocumentationRow } from './ComponentDocumentation';
 import styles from './Showcase.module.css';
 
-const resourceIcon = <img alt="" height={16} src={githubIconUrl} width={16} />;
+const resourceIcon = <GithubIcon />;
 
 type ComponentShowcaseProps = {
   children: ReactNode;

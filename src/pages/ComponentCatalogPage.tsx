@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { AppRail } from './catalog/AppRail';
 import { CatalogSidebar } from './catalog/CatalogSidebar';
 import styles from './ComponentCatalogPage.module.css';
 
@@ -54,6 +55,7 @@ export function ComponentCatalogPage() {
 
   return (
     <div className={styles.shell}>
+      <AppRail />
       <CatalogSidebar activeId={activeComponentId} items={navigationItems} />
 
       <main className={styles.content} id={activeComponentId}>

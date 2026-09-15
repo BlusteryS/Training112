@@ -1,7 +1,8 @@
 .shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 48px auto minmax(0, 1fr);
+  background: var(--color-bg-primary);
 }
 
 .content {
