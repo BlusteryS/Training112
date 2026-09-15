@@ -9,6 +9,7 @@ const showcaseById = {
   button: lazy(() => import('./catalog/ButtonShowcase')),
   checkbox: lazy(() => import('./catalog/CheckboxShowcase')),
   input: lazy(() => import('./catalog/InputShowcase')),
+  modal: lazy(() => import('./catalog/ModalShowcase')),
 };
 
 type ComponentId = keyof typeof showcaseById;
@@ -38,6 +39,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'input',
     label: 'Input',
+  },
+  {
+    id: 'modal',
+    label: 'Modal',
   },
 ];
 
@@ -69,7 +74,7 @@ export function ComponentCatalogPage() {
       <CatalogSidebar activeId={activeComponentId} items={navigationItems} />
 
       <main className={styles.content} id={activeComponentId}>
-        <Suspense fallback={<div className={styles.loading}>Загрузка компонента…</div>}>
+        <Suspense fallback={null}>
           <ActiveShowcase />
         </Suspense>
       </main>

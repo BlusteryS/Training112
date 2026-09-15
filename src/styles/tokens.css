@@ -28,6 +28,12 @@
   initial-value: #d9d9d9;
 }
 
+@property --color-bg-overlay {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0.48);
+}
+
 @property --color-border {
   syntax: '<color>';
   inherits: true;
@@ -168,6 +174,7 @@
   --color-bg-warning: #ffcd29;
   --color-bg-pressed: var(--color-bg-hover);
   --color-bg-disabled: #d9d9d9;
+  --color-bg-overlay: rgba(0, 0, 0, 0.48);
   --color-border-subtle: rgba(0, 0, 0, 0.08);
   --color-border-brand: #bde3ff;
   --color-border-selected: #0d99ff;
@@ -199,6 +206,7 @@
 
   --font-family-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-weight-medium: 500;
+  --duration-theme-transition: 180ms;
 
   transition-property:
     --color-bg,
@@ -206,6 +214,7 @@
     --color-bg-tertiary,
     --color-bg-hover,
     --color-bg-disabled,
+    --color-bg-overlay,
     --color-border,
     --color-border-subtle,
     --color-border-disabled,
@@ -224,7 +233,7 @@
     --color-grid-dot,
     --color-code-primary,
     --color-code-attribute;
-  transition-duration: 180ms;
+  transition-duration: var(--duration-theme-transition);
   transition-timing-function: ease;
 }
 
