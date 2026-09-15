@@ -1,0 +1,81 @@
+.tab {
+  display: inline-flex;
+  min-width: 0;
+  height: 28px;
+  padding: 4px 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 100ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab[data-layout-fill-mode='auto'],
+.tab[data-layout-fill-mode='stretched'] {
+  flex: 1 1 0;
+}
+
+.tab[data-layout-fill-mode='shrinked'] {
+  flex: 0 0 auto;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.tab:hover:not(:disabled, [aria-selected='true']) {
+  background: var(--color-bg-secondary);
+}
+
+.tab:active:not(:disabled) {
+  background: var(--color-bg-tertiary);
+}
+
+.tab:disabled {
+  color: var(--color-text-disabled);
+  background: var(--color-bg-disabled);
+  cursor: not-allowed;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-text-brand);
+  outline-offset: -2px;
+}
+
+.icon {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  color: currentColor;
+}
+
+.icon > :where(svg, img) {
+  width: 16px;
+  height: 16px;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}

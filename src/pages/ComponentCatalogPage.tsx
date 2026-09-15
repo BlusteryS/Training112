@@ -12,6 +12,7 @@ const showcaseById = {
   input: lazy(() => import('./catalog/InputShowcase')),
   modal: lazy(() => import('./catalog/ModalShowcase')),
   tooltip: lazy(() => import('./catalog/TooltipShowcase')),
+  tabs: lazy(() => import('./catalog/TabsShowcase')),
 };
 
 type ComponentId = keyof typeof showcaseById;
@@ -53,6 +54,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'tooltip',
     label: 'Tooltip',
+  },
+  {
+    id: 'tabs',
+    label: 'Tabs',
   },
 ];
 

@@ -114,6 +114,14 @@
   gap: 16px;
 }
 
+.tabsCanvas {
+  width: fit-content;
+  max-width: 100%;
+  padding: 20px;
+  border-radius: var(--radius-paper);
+  background: var(--color-bg-primary);
+}
+
 .buttonCanvas {
   display: flex;
   width: max-content;

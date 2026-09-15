@@ -8,6 +8,7 @@ import styles from './Showcase.module.css';
 const resourceIcon = <GithubIcon />;
 
 type ComponentShowcaseProps = {
+  additionalDocumentation?: ReactNode;
   children: ReactNode;
   code: string;
   documentation: DocumentationRow[];
@@ -15,6 +16,7 @@ type ComponentShowcaseProps = {
 };
 
 export function ComponentShowcase({
+  additionalDocumentation,
   children,
   code,
   documentation,
@@ -39,6 +41,7 @@ export function ComponentShowcase({
 
       <CodeExample code={code} />
       <ComponentDocumentation componentName={name} rows={documentation} />
+      {additionalDocumentation}
     </article>
   );
 }
