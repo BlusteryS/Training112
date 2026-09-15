@@ -7,6 +7,7 @@ const showcaseById = {
   avatar: lazy(() => import('./catalog/AvatarShowcase')),
   badge: lazy(() => import('./catalog/BadgeShowcase')),
   button: lazy(() => import('./catalog/ButtonShowcase')),
+  checkbox: lazy(() => import('./catalog/CheckboxShowcase')),
 };
 
 type ComponentId = keyof typeof showcaseById;
@@ -28,6 +29,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'button',
     label: 'Button',
+  },
+  {
+    id: 'checkbox',
+    label: 'Checkbox',
   },
 ];
 

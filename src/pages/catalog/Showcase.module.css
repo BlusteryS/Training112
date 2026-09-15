@@ -73,6 +73,17 @@
   gap: 8px 18px;
 }
 
+.checkboxCanvas {
+  display: grid;
+  gap: 14px;
+}
+
+.checkboxGroup {
+  display: grid;
+  grid-template-columns: repeat(3, 20px);
+  gap: 6px 8px;
+}
+
 .buttonCanvas {
   display: flex;
   width: max-content;

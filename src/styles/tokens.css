@@ -88,6 +88,12 @@
   initial-value: #14ae5c;
 }
 
+@property --color-icon-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0000004d;
+}
+
 @property --color-grid-dot {
   syntax: '<color>';
   inherits: true;
@@ -120,6 +126,7 @@
   --color-icon-secondary: #00000080;
   --color-icon-tertiary: #0000004d;
   --color-icon-success: #14ae5c;
+  --color-icon-disabled: #0000004d;
   --color-icon-onbrand: #ffffff;
   --color-grid-dot: rgba(0, 0, 0, 0.055);
   --color-code-primary: #8638e5;
@@ -138,6 +145,7 @@
   --color-bg-disabled: #d9d9d9;
   --color-border-subtle: rgba(0, 0, 0, 0.08);
   --color-border-brand: #bde3ff;
+  --color-border-selected-strong: #007be5;
   --color-border-success: #aff4c6;
   --color-border-danger: #ffc7c2;
   --color-border-warning: #ffe8a3;
@@ -153,6 +161,7 @@
   --color-multiplayer-grey: #667799;
 
   --radius-control: 8px;
+  --radius-check: 6px;
   --radius-paper: 12px;
   --radius-promo: 20px;
   --radius-round: 999px;
@@ -176,6 +185,7 @@
     --color-icon-secondary,
     --color-icon-tertiary,
     --color-icon-success,
+    --color-icon-disabled,
     --color-grid-dot,
     --color-code-primary,
     --color-code-attribute;
@@ -198,6 +208,7 @@
   --color-icon-secondary: #ffffffb2;
   --color-icon-tertiary: #ffffff66;
   --color-icon-success: #198f51;
+  --color-icon-disabled: #ffffff66;
   --color-grid-dot: rgba(255, 255, 255, 0.08);
   --color-code-primary: #c5b2dc;
   --color-code-attribute: #79d297;
