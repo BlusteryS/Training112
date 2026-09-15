@@ -1,0 +1,74 @@
+.floating {
+  z-index: 1000;
+  color: var(--color-bg-inverse);
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  transform-origin: center;
+}
+
+.surface {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: max-content;
+  max-width: min(var(--tooltip-max-width), calc(100vw - 16px));
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  color: var(--color-text-on-inverse);
+  background: var(--color-bg-inverse);
+  overflow-wrap: anywhere;
+}
+
+.title,
+.description {
+  width: 100%;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.title {
+  color: var(--color-text-on-inverse);
+  font-weight: var(--font-weight-medium);
+}
+
+.description {
+  color: var(--color-text-on-inverse-secondary);
+  font-weight: 400;
+}
+
+.arrow {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  width: 20px;
+  height: 8px;
+  color: var(--color-bg-inverse);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.arrow[data-side='top'] {
+  transform: rotate(180deg);
+}
+
+.arrow[data-side='left'],
+.arrow[data-side='right'] {
+  width: 8px;
+  height: 20px;
+}
+
+.arrow[data-side='left'] {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    transition-duration: 0.01ms !important;
+  }
+}

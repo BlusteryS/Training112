@@ -189,6 +189,7 @@
   --color-text-primary: var(--color-text);
   --color-text-on-accent: #ffffff;
   --color-text-on-inverse: rgba(255, 255, 255, 0.9);
+  --color-text-on-inverse-secondary: rgba(255, 255, 255, 0.8);
   --color-text-brand: #007be5;
   --color-text-success: #009951;
   --color-text-danger: #dc3412;

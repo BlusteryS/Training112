@@ -97,6 +97,12 @@
   gap: 12px;
 }
 
+.tooltipGrid {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 16px;
+}
+
 .buttonCanvas {
   display: flex;
   width: max-content;
@@ -170,8 +176,10 @@
   text-align: left;
 }
 
-.propertyColumn {
-  width: 200px;
+.propertyColumn,
+.descriptionColumn {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .table th,

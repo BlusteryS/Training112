@@ -20,7 +20,7 @@ export function ComponentDocumentation({ componentName, rows }: ComponentDocumen
           <caption className={styles.visuallyHidden}>Свойства компонента {componentName}</caption>
           <colgroup>
             <col className={styles.propertyColumn} />
-            <col />
+            <col className={styles.descriptionColumn} />
             <col />
           </colgroup>
           <thead>

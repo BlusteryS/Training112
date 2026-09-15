@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import styles from './Button.module.css';
 
 export type ButtonAppearance = 'accent' | 'negative' | 'positive' | 'inversion';
@@ -29,19 +29,22 @@ type InversionButtonProps = ButtonBaseProps & {
 
 export type ButtonProps = StandardButtonProps | InversionButtonProps;
 
-export function Button({
-  appearance = 'accent',
-  after,
-  before,
-  children,
-  className,
-  disabled = false,
-  mode = 'fill',
-  size = 'medium',
-  state = 'default',
-  type = 'button',
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    appearance = 'accent',
+    after,
+    before,
+    children,
+    className,
+    disabled = false,
+    mode = 'fill',
+    size = 'medium',
+    state = 'default',
+    type = 'button',
+    ...props
+  },
+  ref,
+) {
   const classes = [styles.button, className].filter(Boolean).join(' ');
   const renderIcon = (icon: ReactNode) => (
     <span aria-hidden="true" className={styles.icon}>
@@ -58,6 +61,7 @@ export function Button({
       data-size={size}
       data-state={state}
       disabled={disabled}
+      ref={ref}
       type={type}
     >
       {before ? renderIcon(before) : null}
@@ -65,4 +69,4 @@ export function Button({
       {after ? renderIcon(after) : null}
     </button>
   );
-}
+});
