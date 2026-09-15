@@ -97,6 +97,14 @@
   gap: 12px;
 }
 
+.iconButtonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 32px);
+  align-items: center;
+  justify-items: center;
+  gap: 12px;
+}
+
 .tooltipGrid {
   display: grid;
   grid-template-columns: repeat(3, max-content);

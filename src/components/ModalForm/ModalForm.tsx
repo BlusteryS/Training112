@@ -8,6 +8,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { IconButton } from '../IconButton';
 import { CloseIcon } from '../../icons/CloseIcon';
 import styles from './ModalForm.module.css';
 
@@ -106,14 +107,13 @@ export function ModalForm({
               ) : null}
             </div>
 
-            <button
+            <IconButton
               aria-label="Закрыть"
-              className={styles.closeButton}
               onClick={requestClose}
-              type="button"
+              size="small"
             >
               <CloseIcon />
-            </button>
+            </IconButton>
           </div>
         </header>
 

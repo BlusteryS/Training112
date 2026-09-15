@@ -1,4 +1,5 @@
 import logoUrl from '../../assets/logo-light.svg';
+import { IconButton } from '../../components/IconButton';
 import { ThemeIcon } from '../../icons/ThemeIcon';
 import { useTheme } from '../../theme/useTheme';
 import styles from './AppRail.module.css';
@@ -13,15 +14,14 @@ export function AppRail() {
         <img alt="UIKit" height={24} src={logoUrl} width={24} />
       </div>
 
-      <button
+      <IconButton
+        appearance="tertiary"
         aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
         aria-pressed={isDark}
-        className={styles.themeButton}
         onClick={toggleTheme}
-        type="button"
       >
         <ThemeIcon />
-      </button>
+      </IconButton>
     </aside>
   );
 }

@@ -12,28 +12,10 @@
   background: var(--color-bg-primary);
 }
 
-.logo,
-.themeButton {
+.logo {
   display: grid;
   width: 32px;
   height: 32px;
   padding: 0;
   place-items: center;
-}
-
-.themeButton {
-  border: 0;
-  border-radius: var(--radius-control);
-  color: var(--color-icon-tertiary);
-  background: transparent;
-  cursor: pointer;
-}
-
-.themeButton:hover {
-  background: var(--color-bg-hover);
-}
-
-.themeButton:focus-visible {
-  outline: 2px solid var(--color-text-brand);
-  outline-offset: -2px;
 }

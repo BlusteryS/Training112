@@ -102,29 +102,6 @@
   line-height: 1.4;
 }
 
-.closeButton {
-  display: inline-grid;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  border-radius: 5px;
-  color: var(--color-icon);
-  background: transparent;
-  cursor: pointer;
-}
-
-.closeButton:hover {
-  background: var(--color-bg-hover);
-}
-
-.closeButton:focus-visible {
-  outline: 2px solid var(--color-border-selected-strong);
-  outline-offset: 2px;
-}
-
 .body {
   min-height: 0;
   flex: 1 1 auto;
