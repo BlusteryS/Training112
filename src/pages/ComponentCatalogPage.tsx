@@ -7,12 +7,13 @@ const showcaseById = {
   avatar: lazy(() => import('./catalog/AvatarShowcase')),
   badge: lazy(() => import('./catalog/BadgeShowcase')),
   button: lazy(() => import('./catalog/ButtonShowcase')),
-  iconButton: lazy(() => import('./catalog/IconButtonShowcase')),
   checkbox: lazy(() => import('./catalog/CheckboxShowcase')),
+  iconButton: lazy(() => import('./catalog/IconButtonShowcase')),
   input: lazy(() => import('./catalog/InputShowcase')),
   modal: lazy(() => import('./catalog/ModalShowcase')),
-  tooltip: lazy(() => import('./catalog/TooltipShowcase')),
+  snackbar: lazy(() => import('./catalog/SnackbarShowcase')),
   tabs: lazy(() => import('./catalog/TabsShowcase')),
+  tooltip: lazy(() => import('./catalog/TooltipShowcase')),
 };
 
 type ComponentId = keyof typeof showcaseById;
@@ -36,12 +37,12 @@ const navigationItems: NavigationItem[] = [
     label: 'Button',
   },
   {
-    id: 'iconButton',
-    label: 'IconButton',
-  },
-  {
     id: 'checkbox',
     label: 'Checkbox',
+  },
+  {
+    id: 'iconButton',
+    label: 'IconButton',
   },
   {
     id: 'input',
@@ -52,12 +53,16 @@ const navigationItems: NavigationItem[] = [
     label: 'Modal',
   },
   {
-    id: 'tooltip',
-    label: 'Tooltip',
+    id: 'snackbar',
+    label: 'Snackbar',
   },
   {
     id: 'tabs',
     label: 'Tabs',
+  },
+  {
+    id: 'tooltip',
+    label: 'Tooltip',
   },
 ];
 
