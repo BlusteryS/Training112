@@ -1,28 +1,24 @@
-import { Fragment } from 'react';
+import type { CodeTokenKind } from './codeTokenizer';
+import { tokenizeCode } from './codeTokenizer';
 import styles from './Showcase.module.css';
 
 type CodeExampleProps = {
   code: string;
 };
 
-const attributePattern = /([A-Za-z][\w-]*)(?=\s*=)/gu;
-
-function highlightAttributes(line: string) {
-  const parts = line.split(attributePattern);
-
-  return parts.map((part, index) =>
-    index % 2 === 1 ? (
-      <span className={styles.codeAttribute} key={`${part}-${index}`}>
-        {part}
-      </span>
-    ) : (
-      part
-    ),
-  );
-}
+const classNameByTokenKind: Partial<Record<CodeTokenKind, string>> = {
+  attribute: styles.codeAttribute,
+  comment: styles.codeComment,
+  function: styles.codeFunction,
+  keyword: styles.codeKeyword,
+  number: styles.codeNumber,
+  punctuation: styles.codePunctuation,
+  string: styles.codeString,
+  tag: styles.codeTag,
+};
 
 export function CodeExample({ code }: CodeExampleProps) {
-  const lines = code.trim().split('\n');
+  const tokens = tokenizeCode(code.trim());
 
   return (
     <section aria-label="Пример кода" className={styles.section}>
@@ -30,12 +26,17 @@ export function CodeExample({ code }: CodeExampleProps) {
         <span className={styles.codeLabel}>Код</span>
         <pre className={styles.codeBlock}>
           <code>
-            {lines.map((line, index) => (
-              <Fragment key={`${line}-${index}`}>
-                {highlightAttributes(line)}
-                {index < lines.length - 1 ? '\n' : null}
-              </Fragment>
-            ))}
+            {tokens.map(({ kind, value }, index) => {
+              const className = classNameByTokenKind[kind];
+
+              return className ? (
+                <span className={className} key={`${index}-${kind}`}>
+                  {value}
+                </span>
+              ) : (
+                value
+              );
+            })}
           </code>
         </pre>
       </div>

@@ -156,7 +156,7 @@
 .codeBlock {
   margin: 0;
   overflow-x: auto;
-  color: var(--color-code-primary);
+  color: var(--color-text-primary);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 14px;
   line-height: 1.4;
@@ -165,6 +165,29 @@
 
 .codeAttribute {
   color: var(--color-code-attribute);
+}
+
+.codeTag,
+.codeFunction,
+.codeKeyword {
+  color: var(--color-code-primary);
+}
+
+.codeString {
+  color: var(--color-text-secondary);
+}
+
+.codeNumber {
+  color: var(--color-text-brand);
+}
+
+.codeComment {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.codePunctuation {
+  color: var(--color-icon-secondary);
 }
 
 .tableContainer {
