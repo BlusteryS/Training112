@@ -68,20 +68,57 @@ function getComponentFromHash(): ComponentId {
 
 export function ComponentCatalogPage() {
   const [activeComponentId, setActiveComponentId] = useState<ComponentId>(getComponentFromHash);
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const ActiveShowcase = showcaseById[activeComponentId];
 
   useEffect(() => {
-    const handleHashChange = () => setActiveComponentId(getComponentFromHash());
+    const handleHashChange = () => {
+      setActiveComponentId(getComponentFromHash());
+      setIsNavigationOpen(false);
+    };
 
     window.addEventListener('hashchange', handleHashChange);
 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  useEffect(() => {
+    if (!isNavigationOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsNavigationOpen(false);
+      }
+    };
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const previousOverflow = document.body.style.overflow;
+
+    if (isMobile) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isNavigationOpen]);
+
   return (
     <div className={styles.shell}>
-      <AppRail />
-      <CatalogSidebar activeId={activeComponentId} items={navigationItems} />
+      <AppRail
+        isNavigationOpen={isNavigationOpen}
+        onNavigationToggle={() => setIsNavigationOpen((isOpen) => !isOpen)}
+      />
+      <CatalogSidebar
+        activeId={activeComponentId}
+        isOpen={isNavigationOpen}
+        items={navigationItems}
+        onClose={() => setIsNavigationOpen(false)}
+      />
 
       <main className={styles.content} id={activeComponentId}>
         <Suspense fallback={null}>

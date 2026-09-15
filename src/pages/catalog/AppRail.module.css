@@ -1,5 +1,6 @@
 .rail {
   position: sticky;
+  z-index: 30;
   top: 0;
   display: flex;
   width: 48px;
@@ -12,10 +13,33 @@
   background: var(--color-bg-primary);
 }
 
+.leading {
+  display: flex;
+  align-items: center;
+}
+
+.rail .menuButton {
+  display: none;
+}
+
 .logo {
   display: grid;
   width: 32px;
   height: 32px;
   padding: 0;
   place-items: center;
+}
+
+@media (max-width: 640px) {
+  .rail {
+    width: 100%;
+    height: 48px;
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .rail .menuButton {
+    display: inline-grid;
+  }
 }

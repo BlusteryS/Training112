@@ -8,3 +8,9 @@
 .content {
   min-width: 0;
 }
+
+@media (max-width: 640px) {
+  .shell {
+    display: block;
+  }
+}
