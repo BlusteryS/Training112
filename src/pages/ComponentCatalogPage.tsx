@@ -1,6 +1,12 @@
 import { ExternalLink } from 'lucide-react';
 import { Avatar, avatarSizes, type AvatarShape } from '../components/Avatar';
 import { Badge, type BadgeColor } from '../components/Badge';
+import {
+  Button,
+  type ButtonAppearance,
+  type ButtonMode,
+  type ButtonSize,
+} from '../components/Button';
 import styles from './ComponentCatalogPage.module.css';
 
 const avatarPhotoUrl =
@@ -15,6 +21,18 @@ const badgeVariants: Array<{ color: BadgeColor; label: string }> = [
   { color: 'error', label: 'Error' },
   { color: 'warning', label: 'Warning' },
 ];
+const buttonRows: Array<{
+  appearance: Exclude<ButtonAppearance, 'inversion'>;
+  mode: ButtonMode;
+}> = [
+  { appearance: 'accent', mode: 'fill' },
+  { appearance: 'accent', mode: 'outline' },
+  { appearance: 'negative', mode: 'fill' },
+  { appearance: 'negative', mode: 'outline' },
+  { appearance: 'positive', mode: 'fill' },
+  { appearance: 'positive', mode: 'outline' },
+];
+const buttonSizes: ButtonSize[] = ['medium', 'large'];
 
 export function ComponentCatalogPage() {
   return (
@@ -85,6 +103,88 @@ export function ComponentCatalogPage() {
               >
                 {label}
               </Badge>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.componentSection} aria-labelledby="button-title">
+        <h2 className={styles.componentTitle} id="button-title">
+          Button
+        </h2>
+
+        <div className={`${styles.specimen} ${styles.buttonSpecimen}`}>
+          <div className={styles.buttonCanvas}>
+            {buttonSizes.map((size) => (
+              <div className={styles.buttonSizeGroup} data-size={size} key={size}>
+                {buttonRows.flatMap(({ appearance, mode }, rowIndex) => {
+                  const defaultButton = (
+                    <Button
+                      appearance={appearance}
+                      iconLeft={demoIcon}
+                      iconRight={demoIcon}
+                      key={`${appearance}-${mode}-default`}
+                      mode={mode}
+                      size={size}
+                      style={{ gridColumn: 1, gridRow: rowIndex + 1 }}
+                    >
+                      Button
+                    </Button>
+                  );
+                  const disabledButton = (
+                    <Button
+                      appearance={appearance}
+                      disabled
+                      iconLeft={demoIcon}
+                      iconRight={demoIcon}
+                      key={`${appearance}-${mode}-disabled`}
+                      mode={mode}
+                      size={size}
+                      style={{ gridColumn: 3, gridRow: rowIndex + 1 }}
+                    >
+                      Button
+                    </Button>
+                  );
+
+                  return [
+                    defaultButton,
+                    <Button
+                      appearance={appearance}
+                      iconLeft={demoIcon}
+                      iconRight={demoIcon}
+                      key={`${appearance}-${mode}-pressed`}
+                      mode={mode}
+                      size={size}
+                      state="pressed"
+                      style={{ gridColumn: 2, gridRow: rowIndex + 1 }}
+                    >
+                      Button
+                    </Button>,
+                    disabledButton,
+                  ];
+                })}
+                <Button
+                  appearance="inversion"
+                  iconLeft={demoIcon}
+                  iconRight={demoIcon}
+                  key="inversion-fill-default"
+                  size={size}
+                  style={{ gridColumn: 1, gridRow: 7 }}
+                >
+                  Button
+                </Button>
+                <Button
+                  appearance="inversion"
+                  disabled
+                  iconLeft={demoIcon}
+                  iconRight={demoIcon}
+                  key="inversion-fill-disabled"
+                  size={size}
+                  style={{ gridColumn: 3, gridRow: 7 }}
+                >
+                  Button
+                </Button>
+              </div>
             ))}
           </div>
         </div>
