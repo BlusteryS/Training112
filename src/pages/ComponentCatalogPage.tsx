@@ -7,6 +7,7 @@ const showcaseById = {
   avatar: lazy(() => import('./catalog/AvatarShowcase')),
   badge: lazy(() => import('./catalog/BadgeShowcase')),
   button: lazy(() => import('./catalog/ButtonShowcase')),
+  card: lazy(() => import('./catalog/CardShowcase')),
   checkbox: lazy(() => import('./catalog/CheckboxShowcase')),
   iconButton: lazy(() => import('./catalog/IconButtonShowcase')),
   input: lazy(() => import('./catalog/InputShowcase')),
@@ -36,6 +37,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'button',
     label: 'Button',
+  },
+  {
+    id: 'card',
+    label: 'Card',
   },
   {
     id: 'checkbox',

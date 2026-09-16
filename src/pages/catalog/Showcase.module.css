@@ -78,6 +78,18 @@
   gap: 14px;
 }
 
+.cardList {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+}
+
+.cardTabs {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+}
+
 .checkboxShowcase {
   display: flex;
   flex-wrap: wrap;

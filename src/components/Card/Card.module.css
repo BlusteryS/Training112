@@ -1,0 +1,80 @@
+.card {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-paper);
+}
+
+.header {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.accessory {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-icon);
+}
+
+.after {
+  margin-inline-start: auto;
+}
+
+.heading {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.title,
+.subtitle {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.title {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.subtitle {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.card[data-appearance='default'] {
+  background: var(--color-bg-secondary);
+}
+
+.card[data-appearance='accent'] {
+  background: var(--color-bg-brand-tertiary);
+}
+
+.card[data-appearance='error'] {
+  background: var(--color-bg-danger-tertiary);
+}
+
+.card[data-appearance='valid'] {
+  background: var(--color-bg-success-tertiary);
+}
+
+.card[data-appearance='warning'] {
+  background: var(--color-bg-warning-tertiary);
+}
+
+.card[data-appearance='important'] {
+  background: var(--color-bg-figjam-tertiary);
+}

@@ -28,6 +28,36 @@
   initial-value: #d9d9d9;
 }
 
+@property --color-bg-brand-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e5f4ff;
+}
+
+@property --color-bg-danger-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ffe2e0;
+}
+
+@property --color-bg-success-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #cff7d3;
+}
+
+@property --color-bg-warning-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #fff1c2;
+}
+
+@property --color-bg-figjam-tertiary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f1e5ff;
+}
+
 @property --color-bg-overlay {
   syntax: '<color>';
   inherits: true;
@@ -174,6 +204,11 @@
   --color-bg-warning: #ffcd29;
   --color-bg-pressed: var(--color-bg-hover);
   --color-bg-disabled: #d9d9d9;
+  --color-bg-brand-tertiary: #e5f4ff;
+  --color-bg-danger-tertiary: #ffe2e0;
+  --color-bg-success-tertiary: #cff7d3;
+  --color-bg-warning-tertiary: #fff1c2;
+  --color-bg-figjam-tertiary: #f1e5ff;
   --color-bg-overlay: rgba(0, 0, 0, 0.48);
   --color-border-subtle: rgba(0, 0, 0, 0.08);
   --color-border-brand: #bde3ff;
@@ -215,6 +250,11 @@
     --color-bg-tertiary,
     --color-bg-hover,
     --color-bg-disabled,
+    --color-bg-brand-tertiary,
+    --color-bg-danger-tertiary,
+    --color-bg-success-tertiary,
+    --color-bg-warning-tertiary,
+    --color-bg-figjam-tertiary,
     --color-bg-overlay,
     --color-border,
     --color-border-subtle,
@@ -260,6 +300,11 @@
   --color-code-primary: #c5b2dc;
   --color-code-attribute: #79d297;
   --color-bg-disabled: #444444;
+  --color-bg-brand-tertiary: #20394a;
+  --color-bg-danger-tertiary: #4c302a;
+  --color-bg-success-tertiary: #284134;
+  --color-bg-warning-tertiary: #5c4100;
+  --color-bg-figjam-tertiary: #473956;
   --color-border-disabled: #444444;
   --color-text-disabled: rgba(255, 255, 255, 0.4);
   --color-bg-handoff-tertiary: #284134;
