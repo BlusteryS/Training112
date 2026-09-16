@@ -11,6 +11,7 @@ const showcaseById = {
   iconButton: lazy(() => import('./catalog/IconButtonShowcase')),
   input: lazy(() => import('./catalog/InputShowcase')),
   modal: lazy(() => import('./catalog/ModalShowcase')),
+  progress: lazy(() => import('./catalog/ProgressShowcase')),
   snackbar: lazy(() => import('./catalog/SnackbarShowcase')),
   tabs: lazy(() => import('./catalog/TabsShowcase')),
   tooltip: lazy(() => import('./catalog/TooltipShowcase')),
@@ -51,6 +52,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'modal',
     label: 'Modal',
+  },
+  {
+    id: 'progress',
+    label: 'Progress',
   },
   {
     id: 'snackbar',

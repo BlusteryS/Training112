@@ -122,6 +122,10 @@
   background: var(--color-bg-primary);
 }
 
+.progressCanvas {
+  width: 103px;
+}
+
 .buttonCanvas {
   display: flex;
   width: max-content;
