@@ -39,6 +39,10 @@
   cursor: not-allowed;
 }
 
+.root[data-read-only='true']:not([data-disabled='true']) {
+  cursor: pointer;
+}
+
 .input {
   min-width: 0;
   height: 20px;
@@ -64,6 +68,12 @@
   color: var(--color-text-disabled);
   cursor: not-allowed;
   -webkit-text-fill-color: var(--color-text-disabled);
+}
+
+.root[data-read-only='true'] .input {
+  caret-color: transparent;
+  cursor: pointer;
+  user-select: none;
 }
 
 .icon {

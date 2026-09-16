@@ -1,7 +1,11 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
-import styles from './Input.module.css';
+import {
+  FieldControl,
+  FieldControlInput,
+  type FieldControlStatus,
+} from '../FieldControl/FieldControl';
 
-export type InputStatus = 'default' | 'valid' | 'error';
+export type InputStatus = FieldControlStatus;
 
 export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   /** Optional content rendered before the input. */
@@ -17,41 +21,32 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     before,
     className,
     disabled = false,
+    readOnly = false,
     status = 'default',
     type = 'text',
     ...props
   },
   ref,
 ) {
-  const classes = [styles.root, className].filter(Boolean).join(' ');
   const ariaInvalid = status === 'error' ? true : props['aria-invalid'];
 
   return (
-    <label
-      className={classes}
-      data-disabled={disabled || undefined}
-      data-status={status}
+    <FieldControl
+      after={after}
+      before={before}
+      className={className}
+      disabled={disabled}
+      readOnly={readOnly}
+      status={status}
     >
-      {before ? (
-        <span aria-hidden="true" className={styles.icon}>
-          {before}
-        </span>
-      ) : null}
-
-      <input
+      <FieldControlInput
         {...props}
         aria-invalid={ariaInvalid}
-        className={styles.input}
         disabled={disabled}
+        readOnly={readOnly}
         ref={ref}
         type={type}
       />
-
-      {after ? (
-        <span aria-hidden="true" className={styles.icon}>
-          {after}
-        </span>
-      ) : null}
-    </label>
+    </FieldControl>
   );
 });
