@@ -30,17 +30,10 @@
 
 .before {
   display: inline-flex;
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   color: var(--color-icon);
-}
-
-.before > :where(svg, img) {
-  width: 20px;
-  height: 20px;
 }
 
 .text {
@@ -88,17 +81,4 @@
 .closeButton.closeButton:hover:not(:disabled),
 .closeButton.closeButton:active:not(:disabled) {
   background: var(--color-bg-overlay);
-}
-
-.closeIcon {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-}
-
-.closeIcon > svg {
-  width: 20px;
-  height: 20px;
 }

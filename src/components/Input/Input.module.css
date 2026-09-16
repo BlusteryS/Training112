@@ -68,13 +68,6 @@
 
 .icon {
   display: inline-grid;
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  flex: 0 0 auto;
   place-items: center;
-}
-
-.icon > :where(svg, img) {
-  width: 16px;
-  height: 16px;
 }

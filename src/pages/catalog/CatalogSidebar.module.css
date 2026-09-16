@@ -79,7 +79,6 @@
 }
 
 .link svg {
-  flex: 0 0 20px;
   color: var(--color-icon);
 }
 
