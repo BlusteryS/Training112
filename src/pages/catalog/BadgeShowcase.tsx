@@ -1,5 +1,5 @@
 import { Badge, type BadgeColor } from '../../components/Badge';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -12,7 +12,7 @@ const badgeVariants: Array<{ color: BadgeColor; label: string }> = [
   { color: 'error', label: 'Error' },
   { color: 'warning', label: 'Warning' },
 ];
-const demoIcon = <PlaceholderIcon />;
+const demoIcon = <Icon20Placeholder height={16} width={16} />;
 const documentation: DocumentationRow[] = [
   {
     name: 'children',

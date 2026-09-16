@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { Badge } from '../../components/Badge';
-import { GithubIcon } from '../../icons/GithubIcon';
+import { Icon16Github } from '../../icons';
 import { CodeExample } from './CodeExample';
 import { ComponentDocumentation, type DocumentationRow } from './ComponentDocumentation';
 import styles from './Showcase.module.css';
 
-const resourceIcon = <GithubIcon />;
+const resourceIcon = <Icon16Github />;
 
 type ComponentShowcaseProps = {
   additionalDocumentation?: ReactNode;

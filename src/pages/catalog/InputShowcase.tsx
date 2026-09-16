@@ -1,10 +1,10 @@
 import { Input } from '../../components/Input';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
 
-const demoIcon = <PlaceholderIcon />;
+const demoIcon = <Icon20Placeholder height={16} width={16} />;
 const documentation: DocumentationRow[] = [
   {
     name: 'placeholder',

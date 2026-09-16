@@ -2,7 +2,7 @@ import { Card, type CardAppearance } from '../../components/Card';
 import { IconButton } from '../../components/IconButton';
 import { Tab } from '../../components/Tab';
 import { Tabs } from '../../components/Tabs';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -61,10 +61,10 @@ const codeExample = `
   </Tabs>
 </Card>
 `;
-const demoIcon = <PlaceholderIcon />;
+const demoIcon = <Icon20Placeholder />;
 const demoIconButton = (
   <IconButton aria-label="Действие" size="medium">
-    <PlaceholderIcon />
+    <Icon20Placeholder />
   </IconButton>
 );
 const tabIds = ['first', 'second', 'third', 'fourth'];

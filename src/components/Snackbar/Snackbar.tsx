@@ -3,7 +3,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
-import { CloseIcon } from '../../icons/CloseIcon';
+import { Icon24Close } from '../../icons';
 import { IconButton } from '../IconButton';
 import styles from './Snackbar.module.css';
 
@@ -65,9 +65,7 @@ export const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(function Snack
             onClick={onClose}
             size="small"
           >
-            <span className={styles.closeIcon}>
-              <CloseIcon />
-            </span>
+            <Icon24Close height={20} width={20} />
           </IconButton>
         </div>
       ) : null}

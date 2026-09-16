@@ -1,6 +1,6 @@
 import { Tab } from '../../components/Tab';
 import { Tabs } from '../../components/Tabs';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import { ComponentDocumentation, type DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -87,7 +87,7 @@ const codeExample = `
   </Tab>
 </Tabs>
 `;
-const demoIcon = <PlaceholderIcon />;
+const demoIcon = <Icon20Placeholder height={16} width={16} />;
 
 export default function TabsShowcase() {
   return (

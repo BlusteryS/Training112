@@ -25,6 +25,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import { Icon20TooltipArrow } from '../../icons';
 import styles from './Tooltip.module.css';
 
 export type TooltipPlacement =
@@ -188,21 +189,9 @@ export function Tooltip({
                 ref={arrowRef}
                 style={arrowStyle}
               >
-                {side === 'left' || side === 'right' ? (
-                  <svg fill="none" height="20" viewBox="0 0 8 20" width="8">
-                    <path
-                      d="M0 10C0 7 8 4.0001 8 0V20C8 16.0251 0 13 0 10Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                ) : (
-                  <svg fill="none" height="8" viewBox="0 0 20 8" width="20">
-                    <path
-                      d="M10 0C13 0 15.9999 8 20 8H0C3.9749 8 7 0 10 0Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                )}
+                <Icon20TooltipArrow
+                  orientation={side === 'left' || side === 'right' ? 'vertical' : 'horizontal'}
+                />
               </span>
 
               <div className={styles.surface} style={surfaceStyle}>

@@ -6,6 +6,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from 'react';
+import { Icon20Check, Icon20Minus } from '../../icons';
 import styles from './Checkbox.module.css';
 
 export type CheckboxVariant = 'checkbox' | 'radio';
@@ -80,36 +81,8 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
           type={variant}
         />
         <span aria-hidden="true" className={styles.visual}>
-          <svg
-            className={styles.checkmark}
-            fill="none"
-            height="20"
-            viewBox="0 0 20 20"
-            width="20"
-          >
-            <path
-              d="M6 10L9.42857 13L14 7"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.5"
-            />
-          </svg>
-          <svg
-            className={styles.mixedMark}
-            fill="none"
-            height="20"
-            viewBox="0 0 20 20"
-            width="20"
-          >
-            <path
-              d="M6 10H14"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.5"
-            />
-          </svg>
+          <Icon20Check className={styles.checkmark} />
+          <Icon20Minus className={styles.mixedMark} />
         </span>
       </span>
 

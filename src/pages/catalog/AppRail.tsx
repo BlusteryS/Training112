@@ -1,7 +1,6 @@
 import logoUrl from '../../assets/logo-light.svg';
 import { IconButton } from '../../components/IconButton';
-import { MenuIcon } from '../../icons/MenuIcon';
-import { ThemeIcon } from '../../icons/ThemeIcon';
+import { Icon24Menu, Icon24Theme } from '../../icons';
 import { useTheme } from '../../theme/useTheme';
 import styles from './AppRail.module.css';
 
@@ -24,7 +23,7 @@ export function AppRail({ isNavigationOpen, onNavigationToggle }: AppRailProps) 
           className={styles.menuButton}
           onClick={onNavigationToggle}
         >
-          <MenuIcon />
+          <Icon24Menu />
         </IconButton>
 
         <div className={styles.logo}>
@@ -38,7 +37,7 @@ export function AppRail({ isNavigationOpen, onNavigationToggle }: AppRailProps) 
         aria-pressed={isDark}
         onClick={toggleTheme}
       >
-        <ThemeIcon />
+        <Icon24Theme />
       </IconButton>
     </aside>
   );

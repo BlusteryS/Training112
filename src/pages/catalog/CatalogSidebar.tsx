@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { ChevronRightIcon } from '../../icons/ChevronRightIcon';
+import { Icon20ChevronRight } from '../../icons';
 import styles from './CatalogSidebar.module.css';
 import { useResizableSidebar } from './useResizableSidebar';
 
@@ -56,7 +56,7 @@ export function CatalogSidebar({ activeId, isOpen, items, onClose }: CatalogSide
                     onClick={onClose}
                   >
                     <span>{label}</span>
-                    <ChevronRightIcon />
+                    <Icon20ChevronRight />
                   </a>
                 </li>
               ))}

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { IconButton } from '../IconButton';
-import { CloseIcon } from '../../icons/CloseIcon';
+import { Icon24Close } from '../../icons';
 import styles from './ModalForm.module.css';
 
 export type ModalSize = 'small' | 'medium' | 'large';
@@ -112,7 +112,7 @@ export function ModalForm({
               onClick={requestClose}
               size="small"
             >
-              <CloseIcon />
+              <Icon24Close />
             </IconButton>
           </div>
         </header>

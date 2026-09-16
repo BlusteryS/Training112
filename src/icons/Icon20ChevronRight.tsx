@@ -1,12 +1,15 @@
-export function ChevronRightIcon() {
+import type { IconProps } from './types';
+
+export function Icon20ChevronRight({ height = 20, width = 20, ...props }: IconProps) {
   return (
     <svg
       aria-hidden="true"
       fill="none"
-      height="20"
+      height={height}
       viewBox="0 0 20 20"
-      width="20"
+      width={width}
       xmlns="http://www.w3.org/2000/svg"
+      {...props}
     >
       <path
         d="M13.039 8.45537C13.2017 8.29293 13.4652 8.29303 13.6279 8.45537C13.7903 8.61812 13.7905 8.88261 13.6279 9.04522L10.2949 12.3782C10.1323 12.5408 9.86878 12.5405 9.70602 12.3782L6.37204 9.04522C6.20932 8.8825 6.20932 8.61809 6.37204 8.45537C6.53476 8.29265 6.79916 8.29265 6.96188 8.45537L9.99997 11.4944L13.039 8.45537Z"

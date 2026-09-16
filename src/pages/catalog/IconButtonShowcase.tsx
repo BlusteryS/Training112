@@ -3,7 +3,7 @@ import {
   type IconButtonAppearance,
   type IconButtonSize,
 } from '../../components/IconButton';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -55,7 +55,10 @@ export default function IconButtonShowcase() {
               key={`${size}-${appearance}`}
               size={size}
             >
-              <PlaceholderIcon />
+              <Icon20Placeholder
+                height={size === 'small' ? 16 : 20}
+                width={size === 'small' ? 16 : 20}
+              />
             </IconButton>
           )),
         )}

@@ -1,6 +1,6 @@
 import { Button } from '../../components/Button';
 import { useSnackbar } from '../../components/Snackbar';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 
@@ -63,7 +63,7 @@ export default function SnackbarShowcase() {
       <Button
         onClick={() =>
           snackbar.open({
-            before: <PlaceholderIcon />,
+            before: <Icon20Placeholder />,
             subtitle: 'Subtitle',
             title: 'Title',
           })

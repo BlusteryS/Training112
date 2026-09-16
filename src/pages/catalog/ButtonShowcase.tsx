@@ -4,7 +4,7 @@ import {
   type ButtonMode,
   type ButtonSize,
 } from '../../components/Button';
-import { PlaceholderIcon } from '../../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../../icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
@@ -21,7 +21,7 @@ const buttonRows: Array<{
   { appearance: 'positive', mode: 'outline' },
 ];
 const buttonSizes: ButtonSize[] = ['medium', 'large'];
-const demoIcon = <PlaceholderIcon />;
+const demoIcon = <Icon20Placeholder height={16} width={16} />;
 const documentation: DocumentationRow[] = [
   {
     name: 'children',

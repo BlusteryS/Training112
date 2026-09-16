@@ -1,13 +1,13 @@
 import { Button } from '../components/Button';
 import { Checkbox } from '../components/Checkbox';
 import { ModalForm } from '../components/ModalForm';
-import { PlaceholderIcon } from '../icons/PlaceholderIcon';
+import { Icon20Placeholder } from '../icons';
 import { useModal } from './useModal';
 import styles from './ModalRoute.module.css';
 
 export function ModalRoute() {
   const modal = useModal();
-  const actionIcon = <PlaceholderIcon />;
+  const actionIcon = <Icon20Placeholder height={16} width={16} />;
 
   return (
     <ModalForm
