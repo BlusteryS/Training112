@@ -117,15 +117,13 @@
   gap: 12px;
 }
 
-.iconButtonGrid {
+.iconButtonCard {
   display: grid;
   grid-template-columns: repeat(2, 32px);
   align-items: center;
+  justify-content: center;
   justify-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: var(--radius-paper);
-  background: var(--color-bg-primary);
 }
 
 .tooltipGrid {
@@ -134,16 +132,14 @@
   gap: 16px;
 }
 
-.tabsCanvas {
-  width: fit-content;
-  max-width: 100%;
-  padding: 20px;
-  border-radius: var(--radius-paper);
-  background: var(--color-bg-primary);
-}
-
 .progressCanvas {
   width: 103px;
+}
+
+.selectCanvas {
+  display: flex;
+  width: 100%;
+  justify-content: center;
 }
 
 .buttonCanvas {

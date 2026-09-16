@@ -1,3 +1,4 @@
+import { Card } from '../../components/Card';
 import {
   IconButton,
   type IconButtonAppearance,
@@ -46,7 +47,7 @@ const codeExample = `
 export default function IconButtonShowcase() {
   return (
     <ComponentShowcase code={codeExample} documentation={documentation} name="IconButton">
-      <div className={styles.iconButtonGrid}>
+      <Card className={styles.iconButtonCard}>
         {sizes.flatMap((size) =>
           appearances.map((appearance) => (
             <IconButton
@@ -62,7 +63,7 @@ export default function IconButtonShowcase() {
             </IconButton>
           )),
         )}
-      </div>
+      </Card>
     </ComponentShowcase>
   );
 }

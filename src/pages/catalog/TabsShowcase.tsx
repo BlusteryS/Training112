@@ -1,3 +1,4 @@
+import { Card } from '../../components/Card';
 import { Tab } from '../../components/Tab';
 import { Tabs } from '../../components/Tabs';
 import { Icon20Placeholder } from '../../icons';
@@ -99,7 +100,7 @@ export default function TabsShowcase() {
       documentation={tabsDocumentation}
       name="Tabs"
     >
-      <div className={styles.tabsCanvas}>
+      <Card>
         <Tabs defaultSelectedId="first" layoutFillMode="shrinked">
           <Tab before={demoIcon} id="first">
             Tab
@@ -111,7 +112,7 @@ export default function TabsShowcase() {
             Tab
           </Tab>
         </Tabs>
-      </div>
+      </Card>
     </ComponentShowcase>
   );
 }

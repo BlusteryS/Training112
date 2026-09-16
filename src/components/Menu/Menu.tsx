@@ -79,8 +79,8 @@ function getValues(
 
 function getEnabledItems(container: HTMLElement) {
   return Array.from(
-    container.querySelectorAll<HTMLButtonElement>(
-      '[role="menuitemradio"]:not(:disabled), [role="menuitemcheckbox"]:not(:disabled)',
+    container.querySelectorAll<HTMLElement>(
+      '[role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])',
     ),
   );
 }
@@ -249,7 +249,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
 
     const currentItem =
       event.target instanceof HTMLElement
-        ? event.target.closest<HTMLButtonElement>(
+        ? event.target.closest<HTMLElement>(
             '[role="menuitemradio"], [role="menuitemcheckbox"]',
           )
         : null;

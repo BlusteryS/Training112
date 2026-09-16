@@ -40,13 +40,10 @@
   inset: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-check);
   color: var(--color-icon-onbrand);
   background: var(--color-bg-secondary);
   pointer-events: none;
-}
-
-.root[data-variant='checkbox'] .visual {
-  border-radius: var(--radius-check);
 }
 
 .root[data-variant='radio'] .visual {

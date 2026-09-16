@@ -1,18 +1,17 @@
 import {
   forwardRef,
-  type ButtonHTMLAttributes,
+  type HTMLAttributes,
+  type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from 'react';
-import { Icon20Check } from '../../icons';
+import { Checkbox } from '../Checkbox';
 import { useMenuContext } from '../Menu/MenuContext';
 import styles from './MenuItem.module.css';
 
-type MenuItemBaseProps = Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'children' | 'title' | 'value'
-> & {
+type MenuItemBaseProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'title'> & {
   before?: ReactNode;
+  disabled?: boolean;
   selected?: boolean;
   value: string;
 };
@@ -32,18 +31,18 @@ type MenuItemDetailedContent = {
 export type MenuItemProps = MenuItemBaseProps &
   (MenuItemSimpleContent | MenuItemDetailedContent);
 
-export const MenuItem = forwardRef<HTMLButtonElement, MenuItemProps>(function MenuItem(
+export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuItem(
   {
     before,
     children,
     className,
     disabled = false,
     onClick,
+    onKeyDown,
     selected: selectedProp,
     subtitle,
     tabIndex = -1,
     title,
-    type = 'button',
     value,
     ...props
   },
@@ -56,7 +55,12 @@ export const MenuItem = forwardRef<HTMLButtonElement, MenuItemProps>(function Me
   const isRich = title !== undefined || subtitle !== undefined;
   const classes = [styles.item, className].filter(Boolean).join(' ');
 
-  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (disabled) {
+      event.preventDefault();
+      return;
+    }
+
     onClick?.(event);
 
     if (!event.defaultPrevented) {
@@ -64,19 +68,35 @@ export const MenuItem = forwardRef<HTMLButtonElement, MenuItemProps>(function Me
     }
   };
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    onKeyDown?.(event);
+
+    if (
+      event.defaultPrevented ||
+      disabled ||
+      (event.key !== 'Enter' && event.key !== ' ')
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    menu?.onSelect(value);
+  };
+
   return (
-    <button
+    <div
       {...props}
       aria-checked={selected}
+      aria-disabled={disabled || undefined}
       className={classes}
+      data-disabled={disabled || undefined}
       data-rich={isRich || undefined}
       data-selected={selected || undefined}
-      disabled={disabled}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       ref={ref}
       role={selectionMode === 'multiple' ? 'menuitemcheckbox' : 'menuitemradio'}
-      tabIndex={tabIndex}
-      type={type}
+      tabIndex={disabled ? undefined : tabIndex}
     >
       <span className={styles.content}>
         {before !== undefined ? (
@@ -90,10 +110,17 @@ export const MenuItem = forwardRef<HTMLButtonElement, MenuItemProps>(function Me
           {subtitle !== undefined ? <span className={styles.subtitle}>{subtitle}</span> : null}
         </span>
 
-        <span aria-hidden="true" className={styles.indicator} data-mode={selectionMode}>
-          <Icon20Check className={styles.checkmark} />
+        <span aria-hidden="true" className={styles.selection}>
+          <Checkbox
+            checked={selected}
+            disabled={disabled}
+            padding={false}
+            readOnly
+            tabIndex={-1}
+            variant={selectionMode === 'multiple' ? 'checkbox' : 'radio'}
+          />
         </span>
       </span>
-    </button>
+    </div>
   );
 });
