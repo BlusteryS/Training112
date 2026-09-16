@@ -1,0 +1,124 @@
+.item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  align-items: flex-start;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 100ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item:hover:not(:disabled),
+.item[data-selected='true'] {
+  background: var(--color-bg-secondary);
+}
+
+.item:active:not(:disabled) {
+  background: var(--color-bg-tertiary);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-border-selected);
+  outline-offset: -2px;
+}
+
+.item:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.before {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.text {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.label,
+.subtitle {
+  line-height: 1.4;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.item[data-rich='true'] .label {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+}
+
+.subtitle {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.indicator {
+  position: relative;
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-check);
+  color: var(--color-icon-onbrand);
+  background: var(--color-bg-secondary);
+}
+
+.indicator[data-mode='single'] {
+  border-radius: var(--radius-round);
+}
+
+.item[data-selected='true'] .indicator {
+  border-color: var(--color-border-selected-strong);
+  background: var(--color-bg-brand);
+}
+
+.checkmark {
+  opacity: 0;
+}
+
+.item[data-selected='true'] .checkmark {
+  opacity: 1;
+}
+
+.item:disabled .indicator {
+  border-color: var(--color-border-disabled);
+  color: var(--color-icon-disabled);
+  background: var(--color-bg-disabled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item {
+    transition: none;
+  }
+}
