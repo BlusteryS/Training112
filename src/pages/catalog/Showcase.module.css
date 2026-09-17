@@ -90,6 +90,10 @@
   padding: 8px;
 }
 
+.cellCanvas {
+  width: min(100%, 318px);
+}
+
 .menuShowcase {
   display: grid;
   width: 100%;

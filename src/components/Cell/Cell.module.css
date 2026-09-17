@@ -1,0 +1,72 @@
+.cell {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cell[data-interactive='true'] {
+  cursor: pointer;
+  transition: background-color 100ms ease-out;
+}
+
+.cell[data-interactive='true']:hover {
+  background: var(--color-bg-secondary);
+}
+
+.cell[data-interactive='true']:active {
+  background: var(--color-bg-tertiary);
+}
+
+.cell[data-interactive='true']:focus-visible {
+  outline: 2px solid var(--color-border-selected);
+  outline-offset: -2px;
+}
+
+.accessory {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.title,
+.secondary {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.title {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.secondary {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell[data-interactive='true'] {
+    transition: none;
+  }
+}
