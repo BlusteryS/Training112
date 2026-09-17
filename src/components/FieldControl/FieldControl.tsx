@@ -7,12 +7,14 @@ import {
 import styles from './FieldControl.module.css';
 
 export type FieldControlStatus = 'default' | 'valid' | 'error';
+export type FieldControlIconAppearance = 'dynamic' | 'tertiary';
 
 export type FieldControlProps = Omit<LabelHTMLAttributes<HTMLLabelElement>, 'children'> & {
   after?: ReactNode;
   before?: ReactNode;
   children: ReactNode;
   disabled?: boolean;
+  iconAppearance?: FieldControlIconAppearance;
   readOnly?: boolean;
   status?: FieldControlStatus;
 };
@@ -24,6 +26,7 @@ export const FieldControl = forwardRef<HTMLLabelElement, FieldControlProps>(func
     children,
     className,
     disabled = false,
+    iconAppearance = 'dynamic',
     readOnly = false,
     status = 'default',
     ...props
@@ -37,6 +40,7 @@ export const FieldControl = forwardRef<HTMLLabelElement, FieldControlProps>(func
       {...props}
       className={classes}
       data-disabled={disabled || undefined}
+      data-icon-appearance={iconAppearance}
       data-read-only={readOnly || undefined}
       data-status={status}
       ref={ref}

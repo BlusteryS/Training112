@@ -18,6 +18,10 @@
   color: var(--color-icon-tertiary);
 }
 
+.root[data-icon-appearance='tertiary'] {
+  color: var(--color-icon-tertiary);
+}
+
 .root:focus-within {
   border-color: var(--color-border-selected);
 }

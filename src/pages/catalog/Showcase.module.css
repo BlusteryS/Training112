@@ -136,6 +136,7 @@
   width: 103px;
 }
 
+.searchCanvas,
 .selectCanvas {
   display: flex;
   width: 100%;

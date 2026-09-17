@@ -4,6 +4,7 @@ export { Icon20ChevronDown } from './Icon20ChevronDown';
 export { Icon20ChevronRight } from './Icon20ChevronRight';
 export { Icon20Minus } from './Icon20Minus';
 export { Icon20Placeholder } from './Icon20Placeholder';
+export { Icon20Search } from './Icon20Search';
 export { Icon20TooltipArrow } from './Icon20TooltipArrow';
 export type { Icon20TooltipArrowProps } from './Icon20TooltipArrow';
 export { Icon24Close } from './Icon24Close';
