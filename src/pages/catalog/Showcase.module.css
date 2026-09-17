@@ -117,7 +117,7 @@
   gap: 12px;
 }
 
-.iconButtonCard {
+.iconButtonGrid {
   display: grid;
   grid-template-columns: repeat(2, 32px);
   align-items: center;

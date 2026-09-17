@@ -9,6 +9,7 @@ import styles from './Showcase.module.css';
 
 const appearances: CardAppearance[] = [
   'default',
+  'primary',
   'accent',
   'error',
   'valid',
@@ -20,6 +21,11 @@ const documentation: DocumentationRow[] = [
     name: 'appearance',
     description: 'Оформление карточки',
     values: appearances,
+  },
+  {
+    name: 'stretched',
+    description: 'Растягивает карточку',
+    values: ['boolean'],
   },
   {
     name: 'before',
@@ -96,7 +102,7 @@ export default function CardShowcase() {
           <DemoTabs />
         </Card>
 
-        <Card appearance="accent">
+        <Card appearance="primary">
           <DemoTabs />
         </Card>
 

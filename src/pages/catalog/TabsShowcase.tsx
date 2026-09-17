@@ -100,7 +100,7 @@ export default function TabsShowcase() {
       documentation={tabsDocumentation}
       name="Tabs"
     >
-      <Card>
+      <Card appearance="primary" stretched={false}>
         <Tabs defaultSelectedId="first" layoutFillMode="shrinked">
           <Tab before={demoIcon} id="first">
             Tab

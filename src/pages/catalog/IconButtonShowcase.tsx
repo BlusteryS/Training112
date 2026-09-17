@@ -47,22 +47,24 @@ const codeExample = `
 export default function IconButtonShowcase() {
   return (
     <ComponentShowcase code={codeExample} documentation={documentation} name="IconButton">
-      <Card className={styles.iconButtonCard}>
-        {sizes.flatMap((size) =>
-          appearances.map((appearance) => (
-            <IconButton
-              appearance={appearance}
-              aria-label={`${size} ${appearance}`}
-              key={`${size}-${appearance}`}
-              size={size}
-            >
-              <Icon20Placeholder
-                height={size === 'small' ? 16 : 20}
-                width={size === 'small' ? 16 : 20}
-              />
-            </IconButton>
-          )),
-        )}
+      <Card appearance="primary" stretched={false}>
+        <div className={styles.iconButtonGrid}>
+          {sizes.flatMap((size) =>
+            appearances.map((appearance) => (
+              <IconButton
+                appearance={appearance}
+                aria-label={`${size} ${appearance}`}
+                key={`${size}-${appearance}`}
+                size={size}
+              >
+                <Icon20Placeholder
+                  height={size === 'small' ? 16 : 20}
+                  width={size === 'small' ? 16 : 20}
+                />
+              </IconButton>
+            )),
+          )}
+        </div>
       </Card>
     </ComponentShowcase>
   );

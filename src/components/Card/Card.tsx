@@ -7,6 +7,7 @@ import styles from './Card.module.css';
 
 export type CardAppearance =
   | 'default'
+  | 'primary'
   | 'accent'
   | 'error'
   | 'valid'
@@ -18,6 +19,7 @@ export type CardProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'title
   appearance?: CardAppearance;
   before?: ReactNode;
   children?: ReactNode;
+  stretched?: boolean;
   subtitle?: ReactNode;
   title?: ReactNode;
 };
@@ -29,6 +31,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
     before,
     children,
     className,
+    stretched = true,
     subtitle,
     title,
     ...props
@@ -47,6 +50,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       {...props}
       className={classes}
       data-appearance={appearance}
+      data-stretched={stretched}
       ref={ref}
     >
       {hasHeader ? (
