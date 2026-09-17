@@ -147,6 +147,10 @@
   justify-content: center;
 }
 
+.switchCanvas {
+  width: min(100%, 318px);
+}
+
 .buttonCanvas {
   display: flex;
   width: max-content;

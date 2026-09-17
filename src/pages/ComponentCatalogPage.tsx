@@ -18,6 +18,7 @@ const showcaseById = {
   search: lazy(() => import('./catalog/SearchShowcase')),
   select: lazy(() => import('./catalog/SelectShowcase')),
   snackbar: lazy(() => import('./catalog/SnackbarShowcase')),
+  switch: lazy(() => import('./catalog/SwitchShowcase')),
   tabs: lazy(() => import('./catalog/TabsShowcase')),
   tooltip: lazy(() => import('./catalog/TooltipShowcase')),
 };
@@ -85,6 +86,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'snackbar',
     label: 'Snackbar',
+  },
+  {
+    id: 'switch',
+    label: 'Switch',
   },
   {
     id: 'tabs',

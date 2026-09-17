@@ -199,6 +199,7 @@
   --color-bg-inverse: #2c2c2c;
   --color-bg-success: #14ae5c;
   --color-bg-success-pressed: #009951;
+  --color-bg-on-success: #ffffff;
   --color-bg-danger: #f24822;
   --color-bg-danger-pressed: #dc3412;
   --color-bg-warning: #ffcd29;
@@ -218,6 +219,7 @@
   --color-border-handoff-strong: #009951;
   --color-border-measure-strong: #dc3412;
   --color-border-success: #aff4c6;
+  --color-border-on-success: #009951;
   --color-border-danger: #ffc7c2;
   --color-border-warning: #ffe8a3;
   --color-border-disabled: #e6e6e6;
