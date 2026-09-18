@@ -1,0 +1,17 @@
+.separator {
+  width: 100%;
+  min-width: 0;
+  height: 1px;
+  flex: 0 0 auto;
+  background: var(--color-border-primary);
+  background-clip: content-box;
+
+  &[data-padding-horizontal='true'] {
+    padding-inline: 12px;
+  }
+
+  &[data-padding-vertical='true'] {
+    height: 25px;
+    padding-block: 12px;
+  }
+}

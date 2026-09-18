@@ -18,6 +18,7 @@ const showcaseById = {
   progress: lazy(() => import('./catalog/ProgressShowcase')),
   search: lazy(() => import('./catalog/SearchShowcase')),
   select: lazy(() => import('./catalog/SelectShowcase')),
+  separator: lazy(() => import('./catalog/SeparatorShowcase')),
   snackbar: lazy(() => import('./catalog/SnackbarShowcase')),
   switch: lazy(() => import('./catalog/SwitchShowcase')),
   tabs: lazy(() => import('./catalog/TabsShowcase')),
@@ -87,6 +88,10 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'select',
     label: 'Select',
+  },
+  {
+    id: 'separator',
+    label: 'Separator',
   },
   {
     id: 'snackbar',
