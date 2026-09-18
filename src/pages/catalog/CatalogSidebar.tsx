@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { Separator } from '../../components/Separator';
 import { Icon20ChevronRight } from '../../icons';
 import styles from './CatalogSidebar.module.css';
 import { useResizableSidebar } from './useResizableSidebar';
@@ -13,9 +14,42 @@ type CatalogSidebarProps = {
   isOpen: boolean;
   items: CatalogSidebarItem[];
   onClose: () => void;
+  secondaryItems?: CatalogSidebarItem[];
 };
 
-export function CatalogSidebar({ activeId, isOpen, items, onClose }: CatalogSidebarProps) {
+type CatalogSidebarListProps = {
+  activeId: string;
+  items: CatalogSidebarItem[];
+  onSelect: () => void;
+};
+
+function CatalogSidebarList({ activeId, items, onSelect }: CatalogSidebarListProps) {
+  return (
+    <ul className={styles.list}>
+      {items.map(({ id, label }) => (
+        <li key={id}>
+          <a
+            aria-current={activeId === id ? 'page' : undefined}
+            className={styles.link}
+            href={`#${id}`}
+            onClick={onSelect}
+          >
+            <span>{label}</span>
+            <Icon20ChevronRight />
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function CatalogSidebar({
+  activeId,
+  isOpen,
+  items,
+  onClose,
+  secondaryItems = [],
+}: CatalogSidebarProps) {
   const { isResizing, resizeHandleProps, width } = useResizableSidebar();
   const sidebarStyle = {
     '--sidebar-width': `${width}px`,
@@ -45,22 +79,19 @@ export function CatalogSidebar({ activeId, isOpen, items, onClose }: CatalogSide
             <p className={styles.title}>Компоненты</p>
           </header>
 
-          <nav aria-label="Компоненты" className={styles.navigation}>
-            <ul className={styles.list}>
-              {items.map(({ id, label }) => (
-                <li key={id}>
-                  <a
-                    aria-current={activeId === id ? 'page' : undefined}
-                    className={styles.link}
-                    href={`#${id}`}
-                    onClick={onClose}
-                  >
-                    <span>{label}</span>
-                    <Icon20ChevronRight />
-                  </a>
-                </li>
-              ))}
-            </ul>
+          <nav aria-label="Каталог" className={styles.navigation}>
+            <CatalogSidebarList activeId={activeId} items={items} onSelect={onClose} />
+
+            {secondaryItems.length > 0 ? (
+              <>
+                <Separator paddingVertical />
+                <CatalogSidebarList
+                  activeId={activeId}
+                  items={secondaryItems}
+                  onSelect={onClose}
+                />
+              </>
+            ) : null}
           </nav>
         </div>
 

@@ -23,6 +23,7 @@ const showcaseById = {
   switch: lazy(() => import('./catalog/SwitchShowcase')),
   tabs: lazy(() => import('./catalog/TabsShowcase')),
   tooltip: lazy(() => import('./catalog/TooltipShowcase')),
+  icons: lazy(() => import('./catalog/IconsShowcase')),
 };
 
 type ComponentId = keyof typeof showcaseById;
@@ -32,84 +33,30 @@ type NavigationItem = {
   label: string;
 };
 
-const navigationItems: NavigationItem[] = [
-  {
-    id: 'avatar',
-    label: 'Avatar',
-  },
-  {
-    id: 'badge',
-    label: 'Badge',
-  },
-  {
-    id: 'button',
-    label: 'Button',
-  },
-  {
-    id: 'card',
-    label: 'Card',
-  },
-  {
-    id: 'cell',
-    label: 'Cell',
-  },
-  {
-    id: 'checkbox',
-    label: 'Checkbox',
-  },
-  {
-    id: 'iconButton',
-    label: 'IconButton',
-  },
-  {
-    id: 'input',
-    label: 'Input',
-  },
-  {
-    id: 'menu',
-    label: 'Menu',
-  },
-  {
-    id: 'modal',
-    label: 'Modal',
-  },
-  {
-    id: 'placeholder',
-    label: 'Placeholder',
-  },
-  {
-    id: 'progress',
-    label: 'Progress',
-  },
-  {
-    id: 'search',
-    label: 'Search',
-  },
-  {
-    id: 'select',
-    label: 'Select',
-  },
-  {
-    id: 'separator',
-    label: 'Separator',
-  },
-  {
-    id: 'snackbar',
-    label: 'Snackbar',
-  },
-  {
-    id: 'switch',
-    label: 'Switch',
-  },
-  {
-    id: 'tabs',
-    label: 'Tabs',
-  },
-  {
-    id: 'tooltip',
-    label: 'Tooltip',
-  },
-];
+const navigationItems = [
+  { id: 'avatar', label: 'Avatar' },
+  { id: 'badge', label: 'Badge' },
+  { id: 'button', label: 'Button' },
+  { id: 'card', label: 'Card' },
+  { id: 'cell', label: 'Cell' },
+  { id: 'checkbox', label: 'Checkbox' },
+  { id: 'iconButton', label: 'IconButton' },
+  { id: 'input', label: 'Input' },
+  { id: 'menu', label: 'Menu' },
+  { id: 'modal', label: 'Modal' },
+  { id: 'placeholder', label: 'Placeholder' },
+  { id: 'progress', label: 'Progress' },
+  { id: 'search', label: 'Search' },
+  { id: 'select', label: 'Select' },
+  { id: 'separator', label: 'Separator' },
+  { id: 'snackbar', label: 'Snackbar' },
+  { id: 'switch', label: 'Switch' },
+  { id: 'tabs', label: 'Tabs' },
+  { id: 'tooltip', label: 'Tooltip' },
+] satisfies NavigationItem[];
+const secondaryNavigationItems = [
+  { id: 'icons', label: 'Иконки' },
+] satisfies NavigationItem[];
 
 function getComponentFromHash(): ComponentId {
   if (typeof window === 'undefined') {
@@ -173,6 +120,7 @@ export function ComponentCatalogPage() {
         isOpen={isNavigationOpen}
         items={navigationItems}
         onClose={() => setIsNavigationOpen(false)}
+        secondaryItems={secondaryNavigationItems}
       />
 
       <main className={styles.content} id={activeComponentId}>
