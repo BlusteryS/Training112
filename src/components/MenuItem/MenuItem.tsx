@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Icon20Check } from '../../icons';
+import { classNames } from '../../utils/classNames';
 import { Checkbox } from '../Checkbox';
 import { useMenuContext } from '../Menu/MenuContext';
 import styles from './MenuItem.module.css';
@@ -55,7 +56,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
   const selectionIndicator = menu?.selectionIndicator ?? 'control';
   const label = title ?? children;
   const isRich = title !== undefined || subtitle !== undefined;
-  const classes = [styles.item, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.item, className);
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (disabled) {

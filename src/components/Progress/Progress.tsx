@@ -1,4 +1,5 @@
 import { forwardRef, type HTMLAttributes } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Progress.module.css';
 
 export type ProgressProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
@@ -25,7 +26,7 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(function Progr
   const normalizedMax = normalizeMax(max);
   const normalizedValue = clampValue(value, normalizedMax);
   const progress = (normalizedValue / normalizedMax) * 100;
-  const classes = [styles.root, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.root, className);
 
   return (
     <div

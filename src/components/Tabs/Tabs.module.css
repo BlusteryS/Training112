@@ -6,8 +6,8 @@
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
-}
 
-.tabs::-webkit-scrollbar {
-  display: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

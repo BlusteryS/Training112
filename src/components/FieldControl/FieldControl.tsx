@@ -5,6 +5,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './FieldControl.module.css';
 
 export type FieldControlStatus = 'default' | 'valid' | 'error';
@@ -36,7 +37,7 @@ export const FieldControl = forwardRef<HTMLElement, FieldControlProps>(function 
   },
   ref,
 ) {
-  const classes = [styles.root, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.root, className);
   const content = (
     <>
       {before !== undefined ? (
@@ -85,7 +86,7 @@ export const FieldControlInput = forwardRef<
   HTMLInputElement,
   InputHTMLAttributes<HTMLInputElement>
 >(function FieldControlInput({ className, ...props }, ref) {
-  const classes = [styles.input, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.input, className);
 
   return <input {...props} className={classes} ref={ref} />;
 });

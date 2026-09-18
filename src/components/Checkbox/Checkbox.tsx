@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from 'react';
 import { Icon20Check, Icon20Minus } from '../../icons';
+import { classNames } from '../../utils/classNames';
+import { setRef } from '../../utils/setRef';
 import styles from './Checkbox.module.css';
 
 export type CheckboxVariant = 'checkbox' | 'radio';
@@ -16,7 +18,6 @@ export type CheckboxProps = Omit<
   'children' | 'size' | 'type'
 > & {
   children?: ReactNode;
-  /** Displays the mixed state and sets the native indeterminate property. */
   indeterminate?: boolean;
   padding?: boolean;
   subtitle?: ReactNode;
@@ -41,12 +42,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   const setInputRef = useCallback(
     (input: HTMLInputElement | null) => {
       inputRef.current = input;
-
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(input);
-      } else if (forwardedRef) {
-        forwardedRef.current = input;
-      }
+      setRef(forwardedRef, input);
     },
     [forwardedRef],
   );
@@ -57,7 +53,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
     }
   }, [indeterminate]);
 
-  const classes = [styles.root, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.root, className);
   const hasText = children !== undefined || subtitle !== undefined;
   const hasPadding = padding ?? hasText;
 

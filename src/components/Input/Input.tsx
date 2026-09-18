@@ -8,9 +8,7 @@ import {
 export type InputStatus = FieldControlStatus;
 
 export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
-  /** Optional content rendered before the input. */
   before?: ReactNode;
-  /** Optional content rendered after the input. */
   after?: ReactNode;
   status?: InputStatus;
 };

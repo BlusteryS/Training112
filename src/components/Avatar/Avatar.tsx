@@ -1,4 +1,5 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Avatar.module.css';
 
 export const avatarSizes = [16, 24, 32, 44, 56, 72, 88] as const;
@@ -8,9 +9,7 @@ export type AvatarShape = 'circle' | 'square';
 export type AvatarVariant = 'photo' | 'color' | 'placeholder';
 
 type AvatarBaseProps = Omit<HTMLAttributes<HTMLSpanElement>, 'children'> & {
-  /** Size of the avatar in CSS pixels. */
   size?: AvatarSize;
-  /** Circular avatars are used for people; square avatars can represent entities. */
   shape?: AvatarShape;
 };
 
@@ -24,7 +23,6 @@ type PhotoAvatarProps = AvatarBaseProps & {
 
 type TextAvatarProps = AvatarBaseProps & {
   variant: Exclude<AvatarVariant, 'photo'>;
-  /** Full accessible name. It is also used to derive initials when needed. */
   name: string;
   initials?: string;
   src?: never;
@@ -60,7 +58,7 @@ export function Avatar({
   style,
   ...props
 }: AvatarProps) {
-  const classes = [styles.avatar, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.avatar, className);
   const avatarStyle: AvatarStyle = {
     ...style,
     '--avatar-size': `${size}px`,

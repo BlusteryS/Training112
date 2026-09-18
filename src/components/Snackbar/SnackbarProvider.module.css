@@ -13,10 +13,10 @@
   pointer-events: auto;
   transform-origin: left bottom;
   animation: snackbar-enter var(--duration-theme-transition) ease-out both;
-}
 
-.item[data-closing='true'] {
-  animation: snackbar-exit var(--duration-theme-transition) ease-in both;
+  &[data-closing='true'] {
+    animation: snackbar-exit var(--duration-theme-transition) ease-in both;
+  }
 }
 
 @keyframes snackbar-enter {
@@ -44,8 +44,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .item,
-  .item[data-closing='true'] {
+  .item {
     animation-duration: 1ms;
   }
 }

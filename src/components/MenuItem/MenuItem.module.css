@@ -14,25 +14,36 @@
   cursor: pointer;
   transition: background-color 100ms ease-out;
   -webkit-tap-highlight-color: transparent;
-}
 
-.item:hover:not([data-disabled='true']),
-.item[data-selected='true']:not([data-selection-indicator='checkmark']) {
-  background: var(--color-bg-secondary);
-}
+  &:hover:not([data-disabled='true']),
+  &[data-selected='true']:not([data-selection-indicator='checkmark']) {
+    background: var(--color-bg-secondary);
+  }
 
-.item:active:not([data-disabled='true']) {
-  background: var(--color-bg-tertiary);
-}
+  &:active:not([data-disabled='true']) {
+    background: var(--color-bg-tertiary);
+  }
 
-.item:focus-visible {
-  outline: 2px solid var(--color-border-selected);
-  outline-offset: -2px;
-}
+  &:focus-visible {
+    outline: 2px solid var(--color-border-selected);
+    outline-offset: -2px;
+  }
 
-.item[data-disabled='true'] {
-  color: var(--color-text-disabled);
-  cursor: not-allowed;
+  &[data-disabled='true'] {
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  &[data-rich='true'] .label,
+  &[data-selection-indicator='checkmark'] .label,
+  &[data-selection-indicator='none'] .label {
+    font-size: 13px;
+    font-weight: var(--font-weight-medium);
+  }
+
+  &[data-selection-indicator='checkmark'] .content {
+    gap: 10px;
+  }
 }
 
 .content {
@@ -74,21 +85,6 @@
 .label {
   font-size: 14px;
   font-weight: 400;
-}
-
-.item[data-rich='true'] .label {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-}
-
-.item[data-selection-indicator='checkmark'] .label,
-.item[data-selection-indicator='none'] .label {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-}
-
-.item[data-selection-indicator='checkmark'] .content {
-  gap: 10px;
 }
 
 .subtitle {

@@ -2,7 +2,9 @@
   width: 100%;
 }
 
-.input::-webkit-search-decoration,
-.input::-webkit-search-cancel-button {
-  appearance: none;
+.input {
+  &::-webkit-search-decoration,
+  &::-webkit-search-cancel-button {
+    appearance: none;
+  }
 }

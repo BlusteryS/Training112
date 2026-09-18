@@ -3,12 +3,12 @@
   top: 0;
   width: var(--sidebar-width, 360px);
   height: 100vh;
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border-primary);
   background: var(--color-bg-primary);
-}
 
-.sidebar[data-resizing='true'] {
-  user-select: none;
+  &[data-resizing='true'] {
+    user-select: none;
+  }
 }
 
 .backdrop {
@@ -66,20 +66,20 @@
   font-weight: 500;
   line-height: 1.4;
   text-decoration: none;
-}
 
-.link:hover,
-.link[aria-current='page'] {
-  border-color: var(--color-border);
-}
+  &:hover,
+  &[aria-current='page'] {
+    border-color: var(--color-border-primary);
+  }
 
-.link:focus-visible {
-  outline: 2px solid var(--color-text-brand);
-  outline-offset: 2px;
-}
+  &:focus-visible {
+    outline: 2px solid var(--color-text-brand);
+    outline-offset: 2px;
+  }
 
-.link svg {
-  color: var(--color-icon);
+  svg {
+    color: var(--color-icon-primary);
+  }
 }
 
 .resizeHandle {
@@ -91,21 +91,21 @@
   height: 100%;
   cursor: col-resize;
   touch-action: none;
-}
 
-.resizeHandle:focus-visible {
-  outline: none;
-}
+  &:focus-visible {
+    outline: none;
+  }
 
-.resizeHandle:focus-visible::after,
-.sidebar[data-resizing='true'] .resizeHandle::after {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 3px;
-  width: 2px;
-  background: var(--color-text-brand);
-  content: '';
+  &:focus-visible::after,
+  .sidebar[data-resizing='true'] &::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: var(--color-text-brand);
+    content: '';
+  }
 }
 
 @media (max-width: 640px) {
@@ -122,12 +122,12 @@
     transition:
       visibility 0s linear var(--duration-theme-transition),
       transform var(--duration-theme-transition) ease;
-  }
 
-  .sidebar[data-open='true'] {
-    visibility: visible;
-    transform: translateX(0);
-    transition-delay: 0s;
+    &[data-open='true'] {
+      visibility: visible;
+      transform: translateX(0);
+      transition-delay: 0s;
+    }
   }
 
   .backdrop {
@@ -144,13 +144,13 @@
     transition:
       visibility 0s linear var(--duration-theme-transition),
       opacity var(--duration-theme-transition) ease;
-  }
 
-  .backdrop[data-open='true'] {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-    transition-delay: 0s;
+    &[data-open='true'] {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      transition-delay: 0s;
+    }
   }
 
   .resizeHandle {

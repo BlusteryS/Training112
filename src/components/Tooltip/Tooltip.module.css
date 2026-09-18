@@ -51,20 +51,17 @@
   color: var(--color-bg-inverse);
   line-height: 0;
   pointer-events: none;
-}
 
-.arrow[data-side='top'] {
-  transform: rotate(180deg);
-}
+  &[data-side='top'],
+  &[data-side='left'] {
+    transform: rotate(180deg);
+  }
 
-.arrow[data-side='left'],
-.arrow[data-side='right'] {
-  width: 8px;
-  height: 20px;
-}
-
-.arrow[data-side='left'] {
-  transform: rotate(180deg);
+  &[data-side='left'],
+  &[data-side='right'] {
+    width: 8px;
+    height: 20px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

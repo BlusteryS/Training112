@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Badge.module.css';
 
 export const badgeColors = ['white', 'blue', 'inverted', 'success', 'error', 'warning'] as const;
@@ -8,7 +9,6 @@ export type BadgeVariant = 'fill' | 'outline';
 
 type BadgeBaseProps = Omit<HTMLAttributes<HTMLSpanElement>, 'children' | 'color'> & {
   children: ReactNode;
-  /** Optional content rendered before the label. */
   before?: ReactNode;
 };
 
@@ -32,7 +32,7 @@ export function Badge({
   variant = 'fill',
   ...props
 }: BadgeProps) {
-  const classes = [styles.badge, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.badge, className);
 
   return (
     <span
@@ -41,7 +41,7 @@ export function Badge({
       data-color={color}
       data-variant={variant}
     >
-      {before ? (
+      {before != null ? (
         <span aria-hidden="true" className={styles.icon}>
           {before}
         </span>

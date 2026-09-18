@@ -4,6 +4,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { classNames } from '../../utils/classNames';
 import { useTabsContext } from '../Tabs/TabsContext';
 import styles from './Tab.module.css';
 
@@ -34,12 +35,12 @@ export const Tab = forwardRef<HTMLButtonElement, TabProps>(function Tab(
   const tabsContext = useTabsContext();
   const selected = selectedProp ?? (tabsContext?.selectedId === id);
   const hasManagedSelection = tabsContext?.selectedId !== undefined;
-  const classes = [styles.tab, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.tab, className);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
 
-    if (!event.defaultPrevented && id) {
+    if (!event.defaultPrevented) {
       tabsContext?.onSelect(id);
     }
   };

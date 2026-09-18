@@ -12,6 +12,8 @@ import {
   type ReactNode,
 } from 'react';
 import { Icon20ChevronDown, Icon24Close } from '../../icons';
+import { classNames } from '../../utils/classNames';
+import { setRef } from '../../utils/setRef';
 import { IconButton } from '../IconButton';
 import {
   FieldControl,
@@ -137,12 +139,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
   const setInputRef = useCallback(
     (input: HTMLInputElement | null) => {
       inputRef.current = input;
-
-      if (typeof ref === 'function') {
-        ref(input);
-      } else if (ref) {
-        ref.current = input;
-      }
+      setRef(ref, input);
     },
     [ref],
   );
@@ -166,7 +163,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
     () => items.filter((item) => selectedValueSet.has(item.props.value)),
     [items, selectedValueSet],
   );
-  const displayValue = selectedItems.map(getItemLabel).join(', ');
+  const displayValue = isMulti ? '' : selectedItems.map(getItemLabel).join(', ');
   const filterQuery = searchable && isEditing ? currentSearchValue : '';
   const filteredItems = useMemo(
     () => items.filter((item) => matchesSearch(item, filterQuery)),
@@ -177,7 +174,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
   const selectedItem = !isMulti && selectedItems.length === 1 ? selectedItems[0] : undefined;
   const controlBefore =
     !isEditing && selectedItem !== undefined ? (selectedItem.props.before ?? before) : before;
-  const inputValue = searchable && isEditing ? currentSearchValue : isMulti ? '' : displayValue;
+  const inputValue = searchable && isEditing ? currentSearchValue : displayValue;
   const isInputCompact = isMulti && selectedItems.length > 0 && (!searchable || !isEditing);
   const currentStatus = hasNoResults ? 'error' : status;
   const ariaInvalid = currentStatus === 'error' ? true : inputProps['aria-invalid'];
@@ -266,11 +263,9 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
         onFocus?.(event);
 
         if (searchable && !disabled) {
-          const nextSearchValue = isMulti ? '' : displayValue;
-
           setIsEditing(true);
-          setSearchValue(nextSearchValue);
-          setOpen(items.some((item) => matchesSearch(item, nextSearchValue)));
+          setSearchValue(displayValue);
+          setOpen(items.some((item) => matchesSearch(item, displayValue)));
         }
       }}
       onKeyDown={(event) => {
@@ -320,7 +315,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
       }
       as={isMulti ? 'div' : 'label'}
       before={controlBefore}
-      className={[className, isMulti ? styles.multi : undefined].filter(Boolean).join(' ')}
+      className={classNames(className, isMulti && styles.multi)}
       data-has-value={currentValues.length > 0 || undefined}
       data-multi={isMulti || undefined}
       disabled={disabled}

@@ -4,18 +4,14 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Cell.module.css';
 
 export type CellProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'title'> & {
-  /** Content rendered after the text. */
   after?: ReactNode;
-  /** Content rendered before the text. */
   before?: ReactNode;
-  /** Text displayed above the title. */
   subhead?: ReactNode;
-  /** Additional text displayed below the title. */
   subtitle?: ReactNode;
-  /** Main cell content. */
   title: ReactNode;
 };
 
@@ -35,7 +31,7 @@ export const Cell = forwardRef<HTMLDivElement, CellProps>(function Cell(
   ref,
 ) {
   const interactive = onClick !== undefined;
-  const classes = [styles.cell, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.cell, className);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);

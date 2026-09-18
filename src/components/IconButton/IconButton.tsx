@@ -1,4 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './IconButton.module.css';
 
 export type IconButtonAppearance = 'primary' | 'tertiary';
@@ -21,7 +22,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   },
   ref,
 ) {
-  const classes = [styles.button, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.button, className);
 
   return (
     <button

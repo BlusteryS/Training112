@@ -4,6 +4,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Icon24Close } from '../../icons';
+import { classNames } from '../../utils/classNames';
 import { IconButton } from '../IconButton';
 import styles from './Snackbar.module.css';
 
@@ -27,7 +28,7 @@ export const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(function Snack
   },
   ref,
 ) {
-  const classes = [styles.root, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.root, className);
   const hasCloseButton = onClose !== undefined;
 
   return (

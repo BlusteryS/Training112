@@ -32,7 +32,7 @@ export function applyTheme(theme: Theme) {
   root.dataset.theme = theme;
 
   window.requestAnimationFrame(() => {
-    const themeColor = window.getComputedStyle(root).getPropertyValue('--color-bg').trim();
+    const themeColor = window.getComputedStyle(root).getPropertyValue('--color-bg-primary').trim();
     const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
 
     if (themeColor && themeColorMeta) {

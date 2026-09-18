@@ -12,24 +12,24 @@
   text-align: left;
   cursor: default;
   -webkit-tap-highlight-color: transparent;
-}
 
-.cell[data-interactive='true'] {
-  cursor: pointer;
-  transition: background-color 100ms ease-out;
-}
+  &[data-interactive='true'] {
+    cursor: pointer;
+    transition: background-color 100ms ease-out;
 
-.cell[data-interactive='true']:hover {
-  background: var(--color-bg-secondary);
-}
+    &:hover {
+      background: var(--color-bg-secondary);
+    }
 
-.cell[data-interactive='true']:active {
-  background: var(--color-bg-tertiary);
-}
+    &:active {
+      background: var(--color-bg-tertiary);
+    }
 
-.cell[data-interactive='true']:focus-visible {
-  outline: 2px solid var(--color-border-selected);
-  outline-offset: -2px;
+    &:focus-visible {
+      outline: 2px solid var(--color-border-selected);
+      outline-offset: -2px;
+    }
+  }
 }
 
 .accessory {

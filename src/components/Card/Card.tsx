@@ -3,6 +3,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Card.module.css';
 
 export type CardAppearance =
@@ -38,7 +39,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   },
   ref,
 ) {
-  const classes = [styles.card, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.card, className);
   const hasHeader =
     after !== undefined ||
     before !== undefined ||

@@ -7,6 +7,8 @@ import {
   type InputHTMLAttributes,
 } from 'react';
 import { Icon20Search, Icon24Close } from '../../icons';
+import { classNames } from '../../utils/classNames';
+import { setRef } from '../../utils/setRef';
 import {
   FieldControl,
   FieldControlInput,
@@ -25,7 +27,12 @@ function clearInput(input: HTMLInputElement) {
     'value',
   )?.set;
 
-  valueSetter?.call(input, '');
+  if (valueSetter) {
+    valueSetter.call(input, '');
+  } else {
+    input.value = '';
+  }
+
   input.dispatchEvent(new InputEvent('input', { bubbles: true }));
 }
 
@@ -50,21 +57,19 @@ export const Search = forwardRef<HTMLInputElement, SearchProps>(function Search(
   const setInputRef = useCallback(
     (element: HTMLInputElement | null) => {
       inputRef.current = element;
-
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(element);
-      } else if (forwardedRef !== null) {
-        forwardedRef.current = element;
-      }
+      setRef(forwardedRef, element);
     },
     [forwardedRef],
   );
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      setUncontrolledValue(event.currentTarget.value);
+      if (value === undefined) {
+        setUncontrolledValue(event.currentTarget.value);
+      }
+
       onChange?.(event);
     },
-    [onChange],
+    [onChange, value],
   );
 
   return (
@@ -88,7 +93,7 @@ export const Search = forwardRef<HTMLInputElement, SearchProps>(function Search(
         ) : undefined
       }
       before={<Icon20Search />}
-      className={[styles.root, className].filter(Boolean).join(' ')}
+      className={classNames(styles.root, className)}
       disabled={disabled}
       iconAppearance="tertiary"
       readOnly={readOnly}

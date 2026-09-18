@@ -7,26 +7,38 @@
   border: 0;
   color: var(--color-text-primary);
   background: transparent;
-}
 
-.dialog[data-size='small'] {
-  max-width: 400px;
-}
+  &[data-size='small'] {
+    max-width: 400px;
+  }
 
-.dialog[data-size='medium'] {
-  max-width: 600px;
-}
+  &[data-size='medium'] {
+    max-width: 600px;
+  }
 
-.dialog[data-size='large'] {
-  max-width: 1000px;
-}
+  &[data-size='large'] {
+    max-width: 1000px;
+  }
 
-.dialog::backdrop {
-  animation: modal-backdrop-in var(--duration-theme-transition) ease both;
-}
+  &::backdrop {
+    animation: modal-backdrop-in var(--duration-theme-transition) ease both;
+  }
 
-.dialog:focus {
-  outline: none;
+  &:focus {
+    outline: none;
+  }
+
+  &[data-closing='true'] {
+    pointer-events: none;
+
+    &::backdrop {
+      animation-name: modal-backdrop-out;
+    }
+
+    .surface {
+      animation-name: modal-form-out;
+    }
+  }
 }
 
 .surface {
@@ -34,7 +46,7 @@
   max-height: inherit;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-paper);
   background: var(--color-bg-primary);
   box-shadow:
@@ -42,18 +54,6 @@
     0 10px 12px rgb(0 0 0 / 18%),
     0 2px 2.5px rgb(0 0 0 / 15%);
   animation: modal-form-in var(--duration-theme-transition) ease both;
-}
-
-.dialog[data-closing='true'] {
-  pointer-events: none;
-}
-
-.dialog[data-closing='true']::backdrop {
-  animation-name: modal-backdrop-out;
-}
-
-.dialog[data-closing='true'] .surface {
-  animation-name: modal-form-out;
 }
 
 .header {
@@ -107,7 +107,7 @@
   flex: 1 1 auto;
   padding: 12px;
   overflow: auto;
-  border-block: 1px solid var(--color-border);
+  border-block: 1px solid var(--color-border-primary);
   background: var(--color-bg-primary);
 }
 

@@ -9,6 +9,8 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+import { classNames } from '../../utils/classNames';
+import { setRef } from '../../utils/setRef';
 import { TabsContext, type TabsLayoutFillMode } from './TabsContext';
 import styles from './Tabs.module.css';
 
@@ -41,17 +43,12 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
   const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState(defaultSelectedId);
   const isControlled = selectedId !== undefined;
   const currentSelectedId = selectedId ?? uncontrolledSelectedId;
-  const classes = [styles.tabs, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.tabs, className);
 
   const setRootRef = useCallback(
     (node: HTMLDivElement | null) => {
       rootRef.current = node;
-
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(node);
-      } else if (forwardedRef) {
-        forwardedRef.current = node;
-      }
+      setRef(forwardedRef, node);
     },
     [forwardedRef],
   );

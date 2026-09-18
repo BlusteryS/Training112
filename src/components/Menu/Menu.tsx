@@ -29,6 +29,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import { classNames } from '../../utils/classNames';
 import {
   MenuContext,
   type MenuSelectionIndicator,
@@ -48,7 +49,6 @@ type MenuBaseProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'defaultV
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
-  /** Controls the selected-item marker for composed controls such as Select. */
   selectionIndicator?: MenuSelectionIndicator;
   title?: ReactNode;
   trigger?: ReactElement<MenuTriggerProps>;
@@ -72,6 +72,10 @@ type MenuMultipleSelectionProps = {
 export type MenuProps = MenuBaseProps &
   (MenuSingleSelectionProps | MenuMultipleSelectionProps);
 
+const menuItemSelector = '[role="menuitemradio"], [role="menuitemcheckbox"]';
+const enabledMenuItemSelector =
+  '[role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])';
+
 function getValues(
   selectionMode: MenuSelectionMode,
   value: string | readonly string[] | undefined,
@@ -84,11 +88,7 @@ function getValues(
 }
 
 function getEnabledItems(container: HTMLElement) {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(
-      '[role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])',
-    ),
-  );
+  return Array.from(container.querySelectorAll<HTMLElement>(enabledMenuItemSelector));
 }
 
 export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
@@ -132,7 +132,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
   );
   const currentValues = controlledValues ?? uncontrolledValues;
   const selectedValues = useMemo(() => new Set(currentValues), [currentValues]);
-  const classes = [styles.menu, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.menu, className);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -257,9 +257,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
 
     const currentItem =
       event.target instanceof HTMLElement
-        ? event.target.closest<HTMLElement>(
-            '[role="menuitemradio"], [role="menuitemcheckbox"]',
-          )
+        ? event.target.closest<HTMLElement>(menuItemSelector)
         : null;
     const currentIndex = currentItem ? items.indexOf(currentItem) : -1;
     let nextIndex: number;

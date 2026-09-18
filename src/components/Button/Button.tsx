@@ -1,4 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Button.module.css';
 
 export type ButtonAppearance = 'accent' | 'negative' | 'positive' | 'inversion';
@@ -8,12 +9,9 @@ export type ButtonState = 'default' | 'pressed';
 
 type ButtonBaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   children: ReactNode;
-  /** Optional content rendered before the label. */
   before?: ReactNode;
-  /** Optional content rendered after the label. */
   after?: ReactNode;
   size?: ButtonSize;
-  /** Allows the pressed style to be displayed in static component previews. */
   state?: ButtonState;
 };
 
@@ -45,7 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   },
   ref,
 ) {
-  const classes = [styles.button, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.button, className);
   const renderIcon = (icon: ReactNode) => (
     <span aria-hidden="true" className={styles.icon}>
       {icon}
@@ -64,9 +62,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type}
     >
-      {before ? renderIcon(before) : null}
+      {before != null ? renderIcon(before) : null}
       <span className={styles.label}>{children}</span>
-      {after ? renderIcon(after) : null}
+      {after != null ? renderIcon(after) : null}
     </button>
   );
 });

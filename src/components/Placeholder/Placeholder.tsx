@@ -1,14 +1,11 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { classNames } from '../../utils/classNames';
 import styles from './Placeholder.module.css';
 
 export type PlaceholderProps = Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
-  /** Content displayed above the heading. */
   icon?: ReactNode;
-  /** Main placeholder message. */
   title?: ReactNode;
-  /** Additional placeholder description. */
   subtitle?: ReactNode;
-  /** Controls displayed below the text. */
   actions?: ReactNode;
 };
 
@@ -16,7 +13,7 @@ export const Placeholder = forwardRef<HTMLDivElement, PlaceholderProps>(function
   { actions, className, icon, subtitle, title, ...props },
   ref,
 ) {
-  const classes = [styles.placeholder, className].filter(Boolean).join(' ');
+  const classes = classNames(styles.placeholder, className);
   const hasText = title !== undefined || subtitle !== undefined;
   const hasContent = hasText || actions !== undefined;
 

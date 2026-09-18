@@ -6,39 +6,63 @@
   overflow: hidden;
   place-items: center;
   vertical-align: middle;
-}
 
-.avatar[data-shape='circle'] {
-  border-radius: var(--radius-round);
-}
+  &[data-shape='circle'] {
+    border-radius: var(--radius-round);
+  }
 
-.avatar[data-shape='square'][data-size='16'] {
-  border-radius: 4px;
-}
+  &[data-shape='square'][data-size='16'] {
+    border-radius: 4px;
+  }
 
-.avatar[data-shape='square'][data-size='24'],
-.avatar[data-shape='square'][data-size='32'] {
-  border-radius: var(--radius-control);
-}
+  &[data-shape='square'][data-size='24'],
+  &[data-shape='square'][data-size='32'] {
+    border-radius: var(--radius-control);
+  }
 
-.avatar[data-shape='square'][data-size='44'],
-.avatar[data-shape='square'][data-size='56'] {
-  border-radius: var(--radius-paper);
-}
+  &[data-shape='square'][data-size='44'],
+  &[data-shape='square'][data-size='56'] {
+    border-radius: var(--radius-paper);
+  }
 
-.avatar[data-shape='square'][data-size='72'],
-.avatar[data-shape='square'][data-size='88'] {
-  border-radius: var(--radius-promo);
-}
+  &[data-shape='square'][data-size='72'],
+  &[data-shape='square'][data-size='88'] {
+    border-radius: var(--radius-promo);
+  }
 
-.avatar[data-variant='color'] {
-  color: var(--color-text-on-accent);
-  background: var(--color-multiplayer-grey);
-}
+  &[data-variant='color'] {
+    color: var(--color-text-on-accent);
+    background: var(--color-bg-avatar);
+  }
 
-.avatar[data-variant='placeholder'] {
-  color: var(--color-text-primary);
-  background: var(--color-bg-tertiary);
+  &[data-variant='placeholder'] {
+    color: var(--color-text-primary);
+    background: var(--color-bg-tertiary);
+  }
+
+  &[data-size='16'] .initials {
+    font-size: 9px;
+  }
+
+  &[data-size='24'] .initials {
+    font-size: 12px;
+  }
+
+  &[data-size='32'] .initials {
+    font-size: 14px;
+  }
+
+  &[data-size='56'] .initials {
+    font-size: 17px;
+  }
+
+  &[data-size='72'] .initials {
+    font-size: 20px;
+  }
+
+  &[data-size='88'] .initials {
+    font-size: 24px;
+  }
 }
 
 .image {
@@ -52,28 +76,4 @@
   font-weight: var(--font-weight-medium);
   line-height: 1;
   white-space: nowrap;
-}
-
-.avatar[data-size='16'] .initials {
-  font-size: 9px;
-}
-
-.avatar[data-size='24'] .initials {
-  font-size: 12px;
-}
-
-.avatar[data-size='32'] .initials {
-  font-size: 14px;
-}
-
-.avatar[data-size='56'] .initials {
-  font-size: 17px;
-}
-
-.avatar[data-size='72'] .initials {
-  font-size: 20px;
-}
-
-.avatar[data-size='88'] .initials {
-  font-size: 24px;
 }
