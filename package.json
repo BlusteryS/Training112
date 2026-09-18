@@ -1,19 +1,18 @@
 {
-  "name": "uikit",
+  "name": "training112",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "icons",
+    "components",
+    "site"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -b --pretty false"
-  },
-  "dependencies": {
-    "@floating-ui/react": "0.27.20",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "react-router-dom": "7.18.3"
+    "dev": "npm run dev --workspace=@training112/site",
+    "build": "npm run typecheck && npm run build --workspace=@training112/site",
+    "preview": "npm run preview --workspace=@training112/site",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "@types/react": "19.2.18",
