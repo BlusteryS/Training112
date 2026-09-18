@@ -1,9 +1,11 @@
 import { createContext, useContext } from 'react';
 
 export type MenuSelectionMode = 'single' | 'multiple';
+export type MenuSelectionIndicator = 'control' | 'checkmark' | 'none';
 
 export type MenuContextValue = {
   onSelect: (value: string) => void;
+  selectionIndicator: MenuSelectionIndicator;
   selectedValues: ReadonlySet<string>;
   selectionMode: MenuSelectionMode;
 };

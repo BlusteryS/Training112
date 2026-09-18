@@ -147,6 +147,11 @@
   justify-content: center;
 }
 
+.selectList {
+  display: grid;
+  gap: 12px;
+}
+
 .switchCanvas {
   width: min(100%, 318px);
 }

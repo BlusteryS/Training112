@@ -22,9 +22,9 @@ const selectDocumentation: DocumentationRow[] = [
     values: ['boolean'],
   },
   {
-    name: 'selectionMode',
-    description: 'Режим выбора',
-    values: ['single', 'multiple'],
+    name: 'type',
+    description: 'Тип выбора',
+    values: ['single', 'multi'],
   },
   {
     name: 'value',
@@ -73,9 +73,21 @@ const selectDocumentation: DocumentationRow[] = [
   },
 ];
 const codeExample = `
-<Select placeholder="Text" searchable>
-  <MenuItem value="title">Title</MenuItem>
-</Select>
+<>
+  <Select placeholder="Text" searchable>
+    <MenuItem value="title">Title</MenuItem>
+  </Select>
+
+  <Select
+    defaultValue={['first', 'second']}
+    placeholder="Text"
+    type="multi"
+  >
+    <MenuItem value="first">First</MenuItem>
+    <MenuItem value="second">Second</MenuItem>
+    <MenuItem value="third">Third</MenuItem>
+  </Select>
+</>
 `;
 
 export default function SelectShowcase() {
@@ -86,13 +98,25 @@ export default function SelectShowcase() {
       name="Select"
     >
       <div className={styles.selectCanvas}>
-        <Select
-          before={<Icon20Placeholder />}
-          placeholder="Text"
-          searchable
-        >
-          <MenuItem value="title">Title</MenuItem>
-        </Select>
+        <div className={styles.selectList}>
+          <Select
+            before={<Icon20Placeholder />}
+            placeholder="Text"
+            searchable
+          >
+            <MenuItem value="title">Title</MenuItem>
+          </Select>
+
+          <Select
+            defaultValue={['first', 'second']}
+            placeholder="Text"
+            type="multi"
+          >
+            <MenuItem value="first">First</MenuItem>
+            <MenuItem value="second">Second</MenuItem>
+            <MenuItem value="third">Third</MenuItem>
+          </Select>
+        </div>
       </div>
     </ComponentShowcase>
   );

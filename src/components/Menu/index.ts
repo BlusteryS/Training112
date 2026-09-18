@@ -1,2 +1,2 @@
 export { Menu, type MenuProps, type MenuTriggerMode } from './Menu';
-export { type MenuSelectionMode } from './MenuContext';
+export { type MenuSelectionIndicator, type MenuSelectionMode } from './MenuContext';

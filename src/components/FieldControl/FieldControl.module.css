@@ -14,7 +14,7 @@
   cursor: text;
 }
 
-.root:has(.input:placeholder-shown) {
+.root:has(.input:placeholder-shown):not([data-has-value='true']) {
   color: var(--color-icon-tertiary);
 }
 
@@ -27,8 +27,8 @@
 }
 
 .root[data-status='valid'] {
-  border-color: var(--color-border-handoff-strong);
-  background: var(--color-bg-handoff-tertiary);
+  border-color: var(--color-border-success-strong);
+  background: var(--color-bg-success-tertiary);
 }
 
 .root[data-status='error'] {

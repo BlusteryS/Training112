@@ -5,12 +5,14 @@ import {
   useCallback,
   useId,
   useMemo,
+  useRef,
   useState,
   type InputHTMLAttributes,
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { Icon20ChevronDown } from '../../icons';
+import { Icon20ChevronDown, Icon24Close } from '../../icons';
+import { IconButton } from '../IconButton';
 import {
   FieldControl,
   FieldControlInput,
@@ -24,7 +26,14 @@ export type SelectStatus = FieldControlStatus;
 
 type SelectBaseProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  'children' | 'defaultValue' | 'multiple' | 'onChange' | 'readOnly' | 'size' | 'value'
+  | 'children'
+  | 'defaultValue'
+  | 'multiple'
+  | 'onChange'
+  | 'readOnly'
+  | 'size'
+  | 'type'
+  | 'value'
 > & {
   before?: ReactNode;
   children: ReactNode;
@@ -42,18 +51,19 @@ type SelectBaseProps = Omit<
 type SelectSingleProps = {
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  selectionMode?: 'single';
+  type?: 'single';
   value?: string;
 };
 
 type SelectMultipleProps = {
   defaultValue?: readonly string[];
   onValueChange?: (value: string[]) => void;
-  selectionMode: 'multiple';
+  type: 'multi';
   value?: readonly string[];
 };
 
 export type SelectProps = SelectBaseProps & (SelectSingleProps | SelectMultipleProps);
+export type SelectType = NonNullable<SelectProps['type']>;
 
 function normalizeValues(value: string | readonly string[] | undefined) {
   if (Array.isArray(value)) {
@@ -114,7 +124,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
     placeholder,
     searchable = false,
     searchValue,
-    selectionMode = 'single',
+    type = 'single',
     status = 'default',
     value,
     ...inputProps
@@ -122,6 +132,20 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
   ref,
 ) {
   const menuId = `${useId()}-menu`;
+  const isMulti = type === 'multi';
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const setInputRef = useCallback(
+    (input: HTMLInputElement | null) => {
+      inputRef.current = input;
+
+      if (typeof ref === 'function') {
+        ref(input);
+      } else if (ref) {
+        ref.current = input;
+      }
+    },
+    [ref],
+  );
   const items = useMemo(() => Children.toArray(children).filter(isMenuItem), [children]);
   const controlledValues = useMemo(
     () => (value === undefined ? undefined : normalizeValues(value)),
@@ -150,10 +174,11 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
   );
   const hasNoResults = searchable && isEditing && filteredItems.length === 0;
   const isMenuShown = isOpen && filteredItems.length > 0;
-  const selectedItem = selectedItems.length === 1 ? selectedItems[0] : undefined;
+  const selectedItem = !isMulti && selectedItems.length === 1 ? selectedItems[0] : undefined;
   const controlBefore =
     !isEditing && selectedItem !== undefined ? (selectedItem.props.before ?? before) : before;
-  const inputValue = searchable && isEditing ? currentSearchValue : displayValue;
+  const inputValue = searchable && isEditing ? currentSearchValue : isMulti ? '' : displayValue;
+  const isInputCompact = isMulti && selectedItems.length > 0 && (!searchable || !isEditing);
   const currentStatus = hasNoResults ? 'error' : status;
   const ariaInvalid = currentStatus === 'error' ? true : inputProps['aria-invalid'];
 
@@ -211,6 +236,77 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
     }
   };
 
+  const input = (
+    <FieldControlInput
+      {...inputProps}
+      aria-autocomplete={searchable ? 'list' : 'none'}
+      aria-controls={isMenuShown ? menuId : undefined}
+      aria-expanded={isMenuShown}
+      aria-haspopup="menu"
+      aria-invalid={ariaInvalid}
+      autoComplete="off"
+      className={isMulti ? styles.multiInput : undefined}
+      data-compact={isInputCompact || undefined}
+      disabled={disabled}
+      onBlur={(event) => {
+        onBlur?.(event);
+        setIsEditing(false);
+
+        if (hasNoResults) {
+          setOpen(false);
+        }
+      }}
+      onChange={(event) => {
+        const nextSearchValue = event.currentTarget.value;
+
+        setSearchValue(nextSearchValue);
+        setOpen(items.some((item) => matchesSearch(item, nextSearchValue)));
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
+
+        if (searchable && !disabled) {
+          const nextSearchValue = isMulti ? '' : displayValue;
+
+          setIsEditing(true);
+          setSearchValue(nextSearchValue);
+          setOpen(items.some((item) => matchesSearch(item, nextSearchValue)));
+        }
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+
+        if (event.defaultPrevented || disabled) {
+          return;
+        }
+
+        if (event.key === 'Escape' && isOpen) {
+          event.preventDefault();
+          setIsEditing(false);
+          setOpen(false);
+          return;
+        }
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          setOpen(filteredItems.length > 0);
+          return;
+        }
+
+        if (!searchable && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          setOpen(!isOpen);
+        }
+      }}
+      placeholder={selectedItems.length === 0 ? placeholder : undefined}
+      readOnly={!searchable}
+      ref={setInputRef}
+      role="combobox"
+      type="text"
+      value={inputValue}
+    />
+  );
+
   const control = (
     <FieldControl
       after={
@@ -222,9 +318,22 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
           <Icon20ChevronDown />
         </span>
       }
+      as={isMulti ? 'div' : 'label'}
       before={controlBefore}
-      className={className}
+      className={[className, isMulti ? styles.multi : undefined].filter(Boolean).join(' ')}
+      data-has-value={currentValues.length > 0 || undefined}
+      data-multi={isMulti || undefined}
       disabled={disabled}
+      onMouseDown={
+        isMulti
+          ? (event) => {
+              if (!disabled && event.button === 0) {
+                event.preventDefault();
+                inputRef.current?.focus();
+              }
+            }
+          : undefined
+      }
       onClick={() => {
         if (!disabled) {
           setOpen(searchable ? filteredItems.length > 0 : !isOpen);
@@ -233,70 +342,39 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
       readOnly={!searchable}
       status={currentStatus}
     >
-      <FieldControlInput
-        {...inputProps}
-        aria-autocomplete={searchable ? 'list' : 'none'}
-        aria-controls={isMenuShown ? menuId : undefined}
-        aria-expanded={isMenuShown}
-        aria-haspopup="menu"
-        aria-invalid={ariaInvalid}
-        autoComplete="off"
-        disabled={disabled}
-        onBlur={(event) => {
-          onBlur?.(event);
-          setIsEditing(false);
+      {isMulti ? (
+        <span className={styles.multiContent}>
+          {selectedItems.map((item) => {
+            const label = getItemLabel(item);
 
-          if (hasNoResults) {
-            setOpen(false);
-          }
-        }}
-        onChange={(event) => {
-          const nextSearchValue = event.currentTarget.value;
-
-          setSearchValue(nextSearchValue);
-          setOpen(items.some((item) => matchesSearch(item, nextSearchValue)));
-        }}
-        onFocus={(event) => {
-          onFocus?.(event);
-
-          if (searchable && !disabled) {
-            setIsEditing(true);
-            setSearchValue(displayValue);
-            setOpen(items.some((item) => matchesSearch(item, displayValue)));
-          }
-        }}
-        onKeyDown={(event) => {
-          onKeyDown?.(event);
-
-          if (event.defaultPrevented || disabled) {
-            return;
-          }
-
-          if (event.key === 'Escape' && isOpen) {
-            event.preventDefault();
-            setIsEditing(false);
-            setOpen(false);
-            return;
-          }
-
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault();
-            setOpen(filteredItems.length > 0);
-            return;
-          }
-
-          if (!searchable && (event.key === 'Enter' || event.key === ' ')) {
-            event.preventDefault();
-            setOpen(!isOpen);
-          }
-        }}
-        placeholder={placeholder}
-        readOnly={!searchable}
-        ref={ref}
-        role="combobox"
-        type="text"
-        value={inputValue}
-      />
+            return (
+              <span className={styles.chip} key={item.props.value}>
+                <span>{label}</span>
+                <IconButton
+                  appearance="tertiary"
+                  aria-label={`Удалить ${label}`}
+                  disabled={disabled}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    selectMultipleValues(
+                      currentValues.filter(
+                        (currentValue) => currentValue !== item.props.value,
+                      ),
+                    );
+                  }}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  size="small"
+                >
+                  <Icon24Close height={20} width={20} />
+                </IconButton>
+              </span>
+            );
+          })}
+          {input}
+        </span>
+      ) : (
+        input
+      )}
 
       {name !== undefined
         ? currentValues.map((currentValue) => (
@@ -306,7 +384,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
     </FieldControl>
   );
 
-  if (selectionMode === 'multiple') {
+  if (isMulti) {
     return (
       <Menu
         aria-label={menuLabel}
@@ -314,6 +392,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
         onOpenChange={handleMenuOpenChange}
         onValueChange={selectMultipleValues}
         open={isMenuShown}
+        selectionIndicator="checkmark"
         selectionMode="multiple"
         trigger={control}
         triggerMode="manual"
@@ -331,6 +410,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
       onOpenChange={handleMenuOpenChange}
       onValueChange={selectSingleValue}
       open={isMenuShown}
+      selectionIndicator="control"
       trigger={control}
       triggerMode="manual"
       value={currentValues[0]}

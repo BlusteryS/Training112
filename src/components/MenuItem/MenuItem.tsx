@@ -5,6 +5,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { Icon20Check } from '../../icons';
 import { Checkbox } from '../Checkbox';
 import { useMenuContext } from '../Menu/MenuContext';
 import styles from './MenuItem.module.css';
@@ -51,6 +52,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
   const menu = useMenuContext();
   const selected = selectedProp ?? menu?.selectedValues.has(value) ?? false;
   const selectionMode = menu?.selectionMode ?? 'single';
+  const selectionIndicator = menu?.selectionIndicator ?? 'control';
   const label = title ?? children;
   const isRich = title !== undefined || subtitle !== undefined;
   const classes = [styles.item, className].filter(Boolean).join(' ');
@@ -91,6 +93,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
       className={classes}
       data-disabled={disabled || undefined}
       data-rich={isRich || undefined}
+      data-selection-indicator={selectionIndicator}
       data-selected={selected || undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -110,16 +113,24 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
           {subtitle !== undefined ? <span className={styles.subtitle}>{subtitle}</span> : null}
         </span>
 
-        <span aria-hidden="true" className={styles.selection}>
-          <Checkbox
-            checked={selected}
-            disabled={disabled}
-            padding={false}
-            readOnly
-            tabIndex={-1}
-            variant={selectionMode === 'multiple' ? 'checkbox' : 'radio'}
-          />
-        </span>
+        {selectionIndicator === 'checkmark' ? (
+          selected ? (
+            <span aria-hidden="true" className={styles.selection}>
+              <Icon20Check />
+            </span>
+          ) : null
+        ) : selectionIndicator === 'control' ? (
+          <span aria-hidden="true" className={styles.selection}>
+            <Checkbox
+              checked={selected}
+              disabled={disabled}
+              padding={false}
+              readOnly
+              tabIndex={-1}
+              variant={selectionMode === 'multiple' ? 'checkbox' : 'radio'}
+            />
+          </span>
+        ) : null}
       </span>
     </div>
   );

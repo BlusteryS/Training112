@@ -29,7 +29,11 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { MenuContext, type MenuSelectionMode } from './MenuContext';
+import {
+  MenuContext,
+  type MenuSelectionIndicator,
+  type MenuSelectionMode,
+} from './MenuContext';
 import styles from './Menu.module.css';
 
 export type MenuTriggerMode = 'click' | 'hover' | 'manual';
@@ -44,6 +48,8 @@ type MenuBaseProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'defaultV
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
+  /** Controls the selected-item marker for composed controls such as Select. */
+  selectionIndicator?: MenuSelectionIndicator;
   title?: ReactNode;
   trigger?: ReactElement<MenuTriggerProps>;
   triggerMode?: MenuTriggerMode;
@@ -100,6 +106,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
     onOpenChange,
     onValueChange,
     open,
+    selectionIndicator = 'control',
     selectionMode = 'single',
     tabIndex = 0,
     title,
@@ -215,10 +222,11 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
   const contextValue = useMemo(
     () => ({
       onSelect: selectValue,
+      selectionIndicator,
       selectedValues,
       selectionMode,
     }),
-    [selectValue, selectedValues, selectionMode],
+    [selectValue, selectedValues, selectionIndicator, selectionMode],
   );
 
   const handleFocus = (event: FocusEvent<HTMLDivElement>) => {

@@ -2,8 +2,9 @@
   display: flex;
   width: 100%;
   min-width: 0;
+  min-height: 36px;
   padding: 8px;
-  align-items: flex-start;
+  align-items: center;
   overflow: hidden;
   border: 0;
   border-radius: var(--radius-control);
@@ -16,7 +17,7 @@
 }
 
 .item:hover:not([data-disabled='true']),
-.item[data-selected='true'] {
+.item[data-selected='true']:not([data-selection-indicator='checkmark']) {
   background: var(--color-bg-secondary);
 }
 
@@ -78,6 +79,16 @@
 .item[data-rich='true'] .label {
   font-size: 13px;
   font-weight: var(--font-weight-medium);
+}
+
+.item[data-selection-indicator='checkmark'] .label,
+.item[data-selection-indicator='none'] .label {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+}
+
+.item[data-selection-indicator='checkmark'] .content {
+  gap: 10px;
 }
 
 .subtitle {
