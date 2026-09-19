@@ -4,6 +4,7 @@ export * from './Button';
 export * from './Card';
 export * from './Cell';
 export * from './Checkbox';
+export * from './HorizontalScroll';
 export * from './IconButton';
 export * from './Input';
 export * from './Menu';

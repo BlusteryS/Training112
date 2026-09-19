@@ -73,7 +73,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                 inputRef.current.focus();
               }
             }}
-            size="small"
+            size="medium"
           >
             <Icon24Close />
           </IconButton>

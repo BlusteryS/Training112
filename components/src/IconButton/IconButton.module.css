@@ -10,12 +10,18 @@
   -webkit-tap-highlight-color: transparent;
 
   &[data-size='small'] {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+  }
+
+  &[data-size='medium'] {
     width: 24px;
     height: 24px;
     border-radius: 5px;
   }
 
-  &[data-size='medium'] {
+  &[data-size='large'] {
     width: 32px;
     height: 32px;
     border-radius: var(--radius-control);

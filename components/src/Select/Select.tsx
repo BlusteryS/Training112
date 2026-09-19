@@ -358,7 +358,7 @@ export const Select = forwardRef<HTMLInputElement, SelectProps>(function Select(
                     );
                   }}
                   onMouseDown={(event) => event.stopPropagation()}
-                  size="small"
+                  size="medium"
                 >
                   <Icon24Close height={20} width={20} />
                 </IconButton>

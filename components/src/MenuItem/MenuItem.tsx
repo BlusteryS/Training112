@@ -15,7 +15,7 @@ type MenuItemBaseProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'titl
   before?: ReactNode;
   disabled?: boolean;
   selected?: boolean;
-  value: string;
+  value?: string;
 };
 
 type MenuItemSimpleContent = {
@@ -51,9 +51,11 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
   ref,
 ) {
   const menu = useMenuContext();
-  const selected = selectedProp ?? menu?.selectedValues.has(value) ?? false;
   const selectionMode = menu?.selectionMode ?? 'single';
-  const selectionIndicator = menu?.selectionIndicator ?? 'control';
+  const selected = selectionMode !== 'none' && (
+    selectedProp ?? (value !== undefined && (menu?.selectedValues.has(value) ?? false))
+  );
+  const selectionIndicator = selectionMode === 'none' ? 'none' : menu?.selectionIndicator ?? 'control';
   const label = title ?? children;
   const isRich = title !== undefined || subtitle !== undefined;
   const classes = classNames(styles.item, className);
@@ -76,6 +78,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
 
     if (
       event.defaultPrevented ||
+      event.target !== event.currentTarget ||
       disabled ||
       (event.key !== 'Enter' && event.key !== ' ')
     ) {
@@ -83,13 +86,13 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
     }
 
     event.preventDefault();
-    menu?.onSelect(value);
+    event.currentTarget.click();
   };
 
   return (
     <div
       {...props}
-      aria-checked={selected}
+      aria-checked={selectionMode === 'none' ? undefined : selected}
       aria-disabled={disabled || undefined}
       className={classes}
       data-disabled={disabled || undefined}
@@ -99,7 +102,7 @@ export const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(function MenuI
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       ref={ref}
-      role={selectionMode === 'multiple' ? 'menuitemcheckbox' : 'menuitemradio'}
+      role={selectionMode === 'none' ? 'menuitem' : selectionMode === 'multiple' ? 'menuitemcheckbox' : 'menuitemradio'}
       tabIndex={disabled ? undefined : tabIndex}
     >
       <span className={styles.content}>

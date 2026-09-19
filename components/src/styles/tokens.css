@@ -235,6 +235,11 @@
   --radius-promo: 20px;
   --radius-round: 999px;
 
+  --shadow-floating:
+    0 0 0.25px rgb(0 0 0 / 8%),
+    0 10px 12px rgb(0 0 0 / 18%),
+    0 2px 2.5px rgb(0 0 0 / 15%);
+
   --font-family-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-weight-medium: 500;
   --duration-theme-transition: 180ms;

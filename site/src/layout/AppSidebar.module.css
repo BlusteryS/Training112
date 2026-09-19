@@ -27,9 +27,9 @@
   gap: 8px;
 }
 
-.sidebar .separator {
+.separator.separator {
   height: 16px;
-  padding-block: 7.5px;
+  padding: 7.75px 8px;
 }
 
 .logo,
@@ -57,12 +57,25 @@
   }
 
   &[aria-current='page'] {
+    color: var(--color-icon-primary);
     background: var(--color-bg-secondary);
   }
 }
 
-.themeIcon {
+.secondaryIcon {
   color: var(--color-icon-secondary);
+}
+
+.sidebar .menuButton[aria-expanded='true'] {
+  background: var(--color-bg-secondary);
+}
+
+.menu .logout:not([aria-disabled='true']) {
+  color: var(--color-text-danger);
+}
+
+.dangerIcon {
+  color: var(--color-icon-danger);
 }
 
 @media (prefers-reduced-motion: reduce) {

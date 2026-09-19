@@ -72,7 +72,7 @@ export const Search = forwardRef<HTMLInputElement, SearchProps>(function Search(
                 inputRef.current.focus();
               }
             }}
-            size="small"
+            size="medium"
           >
             <Icon24Close />
           </IconButton>

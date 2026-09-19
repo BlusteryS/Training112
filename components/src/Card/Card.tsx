@@ -20,9 +20,12 @@ export type CardProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'title
   appearance?: CardAppearance;
   before?: ReactNode;
   children?: ReactNode;
+  media?: ReactNode;
   stretched?: boolean;
+  subhead?: ReactNode;
   subtitle?: ReactNode;
   title?: ReactNode;
+  withBorder?: boolean;
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
@@ -32,9 +35,12 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
     before,
     children,
     className,
+    media,
     stretched = true,
+    subhead,
     subtitle,
     title,
+    withBorder = false,
     ...props
   },
   ref,
@@ -43,8 +49,33 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   const hasHeader =
     after !== undefined ||
     before !== undefined ||
+    subhead !== undefined ||
     subtitle !== undefined ||
     title !== undefined;
+
+  const header = hasHeader ? (
+    <div className={styles.header}>
+      {before !== undefined ? (
+        <span className={styles.accessory}>{before}</span>
+      ) : null}
+
+      {subhead !== undefined || title !== undefined || subtitle !== undefined ? (
+        <div className={styles.heading}>
+          {subhead !== undefined ? <div className={styles.secondary}>{subhead}</div> : null}
+          {title !== undefined ? (
+            <div className={styles.title}>{title}</div>
+          ) : null}
+          {subtitle !== undefined ? (
+            <div className={styles.secondary}>{subtitle}</div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {after !== undefined ? (
+        <span className={`${styles.accessory} ${styles.after}`}>{after}</span>
+      ) : null}
+    </div>
+  ) : null;
 
   return (
     <div
@@ -52,34 +83,11 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       className={classes}
       data-appearance={appearance}
       data-stretched={stretched}
+      data-with-border={withBorder || undefined}
       ref={ref}
     >
-      {hasHeader ? (
-        <div className={styles.header}>
-          {before !== undefined ? (
-            <span className={styles.accessory}>
-              {before}
-            </span>
-          ) : null}
-
-          {title !== undefined || subtitle !== undefined ? (
-            <div className={styles.heading}>
-              {title !== undefined ? (
-                <div className={styles.title}>{title}</div>
-              ) : null}
-              {subtitle !== undefined ? (
-                <div className={styles.subtitle}>{subtitle}</div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {after !== undefined ? (
-            <span className={`${styles.accessory} ${styles.after}`}>
-              {after}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
+      {media !== undefined ? <div className={styles.media}>{media}</div> : null}
+      {header}
       {children}
     </div>
   );

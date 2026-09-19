@@ -110,7 +110,7 @@ export function ModalForm({
             <IconButton
               aria-label="Закрыть"
               onClick={requestClose}
-              size="small"
+              size="medium"
             >
               <Icon24Close />
             </IconButton>

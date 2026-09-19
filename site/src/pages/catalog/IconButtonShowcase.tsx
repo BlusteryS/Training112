@@ -10,7 +10,7 @@ import { ComponentShowcase } from './ComponentShowcase';
 import styles from './Showcase.module.css';
 
 const appearances: IconButtonAppearance[] = ['primary', 'tertiary'];
-const sizes: IconButtonSize[] = ['small', 'medium'];
+const sizes: IconButtonSize[] = ['small', 'medium', 'large'];
 const documentation: DocumentationRow[] = [
   {
     name: 'children',
@@ -29,7 +29,7 @@ const documentation: DocumentationRow[] = [
   },
   {
     name: 'size',
-    description: 'Размер кнопки',
+    description: 'Размер кнопки: small — 16 px, medium — 24 px, large — 32 px',
     values: sizes,
   },
   {
@@ -58,8 +58,8 @@ export default function IconButtonShowcase() {
                 size={size}
               >
                 <Icon20Placeholder
-                  height={size === 'small' ? 16 : 20}
-                  width={size === 'small' ? 16 : 20}
+                  height={size === 'large' ? 20 : 16}
+                  width={size === 'large' ? 20 : 16}
                 />
               </IconButton>
             )),

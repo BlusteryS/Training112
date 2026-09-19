@@ -2,6 +2,8 @@ import { Avatar } from '@training112/components/Avatar';
 import { Button } from '@training112/components/Button';
 import { Menu } from '@training112/components/Menu';
 import { MenuItem } from '@training112/components/MenuItem';
+import { Separator } from '@training112/components/Separator';
+import { Icon24Close, Icon24Help } from '@training112/icons';
 import type { DocumentationRow } from './ComponentDocumentation';
 import { ComponentDocumentation } from './ComponentDocumentation';
 import { ComponentShowcase } from './ComponentShowcase';
@@ -39,6 +41,16 @@ const menuDocumentation: DocumentationRow[] = [
     values: ['boolean'],
   },
   {
+    name: 'placement',
+    description: 'Расположение относительно кнопки. По умолчанию bottom-start',
+    values: ['top', 'bottom', 'left', 'right', 'С выравниванием -start или -end'],
+  },
+  {
+    name: 'width',
+    description: 'Ширина раскрытого меню в пикселях. По умолчанию совпадает с кнопкой; ограничена доступным местом',
+    values: ['number'],
+  },
+  {
     name: 'defaultOpen',
     description: 'Начальное состояние popup',
     values: ['boolean'],
@@ -50,8 +62,8 @@ const menuDocumentation: DocumentationRow[] = [
   },
   {
     name: 'selectionMode',
-    description: 'Режим выбора',
-    values: ['single', 'multiple'],
+    description: 'Режим выбора. none — действия без выбранного состояния и отметок',
+    values: ['single', 'multiple', 'none'],
   },
   {
     name: 'value',
@@ -72,7 +84,7 @@ const menuDocumentation: DocumentationRow[] = [
 const menuItemDocumentation: DocumentationRow[] = [
   {
     name: 'value',
-    description: 'Значение пункта',
+    description: 'Значение пункта для выбора. Не требуется в режиме действий',
     values: ['string'],
   },
   {
@@ -105,6 +117,11 @@ const menuItemDocumentation: DocumentationRow[] = [
     description: 'Отключённое состояние',
     values: ['boolean'],
   },
+  {
+    name: 'onClick',
+    description: 'Действие пункта, вызывается также клавишами Enter и пробел',
+    values: ['MouseEventHandler'],
+  },
 ];
 const codeExample = `
 <Menu
@@ -133,6 +150,18 @@ export default function MenuShowcase() {
       name="Menu"
     >
       <div className={styles.menuShowcase}>
+        <Menu
+          aria-label="Пример меню действий"
+          placement="right-end"
+          selectionMode="none"
+          trigger={<Button>Меню действий</Button>}
+          width={304}
+        >
+          <MenuItem before={<Icon24Help />}>Помощь</MenuItem>
+          <Separator paddingVertical />
+          <MenuItem before={<Icon24Close />}>Выйти из системы</MenuItem>
+        </Menu>
+
         <Menu
           actions={
             <Button appearance="inversion" style={{ width: '100%' }}>

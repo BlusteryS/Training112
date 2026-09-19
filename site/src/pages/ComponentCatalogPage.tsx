@@ -11,6 +11,7 @@ const showcaseById = {
   card: lazy(() => import('./catalog/CardShowcase')),
   cell: lazy(() => import('./catalog/CellShowcase')),
   checkbox: lazy(() => import('./catalog/CheckboxShowcase')),
+  horizontalScroll: lazy(() => import('./catalog/HorizontalScrollShowcase')),
   iconButton: lazy(() => import('./catalog/IconButtonShowcase')),
   input: lazy(() => import('./catalog/InputShowcase')),
   menu: lazy(() => import('./catalog/MenuShowcase')),
@@ -41,6 +42,7 @@ const navigationItems = [
   { id: 'card', label: 'Card' },
   { id: 'cell', label: 'Cell' },
   { id: 'checkbox', label: 'Checkbox' },
+  { id: 'horizontalScroll', label: 'HorizontalScroll' },
   { id: 'iconButton', label: 'IconButton' },
   { id: 'input', label: 'Input' },
   { id: 'menu', label: 'Menu' },
@@ -127,6 +129,7 @@ export function ComponentCatalogPage() {
             aria-expanded={isNavigationOpen}
             aria-label={isNavigationOpen ? 'Закрыть каталог' : 'Открыть каталог'}
             onClick={() => setIsNavigationOpen((isOpen) => !isOpen)}
+            size="large"
           >
             <Icon24Menu />
           </IconButton>

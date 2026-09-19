@@ -3,7 +3,7 @@ import { classNames } from '../utils/classNames';
 import styles from './IconButton.module.css';
 
 export type IconButtonAppearance = 'primary' | 'tertiary';
-export type IconButtonSize = 'small' | 'medium';
+export type IconButtonSize = 'small' | 'medium' | 'large';
 
 export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   appearance?: IconButtonAppearance;

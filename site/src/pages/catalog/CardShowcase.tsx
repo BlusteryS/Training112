@@ -28,6 +28,21 @@ const documentation: DocumentationRow[] = [
     values: ['boolean'],
   },
   {
+    name: 'withBorder',
+    description: 'Тонкая рамка по контуру карточки',
+    values: ['boolean'],
+  },
+  {
+    name: 'media',
+    description: 'Изображение или другое содержимое над заголовком',
+    values: ['ReactNode'],
+  },
+  {
+    name: 'subhead',
+    description: 'Дополнительный текст над заголовком, 13 px',
+    values: ['ReactNode'],
+  },
+  {
     name: 'before',
     description: 'Содержимое перед текстом',
     values: ['ReactNode'],
@@ -39,12 +54,12 @@ const documentation: DocumentationRow[] = [
   },
   {
     name: 'title',
-    description: 'Заголовок карточки',
+    description: 'Заголовок карточки, 14 px',
     values: ['ReactNode'],
   },
   {
     name: 'subtitle',
-    description: 'Дополнительный текст',
+    description: 'Дополнительный текст под заголовком, 13 px',
     values: ['ReactNode'],
   },
   {
@@ -57,6 +72,7 @@ const codeExample = `
 <Card
   before={<span>Before</span>}
   after={<span>After</span>}
+  subhead="Subhead"
   subtitle="Subtitle"
   title="Title"
 >
@@ -69,7 +85,7 @@ const codeExample = `
 `;
 const demoIcon = <Icon20Placeholder />;
 const demoIconButton = (
-  <IconButton aria-label="Действие" size="medium">
+  <IconButton aria-label="Действие" size="large">
     <Icon20Placeholder />
   </IconButton>
 );
@@ -105,6 +121,15 @@ export default function CardShowcase() {
         <Card appearance="primary">
           <DemoTabs />
         </Card>
+
+        <Card
+          appearance="primary"
+          media={<div className={styles.cardMedia}>{demoIcon}</div>}
+          subhead="Над заголовком"
+          subtitle="Под заголовком"
+          title="Карточка с рамкой"
+          withBorder
+        />
 
         {appearances.slice(2).map((appearance) => (
           <Card

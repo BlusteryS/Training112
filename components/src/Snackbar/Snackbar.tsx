@@ -64,7 +64,7 @@ export const Snackbar = forwardRef<HTMLDivElement, SnackbarProps>(function Snack
             aria-label={closeLabel}
             className={styles.closeButton}
             onClick={onClose}
-            size="small"
+            size="medium"
           >
             <Icon24Close height={20} width={20} />
           </IconButton>

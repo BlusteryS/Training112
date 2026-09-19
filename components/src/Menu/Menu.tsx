@@ -1,6 +1,7 @@
 import {
   autoUpdate,
   flip,
+  FloatingFocusManager,
   FloatingPortal,
   offset,
   safePolygon,
@@ -14,6 +15,7 @@ import {
   useInteractions,
   useMergeRefs,
   useTransitionStyles,
+  type Placement,
 } from '@floating-ui/react';
 import {
   cloneElement,
@@ -49,10 +51,12 @@ type MenuBaseProps = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'defaultV
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
+  placement?: Placement;
   selectionIndicator?: MenuSelectionIndicator;
   title?: ReactNode;
   trigger?: ReactElement<MenuTriggerProps>;
   triggerMode?: MenuTriggerMode;
+  width?: number;
 };
 
 type MenuSingleSelectionProps = {
@@ -69,17 +73,26 @@ type MenuMultipleSelectionProps = {
   value?: readonly string[];
 };
 
-export type MenuProps = MenuBaseProps &
-  (MenuSingleSelectionProps | MenuMultipleSelectionProps);
+type MenuActionProps = {
+  defaultValue?: never;
+  onValueChange?: never;
+  selectionMode: 'none';
+  value?: never;
+};
 
-const menuItemSelector = '[role="menuitemradio"], [role="menuitemcheckbox"]';
+export type MenuProps = MenuBaseProps &
+  (MenuSingleSelectionProps | MenuMultipleSelectionProps | MenuActionProps);
+
+const menuItemSelector = '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]';
 const enabledMenuItemSelector =
-  '[role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])';
+  ':is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]):not([aria-disabled="true"])';
 
 function getValues(
   selectionMode: MenuSelectionMode,
   value: string | readonly string[] | undefined,
 ) {
+  if (selectionMode === 'none') return [];
+
   if (selectionMode === 'multiple') {
     return Array.isArray(value) ? [...value] : [];
   }
@@ -106,6 +119,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
     onOpenChange,
     onValueChange,
     open,
+    placement = 'bottom-start',
     selectionIndicator = 'control',
     selectionMode = 'single',
     tabIndex = 0,
@@ -113,6 +127,7 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
     trigger,
     triggerMode = 'click',
     value,
+    width,
     ...props
   },
   ref,
@@ -151,15 +166,15 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
       flip({ padding: 8 }),
       shift({ padding: 8 }),
       size({
-        apply({ elements, rects }) {
-          elements.floating.style.width = `${rects.reference.width}px`;
+        apply({ availableWidth, elements, rects }) {
+          elements.floating.style.width = `${Math.max(0, Math.min(width ?? rects.reference.width, availableWidth))}px`;
         },
         padding: 8,
       }),
     ],
     onOpenChange: handleOpenChange,
     open: isOpen,
-    placement: 'bottom-start',
+    placement,
     whileElementsMounted: autoUpdate,
   });
   const hover = useHover(context, {
@@ -188,7 +203,13 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
   });
 
   const selectValue = useCallback(
-    (nextValue: string) => {
+    (nextValue?: string) => {
+      if (selectionMode === 'none') {
+        handleOpenChange(false);
+        return;
+      }
+      if (nextValue === undefined) return;
+
       if (selectionMode === 'multiple') {
         const nextValues = selectedValues.has(nextValue)
           ? currentValues.filter((currentValue) => currentValue !== nextValue)
@@ -330,17 +351,19 @@ export const Menu = forwardRef<HTMLDivElement, MenuProps>(function Menu(
 
       {isMounted ? (
         <FloatingPortal>
-          <div
-            {...getFloatingProps({
-              className: styles.floating,
-              ref: refs.setFloating,
-              style: floatingStyles,
-            })}
-          >
-            <div className={styles.transition} style={transitionStyles}>
-              {surface}
+          <FloatingFocusManager context={context} disabled={!isOpen} modal={false}>
+            <div
+              {...getFloatingProps({
+                className: styles.floating,
+                ref: refs.setFloating,
+                style: floatingStyles,
+              })}
+            >
+              <div className={styles.transition} style={transitionStyles}>
+                {surface}
+              </div>
             </div>
-          </div>
+          </FloatingFocusManager>
         </FloatingPortal>
       ) : null}
     </MenuContext.Provider>
