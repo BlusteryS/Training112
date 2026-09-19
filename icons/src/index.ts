@@ -1,4 +1,5 @@
 export { Icon16Github } from './Icon16Github';
+export { Icon16ExternalLink } from './Icon16ExternalLink';
 export { Icon20Check } from './Icon20Check';
 export { Icon20ChevronDown } from './Icon20ChevronDown';
 export { Icon20ChevronRight } from './Icon20ChevronRight';
@@ -7,6 +8,7 @@ export { Icon20Placeholder } from './Icon20Placeholder';
 export { Icon20Search } from './Icon20Search';
 export { Icon20TooltipArrow } from './Icon20TooltipArrow';
 export type { Icon20TooltipArrowProps } from './Icon20TooltipArrow';
+export { Icon20Warning } from './Icon20Warning';
 export { Icon24Close } from './Icon24Close';
 export { Icon24Menu } from './Icon24Menu';
 export { Icon24Theme } from './Icon24Theme';

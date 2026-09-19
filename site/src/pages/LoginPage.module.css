@@ -1,0 +1,172 @@
+.page {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-bg-disabled: #d9d9d9;
+  --color-bg-brand: #0d99ff;
+  --color-bg-brand-pressed: #007be5;
+  --color-bg-warning: #ffcd29;
+  --color-border-primary: #e6e6e6;
+  --color-border-selected: #0d99ff;
+  --color-text-primary: #000000e5;
+  --color-text-secondary: #00000080;
+  --color-text-tertiary: #0000004d;
+  --color-text-on-accent: #ffffff;
+  --color-icon-primary: #000000e5;
+
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  background: #f2f9ff;
+}
+
+.brand {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  width: 167px;
+  height: 40px;
+}
+
+.card {
+  position: absolute;
+  top: calc(50% - 7px);
+  left: 50%;
+  width: min(400px, calc(100vw - 32px));
+  gap: 0;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-promo);
+  background: var(--color-bg-primary);
+  transform: translate(-50%, -50%);
+}
+
+.intro,
+.fields,
+.actions {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px;
+}
+
+.intro {
+  gap: 12px;
+}
+
+.heading {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title,
+.subtitle {
+  margin: 0;
+}
+
+.title {
+  color: var(--color-text-primary);
+  font-family: "TikTok Sans", var(--font-family-sans);
+  font-size: 20px;
+  font-weight: 600;
+  font-variation-settings: "wdth" 100;
+  letter-spacing: 0.4px;
+  line-height: 1.4;
+}
+
+.subtitle {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.form {
+  width: 100%;
+}
+
+.fields,
+.actions {
+  gap: 8px;
+}
+
+.control {
+  width: 100%;
+}
+
+.successIllustration {
+  width: 180px;
+  height: 124px;
+}
+
+.errorSnackbar {
+  --color-bg-primary: #ffffff;
+  --color-text-primary: #000000e5;
+  --color-text-secondary: #00000080;
+}
+
+.warningIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-icon-danger);
+}
+
+.callout {
+  position: absolute;
+  right: 50px;
+  bottom: 54px;
+  display: flex;
+  width: 345px;
+  flex-direction: column;
+  gap: 28px;
+  align-items: flex-end;
+  color: #e5f4ff;
+  text-align: right;
+}
+
+.calloutNumber,
+.calloutText {
+  display: block;
+  width: 100%;
+  font-family: "TikTok Sans", var(--font-family-sans);
+  font-variation-settings: "wdth" 100;
+  line-height: 1.4;
+}
+
+.calloutNumber {
+  height: 200px;
+  font-size: 200px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.calloutText {
+  font-size: 40px;
+  font-weight: 400;
+}
+
+@media (max-width: 940px) {
+  .callout {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand {
+    top: 24px;
+    left: 24px;
+    width: 150px;
+    height: auto;
+  }
+}
+
+@media (max-height: 480px) {
+  .page {
+    min-height: 480px;
+  }
+}
