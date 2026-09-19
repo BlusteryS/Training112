@@ -49,7 +49,7 @@
 }
 
 .link {
-  color: var(--color-icon-primary);
+  color: var(--color-icon-secondary);
   transition: background-color 100ms ease-out;
 
   &:hover {
@@ -59,28 +59,6 @@
   &[aria-current='page'] {
     background: var(--color-bg-secondary);
   }
-}
-
-.icon {
-  display: block;
-  width: 24px;
-  height: 24px;
-  background: currentColor;
-  mask-position: center;
-  mask-repeat: no-repeat;
-  mask-size: contain;
-}
-
-.profile {
-  mask-image: url('../assets/navigation/profile.svg');
-}
-
-.documentation {
-  mask-image: url('../assets/navigation/documentation.svg');
-}
-
-.library {
-  mask-image: url('../assets/navigation/ui-library.svg');
 }
 
 .themeIcon {
