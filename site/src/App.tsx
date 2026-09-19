@@ -60,7 +60,7 @@ export function App() {
 
   return (
     <SnackbarProvider>
-      {session.status === 'loading' ? <main className="session-status" role="status">Загрузка…</main>
+      {session.status === 'loading' ? null
         : session.status === 'error' ? (
           <main className="session-status">
             <p role="alert">{session.message}</p>
