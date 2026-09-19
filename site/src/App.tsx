@@ -3,6 +3,9 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { Button, SnackbarProvider } from '@training112/components';
 import { ApiError, authApi, type User } from './auth/api';
 import { AuthContext } from './auth/AuthContext';
+import { AppLayout } from './layout/AppLayout';
+import { SectionPage } from './layout/SectionPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { ModalRoute } from './modals/ModalRoute';
 import { ComponentCatalogPage } from './pages/ComponentCatalogPage';
 import { LoginPage } from './pages/LoginPage';
@@ -66,8 +69,13 @@ export function App() {
         ) : session.status === 'anonymous' ? <LoginPage onLogin={handleLogin} /> : (
           <AuthContext.Provider value={{ user: session.user, logout }}>
             <Routes>
-              <Route element={<CatalogLayout />} path="/">
-                <Route element={<ModalRoute />} path="modal/form" />
+              <Route element={<AppLayout />} path="/">
+                <Route element={<ProfilePage />} index />
+                <Route element={<SectionPage title="Документация" />} path="docs" />
+                <Route element={<CatalogLayout />} path="ui">
+                  <Route element={<ModalRoute />} path="modal/form" />
+                </Route>
+                <Route element={<Navigate replace to="/ui/modal/form#modal" />} path="modal/form" />
               </Route>
               <Route element={<Navigate replace to="/" />} path="*" />
             </Routes>

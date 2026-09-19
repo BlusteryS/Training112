@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { AppRail } from './catalog/AppRail';
+import { IconButton } from '@training112/components/IconButton';
+import { Icon24Menu } from '@training112/icons';
 import { CatalogSidebar } from './catalog/CatalogSidebar';
 import styles from './ComponentCatalogPage.module.css';
 
@@ -111,10 +112,6 @@ export function ComponentCatalogPage() {
 
   return (
     <div className={styles.shell}>
-      <AppRail
-        isNavigationOpen={isNavigationOpen}
-        onNavigationToggle={() => setIsNavigationOpen((isOpen) => !isOpen)}
-      />
       <CatalogSidebar
         activeId={activeComponentId}
         isOpen={isNavigationOpen}
@@ -124,6 +121,17 @@ export function ComponentCatalogPage() {
       />
 
       <main className={styles.content} id={activeComponentId}>
+        <div className={styles.mobileHeader}>
+          <IconButton
+            aria-controls="catalog-sidebar"
+            aria-expanded={isNavigationOpen}
+            aria-label={isNavigationOpen ? 'Закрыть каталог' : 'Открыть каталог'}
+            onClick={() => setIsNavigationOpen((isOpen) => !isOpen)}
+          >
+            <Icon24Menu />
+          </IconButton>
+          <span>UI-библиотека</span>
+        </div>
         <Suspense fallback={null}>
           <ActiveShowcase />
         </Suspense>

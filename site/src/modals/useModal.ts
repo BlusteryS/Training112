@@ -13,7 +13,7 @@ export function useModal() {
 
   const open = useCallback(
     (id: ModalId) => {
-      navigate(`/modal/${id}${location.hash}`, {
+      navigate(`/ui/modal/${id}${location.hash}`, {
         state: { backgroundLocation: location } satisfies ModalLocationState,
       });
     },
@@ -28,7 +28,7 @@ export function useModal() {
       return;
     }
 
-    navigate('/#modal', { replace: true });
+    navigate('/ui#modal', { replace: true });
   }, [location.state, navigate]);
 
   return useMemo(() => ({ close, open }), [close, open]);
