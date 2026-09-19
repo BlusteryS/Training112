@@ -28,8 +28,8 @@ public record Credentials(String login, String password) {
 
     public static Credentials forCreation(String login, String password) {
         Credentials credentials = new Credentials(login, password);
-        if (password.codePointCount(0, password.length()) < 12) {
-            throw new ApiException(400, "invalid_password", "Пароль должен содержать от 12 до 128 символов.");
+        if (password.codePointCount(0, password.length()) < 8) {
+            throw new ApiException(400, "invalid_password", "Пароль должен содержать от 8 до 128 символов.");
         }
         return credentials;
     }

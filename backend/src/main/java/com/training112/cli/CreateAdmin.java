@@ -49,17 +49,16 @@ public final class CreateAdmin implements Callable<Integer> {
         AppConfig config = AppConfig.fromEnvironment();
         Credentials credentials = readCredentials();
         Vertx vertx = Vertx.vertx(new VertxOptions().setEventLoopPoolSize(1).setWorkerPoolSize(2));
-        Pool pool = Database.connect(vertx, config);
-        PasswordHasher passwords = new PasswordHasher(vertx);
         try {
+            Pool pool = Database.connect(vertx, config);
+            PasswordHasher passwords = new PasswordHasher(vertx);
             AuthRepository.Account account = passwords.hash(credentials.password())
                     .compose(hash -> new AuthRepository(pool).createAdmin(credentials.login(), hash))
                     .toCompletionStage().toCompletableFuture().get(30, TimeUnit.SECONDS);
             System.out.println("Администратор создан: " + account.login());
             return CommandLine.ExitCode.OK;
         } finally {
-            pool.close().eventually(passwords::close).eventually(vertx::close)
-                    .toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
+            vertx.close().toCompletionStage().toCompletableFuture().get(20, TimeUnit.SECONDS);
         }
     }
 
