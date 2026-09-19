@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+**/.gradle
+**/build
+**/*.tsbuildinfo
+**/.DS_Store
+.env
+.env.*
+scripts
+.local
+*.local
+README.md

@@ -1,0 +1,86 @@
+name: training112
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-training112}
+      POSTGRES_USER: ${DB_USER:-training112}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    shm_size: 128mb
+    mem_limit: 256m
+    logging: *logging
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-training112}
+      DB_USER: ${DB_USER:-training112}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/api/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 384m
+    stop_grace_period: 30s
+    logging: *logging
+
+  web:
+    build:
+      context: .
+      dockerfile: site/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 64m
+    logging: *logging
+
+volumes:
+  postgres_data:
