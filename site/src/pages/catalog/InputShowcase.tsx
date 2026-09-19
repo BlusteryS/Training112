@@ -37,6 +37,16 @@ const documentation: DocumentationRow[] = [
     values: ['ReactNode'],
   },
   {
+    name: 'withClearButton',
+    description: 'Кнопка очистки непустого поля, включена по умолчанию',
+    values: ['boolean'],
+  },
+  {
+    name: 'clearLabel',
+    description: 'Доступное название кнопки очистки',
+    values: ['string'],
+  },
+  {
     name: 'onChange',
     description: 'Обработчик изменения',
     values: ['ChangeEventHandler'],

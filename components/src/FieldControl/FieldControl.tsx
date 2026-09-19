@@ -49,7 +49,7 @@ export const FieldControl = forwardRef<HTMLElement, FieldControlProps>(function 
       {children}
 
       {after !== undefined ? (
-        <span aria-hidden="true" className={styles.icon}>
+        <span className={styles.icon}>
           {after}
         </span>
       ) : null}

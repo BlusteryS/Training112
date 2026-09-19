@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Icon20Search, Icon24Close } from '@training112/icons';
 import { classNames } from '../utils/classNames';
+import { clearInput } from '../utils/clearInput';
 import { setRef } from '../utils/setRef';
 import {
   FieldControl,
@@ -21,21 +22,6 @@ export type SearchProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | '
   withClearButton?: boolean;
 };
 
-function clearInput(input: HTMLInputElement) {
-  const valueSetter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    'value',
-  )?.set;
-
-  if (valueSetter) {
-    valueSetter.call(input, '');
-  } else {
-    input.value = '';
-  }
-
-  input.dispatchEvent(new InputEvent('input', { bubbles: true }));
-}
-
 export const Search = forwardRef<HTMLInputElement, SearchProps>(function Search(
   {
     className,
@@ -45,7 +31,7 @@ export const Search = forwardRef<HTMLInputElement, SearchProps>(function Search(
     onChange,
     readOnly = false,
     value,
-    withClearButton = false,
+    withClearButton = true,
     ...props
   },
   forwardedRef,

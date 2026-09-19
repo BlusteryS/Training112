@@ -78,7 +78,9 @@
 }
 
 .icon {
-  display: inline-grid;
+  display: inline-flex;
   flex: 0 0 auto;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }

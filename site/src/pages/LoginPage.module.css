@@ -1,18 +1,4 @@
 .page {
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f5;
-  --color-bg-disabled: #d9d9d9;
-  --color-bg-brand: #0d99ff;
-  --color-bg-brand-pressed: #007be5;
-  --color-bg-warning: #ffcd29;
-  --color-border-primary: #e6e6e6;
-  --color-border-selected: #0d99ff;
-  --color-text-primary: #000000e5;
-  --color-text-secondary: #00000080;
-  --color-text-tertiary: #0000004d;
-  --color-text-on-accent: #ffffff;
-  --color-icon-primary: #000000e5;
-
   position: relative;
   display: grid;
   place-items: center;
@@ -21,7 +7,7 @@
   min-height: 100svh;
   overflow: hidden;
   color: var(--color-text-primary);
-  background: #f2f9ff;
+  background: color-mix(in srgb, var(--color-bg-primary), var(--color-bg-brand-tertiary));
 }
 
 .brand {
@@ -42,7 +28,6 @@
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-promo);
   background: var(--color-bg-primary);
-
 }
 
 .intro,
@@ -106,12 +91,6 @@
   height: 124px;
 }
 
-.errorSnackbar {
-  --color-bg-primary: #ffffff;
-  --color-text-primary: #000000e5;
-  --color-text-secondary: #00000080;
-}
-
 .warningIcon {
   width: 20px;
   height: 20px;
@@ -127,7 +106,7 @@
   flex-direction: column;
   gap: 28px;
   align-items: flex-end;
-  color: #e5f4ff;
+  color: var(--color-bg-brand-tertiary);
   text-align: right;
 }
 

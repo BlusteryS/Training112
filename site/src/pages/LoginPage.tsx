@@ -9,6 +9,7 @@ import {
 } from '@training112/components';
 import { Icon16ExternalLink, Icon20Warning } from '@training112/icons';
 import { ApiError, authApi, type User } from '../auth/api';
+import { useTheme } from '../theme/useTheme';
 import brandLogo from '../assets/auth-brand.svg';
 import successIllustration from '../assets/auth-success.svg';
 import styles from './LoginPage.module.css';
@@ -21,6 +22,7 @@ type LoginPageProps = {
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const snackbar = useSnackbar();
+  useTheme();
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
@@ -60,7 +62,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
       snackbar.open({
         before: <Icon20Warning className={styles.warningIcon} />,
-        className: styles.errorSnackbar,
         title: hasInvalidCredentials
           ? 'Неверные данные'
           : isRegistration
@@ -146,6 +147,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 autoCapitalize="none"
                 spellCheck={false}
                 className={styles.control}
+                clearLabel="Очистить логин"
                 name="login"
                 onChange={(event) => setLogin(event.target.value)}
                 placeholder="Логин"
@@ -159,6 +161,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 minLength={isRegistration ? 12 : 1}
                 maxLength={128}
                 className={styles.control}
+                clearLabel="Очистить пароль"
                 name="password"
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Пароль"
@@ -172,6 +175,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     autoComplete="new-password"
                     className={styles.control}
                     disabled={isSubmitting}
+                    clearLabel="Очистить подтверждение пароля"
                     name="passwordConfirmation"
                     onChange={(event) => setConfirmation(event.target.value)}
                     placeholder="Повторите пароль"
@@ -210,7 +214,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </Button>
               {!isRegistration ? (
                 <button className={styles.forgotPassword} onClick={handleForgotPassword} type="button">
-                  Забыл пароль
+                  Забыли пароль
                 </button>
               ) : null}
             </div>
