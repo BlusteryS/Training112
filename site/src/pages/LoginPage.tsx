@@ -8,23 +8,27 @@ import {
   useSnackbar,
 } from '@training112/components';
 import { Icon16ExternalLink, Icon20Warning } from '@training112/icons';
+import { ApiError, authApi, type User } from '../auth/api';
 import brandLogo from '../assets/auth-brand.svg';
 import successIllustration from '../assets/auth-success.svg';
 import styles from './LoginPage.module.css';
 
-const DEMO_LOGIN = 'admin';
-const DEMO_PASSWORD = 'admin';
 const REDIRECT_DELAY_MS = 3000;
 
 type LoginPageProps = {
-  onLogin: () => void;
+  onLogin: (user: User) => void;
 };
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const snackbar = useSnackbar();
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoginSuccessful, setIsLoginSuccessful] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+  const isLoginSuccessful = authenticatedUser !== null;
+  const isRegistration = mode === 'register';
   const canSubmit = login.trim().length > 0 && password.length > 0;
 
   useEffect(() => {
@@ -32,29 +36,47 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       return;
     }
 
-    const redirectTimer = window.setTimeout(onLogin, REDIRECT_DELAY_MS);
+    const redirectTimer = window.setTimeout(() => authenticatedUser && onLogin(authenticatedUser), REDIRECT_DELAY_MS);
 
     return () => window.clearTimeout(redirectTimer);
-  }, [isLoginSuccessful, onLogin]);
+  }, [isLoginSuccessful, onLogin, authenticatedUser]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!canSubmit) {
+    if (!canSubmit || isSubmitting) return;
+    if (isRegistration && password !== confirmation) {
+      snackbar.open({ title: 'Пароли не совпадают', subtitle: 'Повторите выбранный пароль.' });
       return;
     }
+    setIsSubmitting(true);
+    try {
+      const { user } = await authApi[mode]({ login: login.trim(), password });
+      setPassword('');
+      setConfirmation('');
+      setAuthenticatedUser(user);
+    } catch (error) {
+      const hasInvalidCredentials =
+        !isRegistration && error instanceof ApiError && error.status === 401;
 
-    if (login.trim() !== DEMO_LOGIN || password !== DEMO_PASSWORD) {
       snackbar.open({
         before: <Icon20Warning className={styles.warningIcon} />,
         className: styles.errorSnackbar,
-        title: 'Неверные данные',
-        subtitle: 'Логин и пароль неверные. Обратитесь к оператору для восстановления доступа',
+        title: hasInvalidCredentials
+          ? 'Неверные данные'
+          : isRegistration
+            ? 'Не удалось зарегистрироваться'
+            : 'Не удалось войти',
+        subtitle: hasInvalidCredentials ? (
+          <>
+            Логин и пароль неверные.
+            <br />
+            Обратитесь к оператору для восстановления доступа
+          </>
+        ) : error instanceof Error ? error.message : 'Попробуйте ещё раз.',
       });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsLoginSuccessful(true);
   };
 
   const handleForgotPassword = () => {
@@ -90,7 +112,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <br />
                 в вашей помощи сейчас
               </h1>
-              <p className={styles.subtitle}>Самое время начать работу</p>
+              <p className={styles.subtitle}>{isRegistration ? 'Создайте аккаунт, чтобы начать работу' : 'Самое время начать работу'}</p>
             </div>
           ) : null}
         </div>
@@ -107,15 +129,22 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
             )}
             subtitle="Перенаправляем вас в личный кабинет специалиста службы 112"
-            title="Успешно вошли"
+            title={isRegistration ? 'Аккаунт создан' : 'Успешно вошли'}
           />
         ) : (
-          <form className={styles.form} onSubmit={handleSubmit}>
+          <form aria-busy={isSubmitting} className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.fields}>
               <Input
                 aria-label="Логин"
                 autoComplete="username"
                 autoFocus
+                required
+                disabled={isSubmitting}
+                minLength={3}
+                maxLength={32}
+                pattern="[a-zA-Z0-9_]{3,32}"
+                autoCapitalize="none"
+                spellCheck={false}
                 className={styles.control}
                 name="login"
                 onChange={(event) => setLogin(event.target.value)}
@@ -124,7 +153,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
               <Input
                 aria-label="Пароль"
-                autoComplete="current-password"
+                autoComplete={isRegistration ? 'new-password' : 'current-password'}
+                required
+                disabled={isSubmitting}
+                minLength={isRegistration ? 12 : 1}
+                maxLength={128}
                 className={styles.control}
                 name="password"
                 onChange={(event) => setPassword(event.target.value)}
@@ -132,26 +165,54 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 type="password"
                 value={password}
               />
+              {isRegistration ? (
+                <>
+                  <Input
+                    aria-label="Повторите пароль"
+                    autoComplete="new-password"
+                    className={styles.control}
+                    disabled={isSubmitting}
+                    name="passwordConfirmation"
+                    onChange={(event) => setConfirmation(event.target.value)}
+                    placeholder="Повторите пароль"
+                    required
+                    type="password"
+                    maxLength={128}
+                    value={confirmation}
+                  />
+                  <p className={styles.subtitle}>Логин: 3–32 латинские буквы, цифры или _. Пароль: от 12 символов.</p>
+                </>
+              ) : null}
             </div>
 
             <div className={styles.actions}>
               <Button
                 className={styles.control}
-                disabled={!canSubmit}
+                disabled={!canSubmit || isSubmitting}
                 size="large"
                 type="submit"
               >
-                Войти
+                {isSubmitting ? 'Подождите…' : isRegistration ? 'Создать аккаунт' : 'Войти'}
               </Button>
               <Button
                 className={styles.control}
                 mode="outline"
-                onClick={handleForgotPassword}
+                disabled={isSubmitting}
+                onClick={() => {
+                  setMode(isRegistration ? 'login' : 'register');
+                  setPassword('');
+                  setConfirmation('');
+                }}
                 size="large"
                 type="button"
               >
-                Забыл пароль
+                {isRegistration ? 'Уже есть аккаунт' : 'Зарегистрироваться'}
               </Button>
+              {!isRegistration ? (
+                <button className={styles.forgotPassword} onClick={handleForgotPassword} type="button">
+                  Забыл пароль
+                </button>
+              ) : null}
             </div>
           </form>
         )}

@@ -1,53 +1,78 @@
-import { useState } from 'react';
-import { Outlet, Route, Routes } from 'react-router-dom';
-import { SnackbarProvider } from '@training112/components/Snackbar';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Button, SnackbarProvider } from '@training112/components';
+import { ApiError, authApi, type User } from './auth/api';
+import { AuthContext } from './auth/AuthContext';
 import { ModalRoute } from './modals/ModalRoute';
 import { ComponentCatalogPage } from './pages/ComponentCatalogPage';
 import { LoginPage } from './pages/LoginPage';
 
-const AUTH_STORAGE_KEY = 'training112-authenticated';
-
-function getStoredAuthentication() {
-  try {
-    return window.sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
+type Session =
+  | { status: 'loading' }
+  | { status: 'anonymous' }
+  | { status: 'authenticated'; user: User }
+  | { status: 'error'; message: string };
 
 function CatalogLayout() {
-  return (
-    <>
-      <ComponentCatalogPage />
-      <Outlet />
-    </>
-  );
+  return <><ComponentCatalogPage /><Outlet /></>;
 }
 
 export function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(getStoredAuthentication);
+  const [session, setSession] = useState<Session>({ status: 'loading' });
+  const [retry, setRetry] = useState(0);
+  const sessionRevision = useRef(0);
 
-  const handleLogin = () => {
-    try {
-      window.sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
-    } catch {
-      // The login still works until the page is reloaded.
-    }
+  useEffect(() => {
+    const controller = new AbortController();
+    const refresh = () => {
+      const revision = ++sessionRevision.current;
+      authApi.me(controller.signal).then(({ user }) => {
+        if (revision === sessionRevision.current) setSession({ status: 'authenticated', user });
+      }).catch((error: unknown) => {
+        if (controller.signal.aborted || revision !== sessionRevision.current) return;
+        if (error instanceof ApiError && error.status === 401) {
+          setSession({ status: 'anonymous' });
+        } else {
+          setSession({ status: 'error', message: error instanceof Error ? error.message : 'Не удалось проверить сессию.' });
+        }
+      });
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      controller.abort();
+      window.removeEventListener('focus', refresh);
+    };
+  }, [retry]);
 
-    setIsAuthenticated(true);
-  };
+  const handleLogin = useCallback((user: User) => {
+    sessionRevision.current += 1;
+    setSession({ status: 'authenticated', user });
+  }, []);
+  const logout = useCallback(async () => {
+    await authApi.logout();
+    sessionRevision.current += 1;
+    setSession({ status: 'anonymous' });
+  }, []);
 
   return (
     <SnackbarProvider>
-      {isAuthenticated ? (
-        <Routes>
-          <Route element={<CatalogLayout />} path="/">
-            <Route element={<ModalRoute />} path="modal/form" />
-          </Route>
-        </Routes>
-      ) : (
-        <LoginPage onLogin={handleLogin} />
-      )}
+      {session.status === 'loading' ? <main className="session-status" role="status">Загрузка…</main>
+        : session.status === 'error' ? (
+          <main className="session-status">
+            <p role="alert">{session.message}</p>
+            <Button onClick={() => { setSession({ status: 'loading' }); setRetry((value) => value + 1); }}>Повторить</Button>
+          </main>
+        ) : session.status === 'anonymous' ? <LoginPage onLogin={handleLogin} /> : (
+          <AuthContext.Provider value={{ user: session.user, logout }}>
+            <Routes>
+              <Route element={<CatalogLayout />} path="/">
+                <Route element={<ModalRoute />} path="modal/form" />
+              </Route>
+              <Route element={<Navigate replace to="/" />} path="*" />
+            </Routes>
+          </AuthContext.Provider>
+        )}
     </SnackbarProvider>
   );
 }
