@@ -28,20 +28,16 @@ public final class AuthRepository {
                 .execute(Tuple.of(login)).map(rows -> rows.size() == 0 ? null : account(rows.iterator().next()));
     }
 
-    public Future<Account> register(String login, String passwordHash, String tokenHash, OffsetDateTime expiresAt,
-                                    String previousTokenHash) {
-        return pool.withTransaction(connection -> connection.query("SELECT pg_advisory_xact_lock(112, 1)").execute()
-                .compose(ignored -> connection.preparedQuery("""
-                        INSERT INTO app_user (id, login, password_hash, role)
-                        VALUES ($1, $2, $3, CASE WHEN EXISTS (SELECT 1 FROM app_user) THEN 'user' ELSE 'admin' END)
-                        ON CONFLICT (login) DO NOTHING RETURNING id, login, password_hash, role
-                        """).execute(Tuple.of(UUID.randomUUID(), login, passwordHash))).compose(rows -> {
+    public Future<Account> createAdmin(String login, String passwordHash) {
+        return pool.preparedQuery("""
+                INSERT INTO app_user (id, login, password_hash, role) VALUES ($1, $2, $3, 'admin')
+                ON CONFLICT (login) DO NOTHING RETURNING id, login, password_hash, role
+                """).execute(Tuple.of(UUID.randomUUID(), login, passwordHash)).compose(rows -> {
                     if (rows.size() == 0) {
                         return Future.failedFuture(new ApiException(409, "login_taken", "Этот логин уже занят."));
                     }
-                    Account account = account(rows.iterator().next());
-                    return replaceSession(connection, account.id(), tokenHash, expiresAt, previousTokenHash).map(account);
-                }));
+                    return Future.succeededFuture(account(rows.iterator().next()));
+                });
     }
 
     public Future<Void> createSession(UUID userId, String tokenHash, OffsetDateTime expiresAt, String previousTokenHash) {

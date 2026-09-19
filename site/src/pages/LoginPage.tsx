@@ -26,11 +26,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmation, setConfirmation] = useState('');
   const isLoginSuccessful = authenticatedUser !== null;
-  const isRegistration = mode === 'register';
   const canSubmit = login.trim().length > 0 && password.length > 0;
 
   useEffect(() => {
@@ -46,27 +43,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit || isSubmitting) return;
-    if (isRegistration && password !== confirmation) {
-      snackbar.open({ title: 'Пароли не совпадают', subtitle: 'Повторите выбранный пароль.' });
-      return;
-    }
     setIsSubmitting(true);
     try {
-      const { user } = await authApi[mode]({ login: login.trim(), password });
+      const { user } = await authApi.login({ login: login.trim(), password });
       setPassword('');
-      setConfirmation('');
       setAuthenticatedUser(user);
     } catch (error) {
       const hasInvalidCredentials =
-        !isRegistration && error instanceof ApiError && error.status === 401;
+        error instanceof ApiError && error.status === 401;
 
       snackbar.open({
         before: <Icon20Warning className={styles.warningIcon} />,
         title: hasInvalidCredentials
           ? 'Неверные данные'
-          : isRegistration
-            ? 'Не удалось зарегистрироваться'
-            : 'Не удалось войти',
+          : 'Не удалось войти',
         subtitle: hasInvalidCredentials ? (
           <>
             Логин и пароль неверные.
@@ -113,7 +103,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <br />
                 в вашей помощи сейчас
               </h1>
-              <p className={styles.subtitle}>{isRegistration ? 'Создайте аккаунт, чтобы начать работу' : 'Самое время начать работу'}</p>
+              <p className={styles.subtitle}>Самое время начать работу</p>
             </div>
           ) : null}
         </div>
@@ -130,7 +120,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
             )}
             subtitle="Перенаправляем вас в личный кабинет специалиста службы 112"
-            title={isRegistration ? 'Аккаунт создан' : 'Успешно вошли'}
+            title="Успешно вошли"
           />
         ) : (
           <form aria-busy={isSubmitting} className={styles.form} onSubmit={handleSubmit}>
@@ -155,10 +145,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
               <Input
                 aria-label="Пароль"
-                autoComplete={isRegistration ? 'new-password' : 'current-password'}
+                autoComplete="current-password"
                 required
                 disabled={isSubmitting}
-                minLength={isRegistration ? 12 : 1}
+                minLength={1}
                 maxLength={128}
                 className={styles.control}
                 clearLabel="Очистить пароль"
@@ -168,25 +158,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 type="password"
                 value={password}
               />
-              {isRegistration ? (
-                <>
-                  <Input
-                    aria-label="Повторите пароль"
-                    autoComplete="new-password"
-                    className={styles.control}
-                    disabled={isSubmitting}
-                    clearLabel="Очистить подтверждение пароля"
-                    name="passwordConfirmation"
-                    onChange={(event) => setConfirmation(event.target.value)}
-                    placeholder="Повторите пароль"
-                    required
-                    type="password"
-                    maxLength={128}
-                    value={confirmation}
-                  />
-                  <p className={styles.subtitle}>Логин: 3–32 латинские буквы, цифры или _. Пароль: от 12 символов.</p>
-                </>
-              ) : null}
             </div>
 
             <div className={styles.actions}>
@@ -196,27 +167,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 size="large"
                 type="submit"
               >
-                {isSubmitting ? 'Подождите…' : isRegistration ? 'Создать аккаунт' : 'Войти'}
+                {isSubmitting ? 'Подождите…' : 'Войти'}
               </Button>
-              <Button
-                className={styles.control}
-                mode="outline"
-                disabled={isSubmitting}
-                onClick={() => {
-                  setMode(isRegistration ? 'login' : 'register');
-                  setPassword('');
-                  setConfirmation('');
-                }}
-                size="large"
-                type="button"
-              >
-                {isRegistration ? 'Уже есть аккаунт' : 'Зарегистрироваться'}
-              </Button>
-              {!isRegistration ? (
-                <button className={styles.forgotPassword} onClick={handleForgotPassword} type="button">
-                  Забыли пароль
-                </button>
-              ) : null}
+              <button className={styles.forgotPassword} onClick={handleForgotPassword} type="button">
+                Забыли пароль
+              </button>
             </div>
           </form>
         )}

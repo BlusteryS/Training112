@@ -47,6 +47,5 @@ async function request<T>(path: string, body?: object, signal?: AbortSignal): Pr
 export const authApi = {
   me: (signal?: AbortSignal) => request<AuthResponse>('me', undefined, signal),
   login: (credentials: Credentials) => request<AuthResponse>('login', credentials),
-  register: (credentials: Credentials) => request<AuthResponse>('register', credentials),
   logout: () => request<void>('logout', {}),
 };

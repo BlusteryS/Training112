@@ -11,6 +11,8 @@ FROM eclipse-temurin:25-jre-alpine
 RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
 COPY --from=build --chown=app:app /build/build/install/training112-backend/ ./
+ENV PATH="/app/bin:${PATH}"
 USER app
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=65", "-XX:+ExitOnOutOfMemoryError", "-cp", "/app/lib/*", "com.training112.Main"]
+ENTRYPOINT []
+CMD ["training112-backend"]

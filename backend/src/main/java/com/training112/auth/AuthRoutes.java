@@ -47,8 +47,7 @@ public final class AuthRoutes {
             context.next();
         });
         router.route("/api/auth/*").handler(BodyHandler.create().setBodyLimit(4096).setHandleFileUploads(false));
-        router.post("/api/auth/register").handler(context -> authenticate(context, true));
-        router.post("/api/auth/login").handler(context -> authenticate(context, false));
+        router.post("/api/auth/login").handler(this::login);
         router.get("/api/auth/me").handler(this::currentUser);
         router.post("/api/auth/logout").handler(context -> repository.deleteSession(currentTokenHash(context))
                 .onSuccess(ignored -> {
@@ -57,10 +56,10 @@ public final class AuthRoutes {
                 }).onFailure(context::fail));
     }
 
-    private void authenticate(RoutingContext context, boolean registration) {
+    private void login(RoutingContext context) {
         Credentials credentials;
         try {
-            credentials = Credentials.parse(context.body().asJsonObject(), registration);
+            credentials = Credentials.parse(context.body().asJsonObject());
         } catch (DecodeException e) {
             context.fail(new ApiException(400, "invalid_json", "Некорректный JSON."));
             return;
@@ -72,24 +71,19 @@ public final class AuthRoutes {
         String tokenHash = SessionToken.hash(token);
         OffsetDateTime expiresAt = OffsetDateTime.now(ZoneOffset.UTC).plus(config.sessionTtl());
         String previousTokenHash = currentTokenHash(context);
-        repository.checkRateLimit(credentials.login()).compose(ignored -> {
-            if (registration) {
-                return passwords.hash(credentials.password()).compose(hash -> repository.register(
-                        credentials.login(), hash, tokenHash, expiresAt, previousTokenHash));
-            }
-            return repository.findByLogin(credentials.login()).compose(account ->
-                    passwords.verify(credentials.password(), account == null ? dummyPasswordHash : account.passwordHash())
-                            .compose(valid -> {
-                                if (!valid || account == null) {
-                                    return Future.failedFuture(new ApiException(401, "invalid_credentials", "Неверный логин или пароль."));
-                                }
-                                return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash).map(account);
-                            }));
-        }).onSuccess(account -> {
-            context.response().addCookie(cookie(token, config.sessionTtl().toSeconds()));
-            context.response().setStatusCode(registration ? 201 : 200)
-                    .end(new JsonObject().put("user", account.toJson()).encode());
-        }).onFailure(context::fail);
+        repository.checkRateLimit(credentials.login())
+                .compose(ignored -> repository.findByLogin(credentials.login()))
+                .compose(account -> passwords.verify(credentials.password(),
+                        account == null ? dummyPasswordHash : account.passwordHash()).compose(valid -> {
+                    if (!valid || account == null) {
+                        return Future.failedFuture(new ApiException(401, "invalid_credentials", "Неверный логин или пароль."));
+                    }
+                    return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash).map(account);
+                }))
+                .onSuccess(account -> {
+                    context.response().addCookie(cookie(token, config.sessionTtl().toSeconds()));
+                    context.response().end(new JsonObject().put("user", account.toJson()).encode());
+                }).onFailure(context::fail);
     }
 
     private void currentUser(RoutingContext context) {
