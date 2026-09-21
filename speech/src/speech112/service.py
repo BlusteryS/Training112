@@ -17,10 +17,13 @@ from speech112.config import AppConfig
 from speech112.llm import OpenAiCompatibleDialogueModel
 from speech112.metrics import TurnMetrics
 from speech112.session import VoiceSession
-from speech112.streaming_audio import StreamingAudio
+from speech112.streaming_audio import SendJson, StreamingAudio
 from speech112.stt import GigaAmRecognizer
 from speech112.telephone_noise import PhoneRecordings, RecordedPhoneNoise
+from speech112.transport_security import secure_socket
 from speech112.tts_runtime import open_tts
+from speech112.qwen_tts import QwenSynthesizer
+from speech112.vad import SileroDetector
 
 LOG = logging.getLogger(__name__)
 
@@ -34,18 +37,28 @@ class Peer:
 
 
 class Observer:
-    def __init__(self, send):
+    def __init__(self, send: SendJson) -> None:
         self.send = send
 
     async def emit(self, event: str, **data: Any) -> None:
-        await self.send({"type": event, **{
+        payload = {
             key: value.as_dict() if isinstance(value, TurnMetrics) else value
             for key, value in data.items()
-        }})
+        }
+        await self.send({"type": event, **payload})
 
 
 class SpeechService:
-    def __init__(self, socket, config, stt, llm, tts, recordings, max_sessions: int):
+    def __init__(
+        self,
+        socket: zmq.asyncio.Socket,
+        config: AppConfig,
+        stt: GigaAmRecognizer,
+        llm: OpenAiCompatibleDialogueModel,
+        tts: QwenSynthesizer,
+        recordings: PhoneRecordings,
+        max_sessions: int,
+    ) -> None:
         self.socket = socket
         self.config = config
         self.stt = stt
@@ -99,6 +112,9 @@ class SpeechService:
                         peer = Peer()
                         self.peers[identity] = peer
                         peer.task = asyncio.create_task(self.conversation(identity, peer, config))
+                        peer.task.add_done_callback(
+                            lambda task, key=identity: self.peers.pop(key, None)
+                        )
                 except (ValueError, KeyError, TypeError):
                     with suppress(zmq.ZMQError):
                         await self.event(identity, {"type": "unavailable", "message": "Некорректный запрос сеанса."})
@@ -114,18 +130,19 @@ class SpeechService:
         audio = None
         tasks = set()
 
-        async def send_event(value):
+        async def send_event(value: dict[str, object]) -> None:
             await self.event(identity, value)
 
-        async def send_audio(value):
+        async def send_audio(value: bytes) -> None:
             await self.send(identity, b"audio", value)
 
         try:
             if not self.tts.available or not await self.llm.ready():
                 await send_event({"type": "unavailable", "message": "Речевой сервис не готов."})
                 return
-            audio = await asyncio.to_thread(
-                StreamingAudio, config.audio, config.vad, send_event, send_audio,
+            detector = await asyncio.to_thread(SileroDetector, config.audio.input_sample_rate)
+            audio = StreamingAudio(
+                config.audio, config.vad, detector, send_event, send_audio,
                 RecordedPhoneNoise(self.recordings, config.telephone.level),
             )
             session = VoiceSession(config, audio, self.stt, self.llm,
@@ -147,7 +164,6 @@ class SpeechService:
             for task in tasks:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
-            self.peers.pop(identity, None)
             with suppress(zmq.ZMQError):
                 await send_event({"type": "closed"})
 
@@ -195,15 +211,16 @@ async def serve() -> None:
         socket.setsockopt(zmq.MAXMSGSIZE, 4096)
         socket.setsockopt(zmq.ROUTER_MANDATORY, 1)
         try:
-            socket.bind(os.environ.get("SPEECH_BIND", "tcp://0.0.0.0:5555"))
-            service = SpeechService(socket, config, stt, llm, tts, recordings, max_sessions)
-            task = asyncio.create_task(service.receive())
-            loop = asyncio.get_running_loop()
-            for signum in (signal.SIGINT, signal.SIGTERM):
-                loop.add_signal_handler(signum, task.cancel)
-            LOG.info("Speech ready; conversation limit: %s", max_sessions)
-            with suppress(asyncio.CancelledError):
-                await task
+            with secure_socket(context, socket):
+                socket.bind(os.environ.get("SPEECH_BIND", "tcp://0.0.0.0:5555"))
+                service = SpeechService(socket, config, stt, llm, tts, recordings, max_sessions)
+                task = asyncio.create_task(service.receive())
+                loop = asyncio.get_running_loop()
+                for signum in (signal.SIGINT, signal.SIGTERM):
+                    loop.add_signal_handler(signum, task.cancel)
+                LOG.info("Speech ready; conversation limit: %s", max_sessions)
+                with suppress(asyncio.CancelledError):
+                    await task
         finally:
             socket.close()
             context.term()

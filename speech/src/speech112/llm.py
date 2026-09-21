@@ -37,6 +37,7 @@ class OpenAiCompatibleDialogueModel:
             "temperature": self._config.temperature,
             "top_p": self._config.top_p,
             "stream": True,
+            "chat_template_kwargs": {"enable_thinking": False},
         }
         finished = False
         async with self._client.stream("POST", "/chat/completions", json=body) as response:

@@ -9,7 +9,7 @@ import numpy as np
 
 from speech112.audio import VadAudioChannel
 from speech112.config import AudioConfig, VadConfig
-from speech112.providers import AudioChunk
+from speech112.providers import AudioChunk, VoiceActivityDetector
 from speech112.telephone_noise import RecordedPhoneNoise
 
 SendJson = Callable[[dict[str, object]], Awaitable[None]]
@@ -22,11 +22,12 @@ class StreamingAudio(VadAudioChannel):
         self,
         audio: AudioConfig,
         vad: VadConfig,
+        detector: VoiceActivityDetector,
         send_json: SendJson,
         send_bytes: SendBytes,
         noise: RecordedPhoneNoise,
     ):
-        super().__init__(audio.input_sample_rate, audio.block_ms, vad)
+        super().__init__(audio.input_sample_rate, audio.block_ms, vad, detector)
         self._send_json = send_json
         self._send_bytes = send_bytes
         self._frame_bytes = audio.input_sample_rate * audio.block_ms // 1000 * 2

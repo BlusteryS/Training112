@@ -5,7 +5,6 @@ import logging
 import time
 from collections.abc import AsyncIterator
 from contextlib import aclosing
-from typing import Any
 
 import numpy as np
 
@@ -25,34 +24,6 @@ from speech112.scenario import Initiative, initiative_messages, system_prompt
 from speech112.speech_text import sentence_boundaries, validate_speech_text
 
 
-class ConsoleObserver:
-    def __init__(self) -> None:
-        self._answer_open = False
-
-    async def emit(self, event: str, **data: Any) -> None:
-        if event == "ready":
-            print("Готово. Говорите в микрофон. Ctrl+C — завершить. Используйте гарнитуру.")
-        elif event == "listening":
-            print("\r[слушаю]", flush=True)
-        elif event == "barge_in":
-            print("\r[перебивание: ответ остановлен]", flush=True)
-        elif event == "transcript":
-            print(f"\rОператор: {data['text']}")
-        elif event == "assistant":
-            prefix = " " if self._answer_open else "Звонящий: "
-            print(f"{prefix}{data['text']}", end="", flush=True)
-            self._answer_open = True
-        elif event == "metrics":
-            if self._answer_open:
-                print()
-                self._answer_open = False
-            print(f"METRICS {data['value'].as_json()}")
-        elif event == "error":
-            print(f"Ошибка обработки реплики: {data['message']}")
-        elif event == "ended":
-            print("\nЗвонящий завершил разговор.")
-
-
 class VoiceSession:
     def __init__(
         self,
@@ -61,14 +32,14 @@ class VoiceSession:
         stt: SpeechRecognizer,
         llm: DialogueModel,
         tts: SpeechSynthesizer,
-        observer: SessionObserver | None = None,
+        observer: SessionObserver,
     ) -> None:
         self._config = config
         self._audio = audio
         self._stt = stt
         self._llm = llm
         self._tts = tts
-        self._observer = observer or ConsoleObserver()
+        self._observer = observer
         self._messages = [
             {
                 "role": "system",

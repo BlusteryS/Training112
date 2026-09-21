@@ -5,22 +5,23 @@ import time
 from collections import deque
 
 import numpy as np
-import torch
 from numpy.typing import NDArray
-from silero_vad import load_silero_vad
 
 from speech112.config import VadConfig
 from speech112.events import EventKind, SpeechEvent
+from speech112.providers import VoiceActivityDetector
 
 
 class VadAudioChannel:
-    def __init__(self, sample_rate: int, block_ms: int, vad: VadConfig) -> None:
+    def __init__(
+        self, sample_rate: int, block_ms: int, vad: VadConfig, detector: VoiceActivityDetector
+    ) -> None:
         self._input_sample_rate = sample_rate
         self._block_ms = block_ms
         self._vad_config = vad
         self._frames: asyncio.Queue[NDArray[np.float32]] = asyncio.Queue(maxsize=64)
         self.events: asyncio.Queue[SpeechEvent] = asyncio.Queue()
-        self._vad = load_silero_vad(onnx=True)
+        self._vad = detector
         self._playing = False
         self._playback_generation = 0
         self._overflow = False
@@ -42,8 +43,7 @@ class VadAudioChannel:
             frame = await self._frames.get()
             if self._overflow:
                 raise RuntimeError("Обработка микрофона отстаёт: очередь аудио переполнена")
-            tensor = torch.from_numpy(frame)
-            probability = float(self._vad(tensor, self._input_sample_rate).item())
+            probability = self._vad.probability(frame)
             threshold = (
                 self._vad_config.barge_in_threshold if self._playing else self._vad_config.threshold
             )
@@ -76,7 +76,7 @@ class VadAudioChannel:
                 speaking = False
                 speech_run = 0
                 silence_run = 0
-                self._vad.reset_states()
+                self._vad.reset()
 
     @property
     def playback_generation(self) -> int:
@@ -91,4 +91,3 @@ class VadAudioChannel:
             self._overflow = True
             return
         self._frames.put_nowait(frame)
-

@@ -18,6 +18,12 @@ class AudioChunk:
     sample_rate: int
 
 
+class VoiceActivityDetector(Protocol):
+    def probability(self, frame: NDArray[np.float32]) -> float: ...
+
+    def reset(self) -> None: ...
+
+
 class SpeechRecognizer(Protocol):
     async def transcribe(self, audio: NDArray[np.float32]) -> str: ...
 

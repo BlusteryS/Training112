@@ -152,5 +152,8 @@ def _expand_environment(value: Any) -> Any:
     if isinstance(value, list):
         return [_expand_environment(item) for item in value]
     if isinstance(value, str):
-        return os.path.expandvars(value)
+        expanded = os.path.expandvars(value)
+        if "${" in expanded:
+            raise ValueError(f"Unresolved environment variable in configuration: {value}")
+        return expanded
     return value
