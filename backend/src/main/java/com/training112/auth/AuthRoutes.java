@@ -14,7 +14,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 public final class AuthRoutes {
-    private static final String COOKIE = "training112_session";
     private final AuthRepository repository;
     private final PasswordHasher passwords;
     private final AppConfig config;
@@ -49,7 +48,7 @@ public final class AuthRoutes {
         router.route("/api/auth/*").handler(BodyHandler.create().setBodyLimit(4096).setHandleFileUploads(false));
         router.post("/api/auth/login").handler(this::login);
         router.get("/api/auth/me").handler(this::currentUser);
-        router.post("/api/auth/logout").handler(context -> repository.deleteSession(currentTokenHash(context))
+        router.post("/api/auth/logout").handler(context -> repository.deleteSession(AuthSession.tokenHash(context))
                 .onSuccess(ignored -> {
                     context.response().addCookie(cookie("", 0));
                     context.response().setStatusCode(204).end();
@@ -70,7 +69,7 @@ public final class AuthRoutes {
         String token = SessionToken.create();
         String tokenHash = SessionToken.hash(token);
         OffsetDateTime expiresAt = OffsetDateTime.now(ZoneOffset.UTC).plus(config.sessionTtl());
-        String previousTokenHash = currentTokenHash(context);
+        String previousTokenHash = AuthSession.tokenHash(context);
         repository.checkRateLimit(credentials.login())
                 .compose(ignored -> repository.findByLogin(credentials.login()))
                 .compose(account -> passwords.verify(credentials.password(),
@@ -87,7 +86,7 @@ public final class AuthRoutes {
     }
 
     private void currentUser(RoutingContext context) {
-        repository.findSession(currentTokenHash(context)).onSuccess(account -> {
+        repository.findSession(AuthSession.tokenHash(context)).onSuccess(account -> {
             if (account == null) {
                 context.response().addCookie(cookie("", 0));
                 context.fail(ApiException.unauthorized());
@@ -98,15 +97,8 @@ public final class AuthRoutes {
     }
 
     private Cookie cookie(String token, long maxAge) {
-        return Cookie.cookie(COOKIE, token).setPath("/api").setHttpOnly(true)
+        return Cookie.cookie(AuthSession.COOKIE, token).setPath("/api").setHttpOnly(true)
                 .setSameSite(CookieSameSite.STRICT).setSecure(config.secureCookie()).setMaxAge(maxAge);
     }
 
-    private static String currentTokenHash(RoutingContext context) {
-        Cookie cookie = context.request().getCookie(COOKIE);
-        if (cookie == null || !cookie.getValue().matches("[A-Za-z0-9_-]{43}")) {
-            return null;
-        }
-        return SessionToken.hash(cookie.getValue());
-    }
 }

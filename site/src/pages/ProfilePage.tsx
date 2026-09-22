@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Avatar,
   Button,
@@ -78,6 +79,7 @@ function Statistic({ description, icon, label, lowerIsBetter = false, previous, 
 
 export function ProfilePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <main aria-label="Профиль" className={styles.page}>
@@ -113,8 +115,8 @@ export function ProfilePage() {
       </section>
 
       <div className={styles.shift}>
-        <Button appearance="positive" className={styles.shiftButton} disabled size="large">
-          Начать смену
+        <Button appearance="positive" className={styles.shiftButton} onClick={() => navigate('/session')} size="large">
+          Начать сеанс
         </Button>
       </div>
 
