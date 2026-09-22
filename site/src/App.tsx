@@ -7,6 +7,7 @@ import { AppLayout } from './layout/AppLayout';
 import { PageLayout } from './layout/PageLayout';
 import { SectionPage } from './layout/SectionPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { SpeechPage } from './pages/SpeechPage';
 import { ModalRoute } from './modals/ModalRoute';
 import { ComponentCatalogPage } from './pages/ComponentCatalogPage';
 import { LoginPage } from './pages/LoginPage';
@@ -73,6 +74,7 @@ export function App() {
               <Route element={<AppLayout />} path="/">
                 <Route element={<PageLayout />}>
                   <Route element={<ProfilePage />} index />
+                  <Route element={<SpeechPage />} path="session" />
                   <Route element={<SectionPage title="Документация" />} path="docs" />
                 </Route>
                 <Route element={<CatalogLayout />} path="ui">
