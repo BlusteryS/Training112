@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.zeromq.ZMQ;
 
 public record SpeechConfig(List<String> endpoints, String serverKey,
                            String publicKey, String secretKey) {
@@ -28,6 +29,14 @@ public record SpeechConfig(List<String> endpoints, String serverKey,
         if (!(server.isEmpty() && pub.isEmpty() && secret.isEmpty())
                 && !(server.length() == 40 && pub.length() == 40 && secret.length() == 40)) {
             throw new IllegalArgumentException("Supply all three 40-character Z85 CURVE keys or none");
+        }
+        if (!server.isEmpty()) {
+            for (String key : List.of(server, pub, secret)) {
+                byte[] decoded = ZMQ.Curve.z85Decode(key);
+                if (decoded == null || decoded.length != 32) {
+                    throw new IllegalArgumentException("CURVE keys must use Z85 encoding");
+                }
+            }
         }
         return new SpeechConfig(endpoints, server, pub, secret);
     }

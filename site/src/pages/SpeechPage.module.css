@@ -42,6 +42,9 @@
 .line { display: flex; flex-direction: column; gap: 8px; margin: 0 0 24px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .line[data-speaker='operator'] strong { color: var(--color-text-brand); }
 
+.credits { margin: 0; color: var(--color-text-secondary); font-size: 12px; }
+.credits a { color: inherit; }
+
 @media (max-width: 640px) {
   .page { padding: 20px 16px; }
   .header { align-items: start; flex-direction: column; }

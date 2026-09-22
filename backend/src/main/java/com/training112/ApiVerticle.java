@@ -1,11 +1,11 @@
 package com.training112;
 
 import com.training112.auth.ApiException;
-import com.training112.speech.SpeechConfig;
-import com.training112.speech.SpeechRoutes;
 import com.training112.auth.AuthRepository;
 import com.training112.auth.AuthRoutes;
 import com.training112.auth.PasswordHasher;
+import com.training112.speech.SpeechConfig;
+import com.training112.speech.SpeechRoutes;
 import io.vertx.core.Future;
 import io.vertx.core.VerticleBase;
 import io.vertx.core.http.HttpServer;
@@ -69,7 +69,7 @@ public final class ApiVerticle extends VerticleBase {
             cleanupTimer = vertx.setPeriodic(300_000, ignored -> repository.cleanup()
                     .onFailure(error -> LOG.error("Session cleanup failed", error)));
             return vertx.createHttpServer(new HttpServerOptions().setHost("0.0.0.0").setPort(config.port())
-                            .setIdleTimeout(30).setMaxHeaderSize(8192)
+                            .setIdleTimeout(120).setMaxHeaderSize(8192)
                             .setMaxWebSocketFrameSize(4096).setMaxWebSocketMessageSize(4096))
                     .requestHandler(router).listen().onSuccess(httpServer -> {
                         server = httpServer;

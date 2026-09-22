@@ -95,19 +95,29 @@ class SpeechService:
                         continue
                     command = json.loads(payload)
                     if command["type"] == "voices":
-                        await self.event(identity, {
-                            "type": "voices", "default": self.config.voice_id,
-                            "voices": [{"id": v.id, "name": v.caller_name, "age": v.caller_age}
-                                       for v in self.config.voices],
-                        })
+                        await self.event(
+                            identity,
+                            {
+                                "type": "voices",
+                                "default": self.config.voice_id,
+                                "voices": [
+                                    {"id": v.id, "name": v.caller_name, "age": v.caller_age}
+                                    for v in self.config.voices
+                                ],
+                            },
+                        )
                     elif command["type"] == "start":
                         if command.get("version") != 1:
                             raise ValueError("Несовместимая версия аудиопротокола")
                         config = self.config.for_voice(command["voice"])
                         if len(self.peers) >= self.max_sessions:
-                            await self.event(identity, {
-                                "type": "busy", "message": "Все линии заняты. Попробуйте позже.",
-                            })
+                            await self.event(
+                                identity,
+                                {
+                                    "type": "busy",
+                                    "message": "Все линии заняты. Попробуйте позже.",
+                                },
+                            )
                             continue
                         peer = Peer()
                         self.peers[identity] = peer
@@ -117,7 +127,10 @@ class SpeechService:
                         )
                 except (ValueError, KeyError, TypeError):
                     with suppress(zmq.ZMQError):
-                        await self.event(identity, {"type": "unavailable", "message": "Некорректный запрос сеанса."})
+                        await self.event(
+                            identity,
+                            {"type": "unavailable", "message": "Некорректный запрос сеанса."},
+                        )
                 except zmq.ZMQError:
                     LOG.warning("Backend disconnected or exceeded its transport queue")
         finally:
@@ -142,13 +155,25 @@ class SpeechService:
                 return
             detector = await asyncio.to_thread(SileroDetector, config.audio.input_sample_rate)
             audio = StreamingAudio(
-                config.audio, config.vad, detector, send_event, send_audio,
+                config.audio,
+                config.vad,
+                detector,
+                send_event,
+                send_audio,
                 RecordedPhoneNoise(self.recordings, config.telephone.level),
             )
-            session = VoiceSession(config, audio, self.stt, self.llm,
-                                   self.tts.speaker(config.voice_id), Observer(send_event))
-            tasks = {asyncio.create_task(session.run()),
-                     asyncio.create_task(self.receive_audio(identity, peer, audio))}
+            session = VoiceSession(
+                config,
+                audio,
+                self.stt,
+                self.llm,
+                self.tts.speaker(config.voice_id),
+                Observer(send_event),
+            )
+            tasks = {
+                asyncio.create_task(session.run()),
+                asyncio.create_task(self.receive_audio(identity, peer, audio)),
+            }
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in done:
                 task.result()
@@ -157,7 +182,9 @@ class SpeechService:
         except Exception:
             LOG.exception("Conversation failed")
             with suppress(zmq.ZMQError):
-                await send_event({"type": "unavailable", "message": "Разговор прерван из-за ошибки сервиса."})
+                await send_event(
+                    {"type": "unavailable", "message": "Разговор прерван из-за ошибки сервиса."}
+                )
         finally:
             if audio is not None:
                 audio.close()
@@ -196,9 +223,15 @@ async def serve() -> None:
     max_sessions = int(os.environ.get("SPEECH_MAX_SESSIONS", "1"))
     if not 1 <= max_sessions <= 128:
         raise ValueError("SPEECH_MAX_SESSIONS must be between 1 and 128")
-    if (config.audio.input_sample_rate, config.audio.output_sample_rate, config.audio.block_ms) != (16000, 24000, 32):
+    if (config.audio.input_sample_rate, config.audio.output_sample_rate, config.audio.block_ms) != (
+        16000,
+        24000,
+        32,
+    ):
         raise ValueError("Protocol v1 requires 16 kHz input, 24 kHz output and 32 ms frames")
-    recordings = await asyncio.to_thread(PhoneRecordings.load, Path(config.telephone.directory), config.audio.output_sample_rate)
+    recordings = await asyncio.to_thread(
+        PhoneRecordings.load, Path(config.telephone.directory), config.audio.output_sample_rate
+    )
     stt = await asyncio.to_thread(GigaAmRecognizer, config.stt)
     await asyncio.to_thread(stt.warmup)
     async with open_tts(config) as tts:

@@ -222,10 +222,12 @@ class VoiceSession:
             metrics.interrupted = True
             await self._observer.emit("metrics", value=metrics)
             raise
-        except Exception as error:
+        except Exception:
             self._audio.interrupt()
             logging.exception("Ошибка обработки реплики")
-            await self._observer.emit("error", message=str(error))
+            await self._observer.emit(
+                "error", message="Не удалось обработать реплику. Повторите, пожалуйста."
+            )
         finally:
             if collector is not None:
                 collector.cancel()
