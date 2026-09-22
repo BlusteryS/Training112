@@ -10,4 +10,7 @@
 scripts
 .local
 *.local
-README.md
+speech/.models
+speech/.venv*
+speech/.cache
+**/__pycache__

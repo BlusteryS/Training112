@@ -41,6 +41,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      SPEECH_ENDPOINTS: ${SPEECH_ENDPOINTS:-tcp://host.docker.internal:5555}
+      SPEECH_CURVE_SERVER_KEY: ${SPEECH_CURVE_SERVER_KEY:-}
+      SPEECH_CURVE_PUBLIC_KEY: ${SPEECH_CURVE_PUBLIC_KEY:-}
+      SPEECH_CURVE_SECRET_KEY: ${SPEECH_CURVE_SECRET_KEY:-}
+    extra_hosts:
+      - host.docker.internal:host-gateway
     depends_on:
       db:
         condition: service_healthy
