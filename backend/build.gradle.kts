@@ -16,6 +16,7 @@ java {
 dependencies {
     implementation(platform("io.vertx:vertx-stack-depchain:5.1.8"))
     implementation("io.vertx:vertx-web")
+    implementation("org.zeromq:jeromq:0.6.0")
     implementation("io.vertx:vertx-pg-client")
     implementation("com.password4j:password4j:1.8.4")
     implementation("info.picocli:picocli:4.7.7")
