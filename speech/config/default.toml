@@ -1,0 +1,91 @@
+voice_id = "sergey"
+
+[audio]
+input_sample_rate = 16000
+output_sample_rate = 24000
+block_ms = 32
+
+[vad]
+threshold = 0.55
+barge_in_threshold = 0.72
+speech_start_ms = 96
+silence_end_ms = 480
+pre_roll_ms = 224
+max_utterance_seconds = 30
+
+[stt]
+model = "v3_rnnt"
+device = "cuda"
+language = "ru"
+fp16_encoder = true
+download_root = ".models/gigaam"
+
+[llm]
+base_url = "${SPEECH_LLM_URL}"
+api_key = "local"
+model = "local-model"
+temperature = 0.75
+top_p = 0.95
+first_sentence_min_chars = 18
+
+[conversation]
+idle_seconds = 8
+idle_repeat_seconds = 15
+part_pause_ms = 180
+
+[tts]
+model_dir = ".models/qwen3-tts-1.7b-base"
+python = "/opt/qwen/bin/python"
+device = "cuda:0"
+chunk_size = 8
+max_sequence_length = 2048
+
+[telephone]
+directory = "assets/telephone"
+level = 0.65
+
+[scenario]
+emotion = "calm"
+location = "Москва, улица Профсоюзная, дом 18, третий подъезд"
+incident = "В квартире сильный запах дыма, виден дым из кухни"
+difficulty = "medium"
+
+[voices.sergey]
+caller_name = "Сергей"
+caller_age = 20
+reference_audio = "assets/voices/sergey.wav"
+reference_start_seconds = 0.0
+reference_end_seconds = 9.32
+reference_text = "Организацию Ростелеком, все те, кто работают там, связаны с продвижением, с оборудованием, вы куски говна ебаного и пидорасье."
+
+[voices.varvara]
+caller_name = "Варвара"
+caller_age = 20
+reference_audio = "assets/voices/varvara.ogg"
+reference_start_seconds = 4.9
+reference_end_seconds = 12.85
+reference_text = "Вот это Ньюкасл мне выдала успешно. Я зашла в Тинькофф, стала типа нажимать моя подписка, чтобы посмотреть типа активно, неактивно."
+
+[voices.vlad]
+caller_name = "Влад"
+caller_age = 28
+reference_audio = "assets/voices/vlad.wav"
+reference_start_seconds = 0.0
+reference_end_seconds = 13.60
+reference_text = "Отвечаю на некоторые ваши вопросы. Значит, дряники я люблю. Другие соцсети, возможно, буду развивать. Люблю вкусно покушать, вкусно также готовлю."
+
+[voices.oleg]
+caller_name = "Олег"
+caller_age = 18
+reference_audio = "assets/voices/oleg.ogg"
+reference_start_seconds = 0.0
+reference_end_seconds = 11.65
+reference_text = "Сегодня утром я вышел из дома чуть раньше обычного и заметил, как свежий ветер качает ветви деревьев, а яркое солнце медленно появляется над крышами."
+
+[voices.egor]
+caller_name = "Егор"
+caller_age = 21
+reference_audio = "assets/voices/egor.ogg"
+reference_start_seconds = 0.0
+reference_end_seconds = 4.3135
+reference_text = "Какой контракт, дебилы? Я просто кабачки таскал."

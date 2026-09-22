@@ -8,3 +8,9 @@ dist
 !.env.example
 .gradle
 backend/build
+
+speech/.models/
+speech/.venv*/
+speech/.cache/
+**/__pycache__/
+*.pyc
