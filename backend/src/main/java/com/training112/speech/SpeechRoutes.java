@@ -31,6 +31,12 @@ public final class SpeechRoutes {
     }
 
     public void mount(Router router) {
+        router.get("/api/speech/session").handler(context -> {
+            // Keep the upgrade request unread while authentication awaits the database.
+            context.request().pause();
+            context.addEndHandler(ignored -> context.request().resume());
+            context.next();
+        });
         router.route("/api/speech/*").handler(context -> {
             if (stopping) {
                 context.fail(new ApiException(503, "shutting_down", "Сервер перезапускается."));
