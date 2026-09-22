@@ -14,3 +14,5 @@ speech/.venv*/
 speech/.cache/
 **/__pycache__/
 *.pyc
+
+*.[mM][dD]
