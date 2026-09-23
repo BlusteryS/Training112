@@ -9,22 +9,45 @@ from numpy.typing import NDArray
 
 from speech112.config import VadConfig
 from speech112.events import EventKind, SpeechEvent
-from speech112.providers import VoiceActivityDetector
+from speech112.providers import RecognitionStream, VoiceActivityDetector
 
 
 class VadAudioChannel:
     def __init__(
-        self, sample_rate: int, block_ms: int, vad: VadConfig, detector: VoiceActivityDetector
+        self,
+        sample_rate: int,
+        block_ms: int,
+        vad: VadConfig,
+        detector: VoiceActivityDetector,
+        recognizer: RecognitionStream,
     ) -> None:
         self._input_sample_rate = sample_rate
         self._block_ms = block_ms
         self._vad_config = vad
         self._frames: asyncio.Queue[NDArray[np.float32]] = asyncio.Queue(maxsize=64)
-        self.events: asyncio.Queue[SpeechEvent] = asyncio.Queue()
+        self.events: asyncio.Queue[SpeechEvent] = asyncio.Queue(maxsize=16)
         self._vad = detector
+        self._recognizer = recognizer
         self._playing = False
         self._playback_generation = 0
         self._overflow = False
+        self._capture_epoch = 0
+        self._suspended = False
+
+    def suspend(self) -> None:
+        self._suspended = True
+        self._capture_epoch += 1
+        self.interrupt()
+        while not self._frames.empty():
+            self._frames.get_nowait()
+        while not self.events.empty():
+            self.events.get_nowait()
+        self.events.put_nowait(SpeechEvent(EventKind.SUSPENDED))
+
+    def resume(self) -> None:
+        self._suspended = False
+        self._capture_epoch += 1
+        self.events.put_nowait(SpeechEvent(EventKind.RESUMED))
 
     async def detect_speech(self) -> None:
         frame_ms = self._block_ms
@@ -38,9 +61,18 @@ class VadAudioChannel:
         silence_run = 0
         speaking = False
         last_speech_at = time.perf_counter()
+        epoch = self._capture_epoch
 
         while True:
             frame = await self._frames.get()
+            if epoch != self._capture_epoch:
+                epoch = self._capture_epoch
+                self._recognizer.reset()
+                self._vad.reset()
+                pre_roll.clear()
+                utterance = []
+                speaking = False
+                speech_run = silence_run = 0
             if self._overflow:
                 raise RuntimeError("Обработка микрофона отстаёт: очередь аудио переполнена")
             probability = self._vad.probability(frame)
@@ -66,17 +98,27 @@ class VadAudioChannel:
                         await self.events.put(SpeechEvent(EventKind.BARGE_IN))
                     else:
                         await self.events.put(SpeechEvent(EventKind.SPEECH_STARTED))
+                    await self._recognizer.accept(np.concatenate(utterance))
                 continue
 
             utterance.append(frame)
+            await self._recognizer.accept(frame)
+            if epoch != self._capture_epoch:
+                continue
             if silence_run >= end_frames or len(utterance) >= max_frames:
+                text = await self._recognizer.finish()
+                if epoch != self._capture_epoch:
+                    continue
                 audio = np.concatenate(utterance).astype(np.float32, copy=False)
-                await self.events.put(SpeechEvent(EventKind.SPEECH_ENDED, audio, last_speech_at))
+                await self.events.put(
+                    SpeechEvent(EventKind.SPEECH_ENDED, audio, last_speech_at, text)
+                )
                 utterance = []
                 speaking = False
                 speech_run = 0
                 silence_run = 0
                 self._vad.reset()
+                self._recognizer.reset()
 
     @property
     def playback_generation(self) -> int:
@@ -87,6 +129,8 @@ class VadAudioChannel:
         self._playing = False
 
     def _enqueue_frame(self, frame: NDArray[np.float32]) -> None:
+        if self._suspended:
+            return
         if self._frames.full():
             self._overflow = True
             return

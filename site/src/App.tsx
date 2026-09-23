@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
-import { Button, SnackbarProvider } from '@training112/components';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { ApiError, authApi, type User } from './auth/api';
-import { AuthContext } from './auth/AuthContext';
-import { AppLayout } from './layout/AppLayout';
-import { PageLayout } from './layout/PageLayout';
-import { SectionPage } from './layout/SectionPage';
-import { ProfilePage } from './pages/ProfilePage';
+import { AuthContext, useAuth } from './auth/AuthContext';
 import { SpeechPage } from './pages/SpeechPage';
-import { ModalRoute } from './modals/ModalRoute';
-import { ComponentCatalogPage } from './pages/ComponentCatalogPage';
 import { LoginPage } from './pages/LoginPage';
+import { Management } from './management/Management';
+import { Assignments } from './pages/Assignments';
 
 type Session =
   | { status: 'loading' }
@@ -18,23 +13,34 @@ type Session =
   | { status: 'authenticated'; user: User }
   | { status: 'error'; message: string };
 
-function CatalogLayout() {
-  return <><ComponentCatalogPage /><Outlet /></>;
+function Home() {
+  const { user, logout } = useAuth();
+  const [error, setError] = useState('');
+  return <main>
+    <h1>Тренажёр оператора ДДС</h1>
+    <p>Пользователь: {user.login}</p>
+    {user.role === 'user' && <Assignments />}
+    <Management />
+    <button onClick={() => { void logout().catch((cause: unknown) => {
+      setError(cause instanceof Error ? cause.message : 'Не удалось выйти.');
+    }); }}>Выйти</button>
+    {error && <p role="alert">{error}</p>}
+  </main>;
 }
 
 export function App() {
   const [session, setSession] = useState<Session>({ status: 'loading' });
   const [retry, setRetry] = useState(0);
-  const sessionRevision = useRef(0);
+  const authRequest = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
     const refresh = () => {
-      const revision = ++sessionRevision.current;
+      const request = ++authRequest.current;
       authApi.me(controller.signal).then(({ user }) => {
-        if (revision === sessionRevision.current) setSession({ status: 'authenticated', user });
+        if (request === authRequest.current) setSession({ status: 'authenticated', user });
       }).catch((error: unknown) => {
-        if (controller.signal.aborted || revision !== sessionRevision.current) return;
+        if (controller.signal.aborted || request !== authRequest.current) return;
         if (error instanceof ApiError && error.status === 401) {
           setSession({ status: 'anonymous' });
         } else {
@@ -51,41 +57,32 @@ export function App() {
   }, [retry]);
 
   const handleLogin = useCallback((user: User) => {
-    sessionRevision.current += 1;
+    authRequest.current += 1;
     setSession({ status: 'authenticated', user });
   }, []);
   const logout = useCallback(async () => {
     await authApi.logout();
-    sessionRevision.current += 1;
+    authRequest.current += 1;
     setSession({ status: 'anonymous' });
   }, []);
 
   return (
-    <SnackbarProvider>
-      {session.status === 'loading' ? null
+    <>
+      {session.status === 'loading' ? <p role="status">Проверяем вход…</p>
         : session.status === 'error' ? (
-          <main className="session-status">
+          <main>
             <p role="alert">{session.message}</p>
-            <Button onClick={() => { setSession({ status: 'loading' }); setRetry((value) => value + 1); }}>Повторить</Button>
+            <button onClick={() => { setSession({ status: 'loading' }); setRetry((value) => value + 1); }}>Повторить</button>
           </main>
         ) : session.status === 'anonymous' ? <LoginPage onLogin={handleLogin} /> : (
           <AuthContext.Provider value={{ user: session.user, logout }}>
             <Routes>
-              <Route element={<SpeechPage />} path="/session" />
-              <Route element={<AppLayout />} path="/">
-                <Route element={<PageLayout />}>
-                  <Route element={<ProfilePage />} index />
-                  <Route element={<SectionPage title="Документация" />} path="docs" />
-                </Route>
-                <Route element={<CatalogLayout />} path="ui">
-                  <Route element={<ModalRoute />} path="modal/form" />
-                </Route>
-                <Route element={<Navigate replace to="/ui/modal/form#modal" />} path="modal/form" />
-              </Route>
+              <Route element={session.user.role === 'user' ? <SpeechPage /> : <Navigate replace to="/" />} path="/session" />
+              <Route element={<Home />} path="/" />
               <Route element={<Navigate replace to="/" />} path="*" />
             </Routes>
           </AuthContext.Provider>
         )}
-    </SnackbarProvider>
+    </>
   );
 }

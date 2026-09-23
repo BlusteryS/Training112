@@ -1,121 +1,61 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, Cell, Placeholder } from '@training112/components';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
+import { finishAttempt, startAssignedAttempt } from '../speech/trainingApi';
 import { VoiceCall } from '../speech/VoiceCall';
-import styles from './SpeechPage.module.css';
 
-export type CallPhase = 'waiting' | 'active' | 'error';
+export type CallPhase = 'waiting' | 'active' | 'error' | 'finished';
 export type CallLine = { speaker: 'operator' | 'caller'; text: string; turn?: number };
-
-const plurals = new Intl.PluralRules('ru');
-function waitingTime(seconds: number) {
-  const word = { one: 'секунда', few: 'секунды', many: 'секунд', other: 'секунды' };
-  return `${seconds} ${word[plurals.select(seconds) as keyof typeof word] ?? 'секунд'}`;
-}
 
 function duration(seconds: number) {
   return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-function randomPhoneNumber() {
-  const digits = Math.floor(Math.random() * 1_000_000_000).toString().padStart(9, '0');
-  return `+7 (9${digits.slice(0, 2)}) ${digits.slice(2, 5)}-${digits.slice(5, 7)}-${digits.slice(7)}`;
-}
-
-export function SpeechScreen({ phase, phoneNumber, lines, remaining, elapsed, message, onCancel, onRetry, onEnd }: {
+export function SpeechScreen({ phase, phoneNumber, lines, elapsed, remaining, message, finishing, onCancel, onRetry, onEnd }: {
   phase: CallPhase;
   phoneNumber: string;
   lines: CallLine[];
-  remaining: number;
+  remaining: number | null;
   elapsed: number;
   message: string;
+  finishing: boolean;
   onCancel: () => void;
   onRetry: () => void;
   onEnd: () => void;
 }) {
-  const transcript = useRef<HTMLDivElement>(null);
-  const follow = useRef(true);
-
-  useEffect(() => {
-    if (follow.current) transcript.current?.scrollTo({ top: transcript.current.scrollHeight });
-  }, [lines]);
-
-  if (phase === 'waiting' || phase === 'error') {
-    return (
-      <main className={styles.waiting}>
-        <Placeholder
-          icon={phase === 'waiting' ? <span aria-hidden="true" className={styles.spinner} /> : undefined}
-          title={<span role="status">{phase === 'waiting' ? 'Ожидаем запрос' : 'Не удалось начать звонок'}</span>}
-          subtitle={phase === 'waiting' ? `Примерное время ожидания: ${waitingTime(remaining)}` : message}
-          actions={phase === 'waiting'
-            ? <Button mode="outline" onClick={onCancel} size="large">Отменить поиск</Button>
-            : <><Button onClick={onRetry} size="large">Повторить</Button><Button mode="outline" onClick={onCancel} size="large">В профиль</Button></>}
-        />
-      </main>
-    );
-  }
-
-  return (
-    <main aria-label="Учебный звонок" className={styles.workspace}>
-      <section aria-label="Звонок и история сообщений" className={styles.call}>
-        <header className={styles.header}>
-          <Cell
-            subhead={<span role="status">Активный звонок</span>}
-            title={phoneNumber}
-            after={<Badge aria-label={`Длительность звонка ${duration(elapsed)}`} className={styles.timer} role="timer">{duration(elapsed)}</Badge>}
-          />
-        </header>
-        <section aria-labelledby="call-history-title" className={styles.history}>
-          <header className={styles.historyHeading}>
-            <h1 id="call-history-title">История звонка</h1>
-            <p>Здесь хранится весь диалог в реальном времени</p>
-          </header>
-          <div
-            aria-label="Сообщения разговора"
-            aria-live="polite"
-            aria-relevant="additions text"
-            className={styles.transcript}
-            onScroll={(event) => {
-              const element = event.currentTarget;
-              follow.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48;
-            }}
-            ref={transcript}
-            role="log"
-          >
-            {lines.map((line, index) => {
-              const name = line.speaker === 'caller' ? 'Заявитель' : 'Оператор';
-              return (
-                <Card className={styles.message} key={index}>
-                  <div className={styles.messageBody}>
-                    <Avatar aria-hidden="true" name={name} size={32} variant="placeholder" />
-                    <div className={styles.messageText}>
-                      <span className={styles.speaker}>{name}</span>
-                      <p>{line.text}</p>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-        <footer className={styles.footer}>
-          <Button appearance="negative" mode="outline" onClick={onEnd}>Завершить звонок</Button>
-        </footer>
-      </section>
-      <div aria-hidden="true" className={styles.reserved} />
-    </main>
-  );
+  if (phase !== 'active') return <main>
+    <h1>{phase === 'waiting' ? 'Подключаем учебный звонок' : phase === 'finished' ? 'Разговор завершён' : 'Звонок прерван'}</h1>
+    <p role={phase === 'error' ? 'alert' : 'status'}>{message}</p>
+    {phase === 'waiting' && remaining !== null && <p>Ожидание подключения: около {remaining} сек.</p>}
+    {phase === 'error' && <button disabled={finishing} onClick={onRetry}>Повторить подключение</button>}
+    <button onClick={onCancel}>К моим заданиям</button>
+  </main>;
+  return <main aria-label="Учебный звонок">
+    <h1>{phoneNumber}</h1>
+    <p role="timer" aria-label="Длительность звонка">{duration(elapsed)}</p>
+    <section aria-label="Сообщения разговора" role="log" aria-live="polite" aria-relevant="additions text">
+      {lines.map((line, index) => <p key={index}>
+        <strong>{line.speaker === 'caller' ? 'Заявитель' : 'Оператор'}:</strong> {line.text}
+      </p>)}
+    </section>
+    <p role="status">{message}</p>
+    <button onClick={onEnd}>Завершить звонок</button>
+  </main>;
 }
 
 export function SpeechPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [search] = useSearchParams();
+  const assignmentId = search.get('assignment_id') ?? '';
   const [phase, setPhase] = useState<CallPhase>('waiting');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [lines, setLines] = useState<CallLine[]>([]);
   const [message, setMessage] = useState('');
+  const [finishing, setFinishing] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [waitUntil, setWaitUntil] = useState(() => Date.now() + 5_000);
+  const [waitUntil, setWaitUntil] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now);
   const call = useRef<VoiceCall | null>(null);
 
@@ -126,9 +66,23 @@ export function SpeechPage() {
 
   useEffect(() => {
     let admitted = false;
-    const current = new VoiceCall({
-      status: (text) => { if (call.current === current) setMessage(text); },
-      waiting: (seconds) => {
+    let attemptId: string | undefined;
+    let finishRequested = false;
+    async function finish(failed = false) {
+      if (!attemptId || finishRequested) return;
+      finishRequested = true;
+      if (!disposed) setFinishing(true);
+      try { await finishAttempt(attemptId, failed); }
+      catch (error) {
+        finishRequested = false;
+        if (!disposed) setMessage(error instanceof Error ? error.message : 'Не удалось завершить попытку. Откройте текущее задание повторно.');
+      } finally { if (!disposed) setFinishing(false); }
+    }
+    let current: VoiceCall;
+    let disposed = false;
+    const callbacks = {
+      status: (text: string) => { if (call.current === current) setMessage(text); },
+      waiting: (seconds: number) => {
         if (call.current === current) {
           const receivedAt = Date.now();
           setNow(receivedAt);
@@ -138,11 +92,11 @@ export function SpeechPage() {
       ready: () => {
         if (call.current !== current) return;
         admitted = true;
-        setPhoneNumber(randomPhoneNumber());
-        setStartedAt(Date.now());
+        setPhoneNumber('Учебный звонок');
+        setStartedAt((previous) => previous ?? Date.now());
         setPhase('active');
       },
-      text: (speaker, text, turn) => {
+      text: (speaker: 'operator' | 'caller', text: string, turn?: number) => {
         if (call.current !== current) return;
         setLines((previous) => {
           const last = previous.at(-1);
@@ -152,42 +106,54 @@ export function SpeechPage() {
           return [...previous, { speaker, text, turn }];
         });
       },
-      closed: () => {
+      closed: (failed: boolean) => {
         if (call.current !== current) return;
         call.current = null;
-        if (admitted) navigate('/', { replace: true });
-        else setPhase('error');
+        setPhase(failed ? 'error' : 'finished');
+        void finish(failed);
       },
-    });
-    call.current = current;
+    };
     setPhase('waiting');
+    setFinishing(false);
     setLines([]);
     setStartedAt(null);
     const waitingAt = Date.now();
     setNow(waitingAt);
-    setWaitUntil(waitingAt + 5_000);
+    setWaitUntil(null);
     // Let StrictMode's setup/cleanup cycle finish before requesting the microphone.
     const start = setTimeout(() => {
-      void current.start().catch((error: unknown) => {
-        current.close(error instanceof Error ? error.message : 'Не удалось включить микрофон.');
+      void startAssignedAttempt(user.id, assignmentId).then(async (id) => {
+        attemptId = id;
+        if (disposed) { await finish(true); return; }
+        current = new VoiceCall(callbacks, id);
+        call.current = current;
+        await current.start();
+      }).catch((error: unknown) => {
+        if (disposed) return;
+        const text = error instanceof Error ? error.message : 'Не удалось начать звонок.';
+        if (current) current.close(text);
+        else { setMessage(text); setPhase('error'); }
       });
     }, 0);
     return () => {
+      disposed = true;
       clearTimeout(start);
       if (call.current === current) call.current = null;
-      current.close();
+      current?.close();
+      void finish(!admitted);
     };
-  }, [attempt, navigate]);
+  }, [attempt, assignmentId, user.id]);
 
   return <SpeechScreen
     phoneNumber={phoneNumber}
     elapsed={startedAt === null ? 0 : Math.max(0, Math.floor((now - startedAt) / 1_000))}
     lines={lines}
     message={message}
+    finishing={finishing}
     onCancel={() => navigate('/')}
     onEnd={() => call.current?.close()}
     onRetry={() => setAttempt((value) => value + 1)}
     phase={phase}
-    remaining={Math.max(1, Math.ceil((waitUntil - now) / 1_000))}
+    remaining={waitUntil === null ? null : Math.max(1, Math.ceil((waitUntil - now) / 1_000))}
   />;
 }

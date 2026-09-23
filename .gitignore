@@ -18,3 +18,5 @@ speech/.cache/
 *.[mM][dD]
 !README.md
 !speech/assets/telephone/ATTRIBUTION.md
+
+deploy/tls/

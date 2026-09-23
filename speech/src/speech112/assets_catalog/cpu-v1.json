@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "t-one/model.onnx",
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-t-one-russian-2025-09-08/resolve/9d63341e0f2d8a8b2edaa825aa1fcfe3c5283b47/model.onnx",
+      "sha256": "5ded080e2a6c86ecc11bcb0902d77524eb3e8b0844cb0c0754347f5aafb4dabc",
+      "bytes": 144193702
+    },
+    {
+      "path": "t-one/tokens.txt",
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-t-one-russian-2025-09-08/resolve/9d63341e0f2d8a8b2edaa825aa1fcfe3c5283b47/tokens.txt",
+      "sha256": "27f7b3ba2096c572375fba1a6b29af1f80d86e08a329940612908112695f97e0",
+      "bytes": 202
+    },
+    {
+      "path": "t-one/LICENSE",
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-streaming-t-one-russian-2025-09-08/resolve/9d63341e0f2d8a8b2edaa825aa1fcfe3c5283b47/LICENSE",
+      "sha256": "c8e6ecb86af681d9815d1ada7b1a7780ea5e5cb68a5df94fc800adab1a6ce027",
+      "bytes": 553
+    },
+    {
+      "path": "voices/demo.onnx",
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/denis/medium/ru_RU-denis-medium.onnx",
+      "sha256": "15fab56e11a097858ee115545d0f697fc2a316c41a291a5362349fb870411b0a",
+      "bytes": 63201294
+    },
+    {
+      "path": "voices/demo.onnx.json",
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/denis/medium/ru_RU-denis-medium.onnx.json",
+      "sha256": "831c860dac0b5073eaa81610a0a638ec23d90a6cf8e5f871b4485c2cec3767c8",
+      "bytes": 4823
+    },
+    {
+      "path": "voices/MODEL_CARD",
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/denis/medium/MODEL_CARD",
+      "sha256": "8b5d685dd80f8ad3f8dbbe1c56b16bb0809f00c144af3642dbcf3b707eb89c12",
+      "bytes": 276
+    },
+    {
+      "path": "silero/silero_vad.onnx",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/41f03a954b841327835dea1ddb7bb28ae23ddc2c/src/silero_vad/data/silero_vad.onnx",
+      "sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+      "bytes": 2327524
+    },
+    {
+      "path": "silero/LICENSE",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/41f03a954b841327835dea1ddb7bb28ae23ddc2c/LICENSE",
+      "sha256": "2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b",
+      "bytes": 1075
+    },
+    {
+      "path": "voices/irina.MODEL_CARD",
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/MODEL_CARD",
+      "sha256": "f4fc2deb0e8c6219f29202b8dd06c9638c5ffd50ad5c6b2c90cf1aa59d507593",
+      "bytes": 271
+    },
+    {
+      "path": "voices/irina.onnx.json",
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json",
+      "sha256": "c2ec28bb38e2b59e93b959b3e40348c1afebbd272f30fed5d41205d08e98a9d7",
+      "bytes": 4765
+    },
+    {
+      "path": "voices/irina.onnx",
+      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
+      "sha256": "8ff38212d23da300bbe3705c645e6e5b9475f0bfde01558eb17813e22acaaaaa",
+      "bytes": 63201294
+    },
+    {
+      "path": "e5-small-int8/model.onnx",
+      "url": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/onnx/model_qint8_avx512_vnni.onnx",
+      "sha256": "dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88",
+      "bytes": 118346824
+    },
+    {
+      "path": "e5-small-int8/tokenizer.json",
+      "url": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer.json",
+      "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+      "bytes": 17082730
+    },
+    {
+      "path": "e5-small-int8/MODEL_CARD",
+      "url": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/README.md",
+      "sha256": "0038de97aee16258cecbad7ffda4b4febd6953e747a00e0ddbc8e6ed241e9c1c",
+      "bytes": 497538
+    },
+    {
+      "path": "e5-small-int8/encoder.json",
+      "resource": "e5-small-encoder.json",
+      "bytes": 59,
+      "sha256": "615bc22b5ddaffe040826950fada60e3d7e8890a2703c606240465ef2d0aadc1"
+    }
+  ]
+}

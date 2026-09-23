@@ -4,25 +4,33 @@ build-backend = "hatchling.build"
 
 [project]
 name = "speech112"
-version = "0.1.0"
+version = "0.2.0"
 description = "Low-latency full-duplex Russian voice simulator for 112 operator training"
-requires-python = ">=3.11,<3.15"
+requires-python = ">=3.11,<3.14"
 dependencies = [
   "scipy>=1.15,<2",
-  "gigaam @ git+https://github.com/salute-developers/GigaAM.git@7447938d791c4f3e643386ee22c33777004293a5",
   "httpx>=0.28.1,<1",
+  "filelock>=3.20,<4",
   "numpy>=2.2,<3",
   "num2words==0.5.14",
-  "nvidia-cudnn-cu13>=9.24,<10; sys_platform == 'linux' and platform_machine == 'x86_64'",
   "onnxruntime>=1.22,<2",
-  "silero-vad>=6.2,<7",
+  "sherpa-onnx>=1.12.14,<2",
+  "piper-tts>=1.3,<2",
+  "tokenizers==0.22.2",
+  "jsonschema>=4.25,<5",
+  "psycopg[binary]>=3.2,<4",
   "soundfile>=0.14,<1",
-  "torch>=2.7,<3",
   "pyzmq>=27,<28",
+  "sherpa-onnx-bin==1.13.8",
 ]
 
 [project.scripts]
 speech112 = "speech112.service:main"
+training112-worker = "speech112.preparation.worker:main"
+training112-compile = "speech112.preparation.worker:compile_main"
+training112-install-models = "speech112.install_models:main"
+training112-check-scenario = "speech112.preparation.quality:main"
+training112-prepare-audio = "speech112.preparation.audio:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/speech112"]
@@ -30,9 +38,24 @@ packages = ["src/speech112"]
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [dependency-groups]
 dev = [
   "ruff>=0.12,<1",
+]
+training = [
+  "torch>=2.5,<3",
+  "transformers>=4.57,<5",
+  "onnx>=1.20,<2",
+  "scikit-learn>=1.7,<2",
+  "pyarrow>=20,<26",
 ]
 
 [tool.ruff]

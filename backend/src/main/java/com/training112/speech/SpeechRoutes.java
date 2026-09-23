@@ -3,198 +3,346 @@ package com.training112.speech;
 import com.training112.AppConfig;
 import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository;
+import com.training112.auth.AuthRepository.Account;
 import com.training112.auth.AuthSession;
+import com.training112.training.TrainingRepository;
+import com.training112.training.TrainingRoutes;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
 
+/** Reattachment preserves the live DEALER/socket/node. No replay into another provider. */
 public final class SpeechRoutes {
-    private final Vertx vertx;
-    private final AuthRepository auth;
-    private final AppConfig app;
-    private final SpeechConfig config;
-    private final Set<Connection> connections = new HashSet<>();
-    private boolean stopping;
+  private final Vertx vertx;
+  private final AuthRepository auth;
+  private final AppConfig app;
+  private final SpeechConfig config;
+  private final TrainingRepository training;
+  private final Map<UUID, Connection> calls = new HashMap<>();
+  private final Set<UUID> attaching = new java.util.HashSet<>();
+  private MessageConsumer<String> completed;
+  private boolean stopping;
 
-    public SpeechRoutes(Vertx vertx, AuthRepository auth, AppConfig app, SpeechConfig config) {
-        this.vertx = vertx;
-        this.auth = auth;
-        this.app = app;
-        this.config = config;
-    }
+  public SpeechRoutes(
+      Vertx vertx,
+      AuthRepository auth,
+      AppConfig app,
+      SpeechConfig config,
+      TrainingRepository training) {
+    this.vertx = vertx;
+    this.auth = auth;
+    this.app = app;
+    this.config = config;
+    this.training = training;
+  }
 
-    public void mount(Router router) {
-        router.get("/api/speech/session").handler(context -> {
-            // Keep the upgrade request unread while authentication awaits the database.
-            context.request().pause();
-            context.addEndHandler(ignored -> context.request().resume());
-            context.next();
-        });
-        router.route("/api/speech/*").handler(context -> {
-            if (stopping) {
+  public void mount(Router router) {
+    completed =
+        vertx
+            .eventBus()
+            .consumer(
+                "training.attempt.closed",
+                message -> {
+                  Connection connection = calls.get(UUID.fromString(message.body()));
+                  if (connection != null) {
+                    connection.forward(new JsonObject().put("type", "ended")
+                        .put("message", "Учебная попытка завершена."));
+                    connection.close(false);
+                  }
+                });
+    router
+        .get("/api/speech/session")
+        .handler(
+            context -> {
+              context.request().pause();
+              context.addEndHandler(ignored -> context.request().resume());
+              if (stopping) {
                 context.fail(new ApiException(503, "shutting_down", "Сервер перезапускается."));
                 return;
-            }
-            auth.findSession(AuthSession.tokenHash(context)).onSuccess(account -> {
-                if (account == null) context.fail(ApiException.unauthorized());
-                else context.next();
-            }).onFailure(context::fail);
-        });
-        router.get("/api/speech/voices").handler(context -> new Connection(context, null).start());
-        router.get("/api/speech/session").handler(context -> {
-            if (!app.appOrigin().equals(context.request().getHeader("Origin"))) {
-                context.fail(new ApiException(403, "forbidden_origin", "Запрос с этого сайта запрещён."));
+              }
+              if (!app.appOrigin().equals(context.request().getHeader("Origin"))) {
+                context.fail(
+                    new ApiException(403, "forbidden_origin", "Запрос с этого сайта запрещён."));
                 return;
-            }
-            context.request().toWebSocket().onSuccess(socket -> new Connection(context, socket).start())
-                    .onFailure(context::fail);
-        });
-    }
-
-    public Future<Void> close() {
-        stopping = true;
-        var waits = Set.copyOf(connections).stream().map(Connection::close).toList();
-        return Future.all(waits).mapEmpty();
-    }
-
-    private final class Connection {
-        private final RoutingContext request;
-        private final ServerWebSocket socket;
-        private final SpeechTransport transport;
-        private final String token;
-        private long timer = -1;
-        private boolean closed;
-        private boolean ready;
-        private boolean validating;
-        private long lastClientActivity = System.nanoTime();
-
-        Connection(RoutingContext request, ServerWebSocket socket) {
-            this.request = request;
-            this.socket = socket;
-            token = AuthSession.tokenHash(request);
-            transport = new SpeechTransport(config, Vertx.currentContext(), this::receive);
-        }
-
-        void start() {
-            connections.add(this);
-            JsonObject command = new JsonObject().put("type", socket == null ? "voices" : "start")
-                    .put("version", 1);
-            if (socket != null) {
-                socket.setWriteQueueMaxSize(32768);
-                socket.binaryMessageHandler(data -> {
-                    lastClientActivity = System.nanoTime();
-                    if (!ready || data.length() != 1024
-                            || !transport.send(new SpeechTransport.Message("audio", data.getBytes()))) {
-                        fail("Передача микрофона прервана.");
-                    }
-                });
-                socket.textMessageHandler(text -> {
-                    lastClientActivity = System.nanoTime();
-                    try {
-                        JsonObject event = new JsonObject(text);
-                        switch (event.getString("type", "")) {
-                            case "end" -> close();
-                            case "ping" -> socket.writeTextMessage(new JsonObject().put("type", "pong").encode())
-                                    .onFailure(error -> close());
-                            case "played" -> {
-                                Object generation = event.getValue("generation");
-                                Object id = event.getValue("id");
-                                if (!ready || !unsignedInteger(generation) || !unsignedInteger(id)
-                                        || !transport.send(SpeechTransport.Message.command(event))) {
-                                    fail("Некорректное подтверждение воспроизведения.");
-                                }
-                            }
-                            default -> fail("Неизвестная команда сеанса.");
-                        }
-                    } catch (RuntimeException error) {
-                        fail("Некорректная команда сеанса.");
-                    }
-                });
-                socket.closeHandler(ignored -> close());
-                socket.exceptionHandler(error -> close());
-            } else {
-                request.response().closeHandler(ignored -> close());
-            }
-            timer = vertx.setPeriodic(5_000, ignored -> maintain());
-            transport.start(command, ThreadLocalRandom.current().nextInt(config.endpoints().size()));
-            if (stopping || (socket != null && socket.isClosed())) close();
-        }
-
-        void maintain() {
-            long now = System.nanoTime();
-            if (now - lastClientActivity > (socket == null ? 90_000_000_000L : 15_000_000_000L)) {
-                fail("Сеанс завершён: соединение не отвечает.");
+              }
+              UUID attempt = TrainingRoutes.uuid(context.request().getParam("attempt_id"));
+              if (!attaching.add(attempt)) {
+                context.fail(
+                    new ApiException(409, "already_attaching", "Подключение уже выполняется."));
                 return;
-            }
-            if (socket == null || validating) return;
-            validating = true;
-            auth.findSession(token).onComplete(result -> {
-                validating = false;
-                if (result.failed() || result.result() == null) fail("Войдите в аккаунт повторно.");
+              }
+              String token = AuthSession.tokenHash(context);
+              auth.findSession(token)
+                  .compose(
+                      actor -> {
+                        if (actor == null) return Future.failedFuture(ApiException.unauthorized());
+                        return training
+                            .speechAdmission(actor, attempt)
+                            .compose(
+                                admission -> attach(context, actor, token, attempt, admission));
+                      })
+                  .onComplete(
+                      result -> {
+                        attaching.remove(attempt);
+                        if (result.failed()) context.fail(result.cause());
+                      });
             });
-        }
+  }
 
-        void receive(SpeechTransport.Message message) {
-            if (closed) return;
-            if (socket == null) {
-                JsonObject event = message.event();
-                if ("voices".equals(event.getString("type"))) {
-                    request.response().end(event.encode());
-                } else {
-                    request.fail(new ApiException(503, "speech_unavailable", event.getString("message", "Речевой сервис недоступен.")));
+  private Future<Void> attach(
+      RoutingContext request, Account actor, String token, UUID attempt, JsonObject admission) {
+    Connection existing = calls.get(attempt);
+    if (existing != null && existing.socket != null)
+      return Future.failedFuture(
+          new ApiException(409, "already_connected", "Попытка уже подключена."));
+    if (existing == null && !"created".equals(admission.getString("status"))) {
+      return training
+          .terminate(attempt, true)
+          .compose(
+              ignored ->
+                  Future.failedFuture(
+                      new ApiException(
+                          409, "session_lost", "Речевой сеанс потерян. Начните новую попытку.")));
+    }
+    return request
+        .request()
+        .toWebSocket()
+        .map(
+            socket -> {
+              if (stopping || (existing != null && existing.closed)) {
+                socket.close();
+                return null;
+              }
+              if (existing != null) existing.attach(socket, token, true);
+              else {
+                Connection connection = new Connection(attempt, actor);
+                calls.put(attempt, connection);
+                connection.attach(socket, token, false);
+                connection.transport.start(
+                    new JsonObject()
+                        .put("type", "start")
+                        .put("version", 2)
+                        .put("attempt_id", attempt.toString())
+                        .put("artifact", admission.getString("artifact"))
+                        .put("sha256", admission.getString("sha256")));
+                connection.timer = vertx.setPeriodic(5_000, ignored -> connection.maintain());
+              }
+              return null;
+            });
+  }
+
+  public Future<Void> close() {
+    stopping = true;
+    if (completed != null) completed.unregister();
+    return Future.all(
+            java.util.List.copyOf(calls.values()).stream().map(c -> c.close(true)).toList())
+        .mapEmpty();
+  }
+
+  private final class Connection {
+    final UUID attempt;
+    final Account actor;
+    final SpeechTransport transport;
+    ServerWebSocket socket;
+    String token;
+    boolean ready, closed, checking;
+    long timer = -1, grace = -1, lastActivity = System.nanoTime();
+    int pendingJournal;
+    Future<Void> journal = Future.succeededFuture();
+    Future<Void> closing;
+
+    Connection(UUID attempt, Account actor) {
+      this.attempt = attempt;
+      this.actor = actor;
+      transport = new SpeechTransport(config, Vertx.currentContext(), this::receive);
+    }
+
+    void attach(ServerWebSocket next, String sessionToken, boolean resume) {
+      socket = next;
+      token = sessionToken;
+      lastActivity = System.nanoTime();
+      if (grace != -1) {
+        vertx.cancelTimer(grace);
+        grace = -1;
+      }
+      next.setWriteQueueMaxSize(32768);
+      next.binaryMessageHandler(
+          data -> {
+            if (socket != next || closed) return;
+            lastActivity = System.nanoTime();
+            if (!ready
+                || data.length() != 1024
+                || !transport.send(new SpeechTransport.Message("audio", data.getBytes())))
+              fail("audio_overflow");
+          });
+      next.textMessageHandler(
+          text -> {
+            if (socket != next || closed) return;
+            lastActivity = System.nanoTime();
+            try {
+              JsonObject message = new JsonObject(text);
+              switch (message.getString("type", "")) {
+                case "ping" -> next.writeTextMessage(new JsonObject().put("type", "pong").encode());
+                case "end" -> {
+                  Object failed = message.getValue("failed", false);
+                  if (!(failed instanceof Boolean)) {
+                    fail("invalid_command");
+                    return;
+                  }
+                  close((Boolean) failed);
                 }
-                close();
-                return;
+                case "played" -> {
+                  if (!ready
+                      || !uint(message.getValue("id"))
+                      || !uint(message.getValue("generation"))) {
+                    fail("invalid_ack");
+                    return;
+                  }
+                  send(
+                      new JsonObject()
+                          .put("type", "played")
+                          .put("id", message.getValue("id"))
+                          .put("generation", message.getValue("generation")));
+                }
+                default -> fail("unknown_command");
+              }
+            } catch (RuntimeException error) {
+              fail("invalid_command");
             }
-            if (socket.writeQueueFull()) {
-                fail("Соединение не успевает воспроизводить звук.");
-                return;
-            }
-            if ("audio".equals(message.kind())) {
-                socket.writeBinaryMessage(Buffer.buffer(message.payload())).onFailure(error -> close());
-                return;
-            }
-            JsonObject event = message.event();
-            String type = event.getString("type");
-            if ("ready".equals(type)) {
-                ready = true;
-                lastClientActivity = System.nanoTime();
-            }
-            socket.writeTextMessage(event.encode()).onComplete(result -> {
-                if (result.failed() || Set.of("closed", "unavailable", "busy", "ended").contains(type)) close();
-            });
-        }
-
-        void fail(String message) {
-            if (closed) return;
-            if (socket == null) {
-                request.fail(new ApiException(503, "speech_unavailable", message));
-            } else {
-                socket.writeTextMessage(new JsonObject().put("type", "unavailable").put("message", message).encode());
-            }
-            close();
-        }
-
-        Future<Void> close() {
-            if (!closed) {
-                closed = true;
-                connections.remove(this);
-                if (timer != -1) vertx.cancelTimer(timer);
-                if (socket != null && !socket.isClosed()) socket.close();
-            }
-            return Future.fromCompletionStage(transport.close(), Vertx.currentContext());
-        }
+          });
+      next.closeHandler(ignored -> detach(next));
+      next.exceptionHandler(error -> detach(next));
+      if (resume) {
+        ready = false;
+        send(new JsonObject().put("type", "resume"));
+      }
     }
 
-    private static boolean unsignedInteger(Object value) {
-        return (value instanceof Integer || value instanceof Long)
-                && ((Number) value).longValue() >= 0 && ((Number) value).longValue() <= 0xffff_ffffL;
+    void detach(ServerWebSocket previous) {
+      if (closed || socket != previous) return;
+      socket = null;
+      previous.close();
+      if (!ready) {
+        close(true);
+        return;
+      }
+      ready = false;
+      send(new JsonObject().put("type", "suspend"));
+      grace = vertx.setTimer(30_000, ignored -> close(true));
     }
+
+    void maintain() {
+      if (closed) return;
+      if (socket != null && System.nanoTime() - lastActivity > 15_000_000_000L) detach(socket);
+      if (checking) return;
+      checking = true;
+      auth.findSession(token)
+          .compose(
+              account -> {
+                if (account == null || !account.id().equals(actor.id()))
+                  return Future.failedFuture(ApiException.unauthorized());
+                return training.attempt(actor, attempt);
+              })
+          .onComplete(
+              result -> {
+                checking = false;
+                if (result.failed()) fail("authorization_lost");
+                else if (Set.of("completed", "failed")
+                    .contains(result.result().getString("status"))) close(false);
+              });
+    }
+
+    void send(JsonObject command) {
+      if (!transport.send(SpeechTransport.Message.command(command))) fail("transport_overflow");
+    }
+
+    void receive(SpeechTransport.Message message) {
+      if (closed) return;
+      if ("audio".equals(message.kind())) {
+        if (socket != null) {
+          if (socket.writeQueueFull()) {
+            fail("playback_overflow");
+            return;
+          }
+          ServerWebSocket target = socket;
+          target
+              .writeBinaryMessage(Buffer.buffer(message.payload()))
+              .onFailure(error -> detach(target));
+        }
+        return;
+      }
+      JsonObject event = message.event();
+      String type = event.getString("type", "");
+      if (Set.of("ready", "resumed").contains(type)) ready = true;
+      if (!Set.of("audio_stop", "pong", "listening").contains(type)) {
+        if (++pendingJournal > 64) {
+          fail("journal_overflow");
+          return;
+        }
+        journal =
+            journal
+                .compose(ignored -> training.speechEvent(attempt, type, event))
+                .onComplete(ignored -> pendingJournal--);
+        journal.onFailure(error -> fail("journal_failed"));
+      }
+      if (Set.of("ready", "resumed").contains(type)) {
+        journal.onSuccess(ignored -> forward(event));
+      } else forward(event);
+      if ("ended".equals(type)) close(false);
+      else if (Set.of("unavailable", "busy", "closed").contains(type)) close(true);
+    }
+
+    void forward(JsonObject event) {
+      if (closed || socket == null) return;
+      ServerWebSocket target = socket;
+      if (target.writeQueueFull()) {
+        fail("playback_overflow");
+        return;
+      }
+      target.writeTextMessage(event.encode()).onFailure(error -> detach(target));
+    }
+
+    void fail(String code) {
+      if (closed) return;
+      if (socket != null)
+        socket.writeTextMessage(
+            new JsonObject().put("type", "unavailable").put("code", code)
+                .put("message", switch (code) {
+                  case "authorization_lost" -> "Доступ к звонку потерян. Войдите в систему повторно.";
+                  case "audio_overflow", "playback_overflow", "transport_overflow", "journal_overflow" ->
+                      "Звонок остановлен: сервер или соединение перегружены. Повторите попытку позже.";
+                  default -> "Звонок остановлен из-за ошибки соединения. Повторите попытку.";
+                }).encode());
+      close(true);
+    }
+
+    Future<Void> close(boolean failed) {
+      if (closed) return closing == null ? Future.succeededFuture() : closing;
+      closed = true;
+      calls.remove(attempt, this);
+      if (timer != -1) vertx.cancelTimer(timer);
+      if (grace != -1) vertx.cancelTimer(grace);
+      if (socket != null) socket.close();
+      closing =
+          Future.fromCompletionStage(transport.close(), Vertx.currentContext())
+              .compose(ignored -> journal.recover(error -> Future.succeededFuture()))
+              .compose(ignored -> training.terminate(attempt, failed));
+      return closing;
+    }
+  }
+
+  private static boolean uint(Object value) {
+    return (value instanceof Integer || value instanceof Long)
+        && ((Number) value).longValue() >= 0
+        && ((Number) value).longValue() <= 0xFFFFFFFFL;
+  }
 }

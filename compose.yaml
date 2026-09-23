@@ -7,12 +7,6 @@ x-logging: &logging
     max-file: "3"
 
 services:
-  speech:
-    extends:
-      file: speech/compose.yaml
-      service: speech
-    build: ./speech
-
   db:
     image: postgres:18.6-alpine
     restart: unless-stopped
@@ -23,13 +17,36 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 3s
       retries: 12
       start_period: 10s
-    shm_size: 128mb
-    mem_limit: 256m
+    shm_size: 256mb
+    logging: *logging
+
+  speech:
+    build:
+      context: .
+      dockerfile: speech/Dockerfile
+    image: training112-speech:local
+    restart: unless-stopped
+    command: [speech112]
+    environment:
+      SPEECH_BIND: tcp://127.0.0.1:5555
+      SPEECH_CONFIG: /app/config/default.toml
+      SPEECH_MAX_SESSIONS: "20"
+      HF_HUB_OFFLINE: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    volumes:
+      - speech_audio:/app/.cache/audio
+    healthcheck:
+      test: [CMD, python, -c, 'import socket;s=socket.socket();s.settimeout(1);s.connect(("127.0.0.1",5555))']
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
     logging: *logging
 
   backend:
@@ -37,37 +54,58 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
-    init: true
+    network_mode: service:speech
     environment:
       PORT: "8080"
+      BIND_HOST: 0.0.0.0
       DB_HOST: db
       DB_PORT: "5432"
       DB_NAME: training112
       DB_USER: training112
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
-      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
-      SPEECH_ENDPOINTS: ${SPEECH_ENDPOINTS:-tcp://speech:5555}
-      SPEECH_CURVE_SERVER_KEY: ${SPEECH_CURVE_SERVER_KEY:-}
-      SPEECH_CURVE_PUBLIC_KEY: ${SPEECH_CURVE_PUBLIC_KEY:-}
-      SPEECH_CURVE_SECRET_KEY: ${SPEECH_CURVE_SECRET_KEY:-}
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      APP_ORIGIN: https://${SERVER_IP:?Run deploy/setup.py first}
+      TLS_TERMINATED_BY_PROXY: "true"
+      SPEECH_ENDPOINT: tcp://127.0.0.1:5555
     depends_on:
       db:
         condition: service_healthy
+      speech:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/api/health/ready"]
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/api/health/ready]
       interval: 10s
       timeout: 5s
-      retries: 6
+      retries: 12
       start_period: 30s
     read_only: true
     tmpfs:
       - /tmp:size=32m,mode=1777
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    mem_limit: 384m
-    stop_grace_period: 30s
+    logging: *logging
+
+  worker:
+    image: training112-speech:local
+    restart: unless-stopped
+    command: [training112-worker]
+    environment:
+      TRAINING_DATABASE_URL: ""
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: training112
+      PGUSER: training112
+      PGPASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      SPEECH_CONFIG: /app/config/default.toml
+      HF_HUB_OFFLINE: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    volumes:
+      - speech_audio:/app/.cache/audio
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     logging: *logging
 
   web:
@@ -76,12 +114,15 @@ services:
       dockerfile: site/Dockerfile
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${SERVER_IP:?Run deploy/setup.py first}:443:8443"
     depends_on:
       backend:
         condition: service_healthy
+    volumes:
+      - ./deploy/tls/server.crt:/etc/nginx/tls/server.crt:ro
+      - ./deploy/tls/server.key:/etc/nginx/tls/server.key:ro
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/healthz]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -90,9 +131,8 @@ services:
       - /tmp:size=32m,mode=1777
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    mem_limit: 64m
     logging: *logging
 
 volumes:
   postgres_data:
-  speech_models:
+  speech_audio:

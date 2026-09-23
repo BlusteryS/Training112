@@ -4,13 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "workspaces": [
-    "icons",
-    "components",
     "site"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@training112/site",
-    "build": "npm run typecheck && npm run build --workspace=@training112/site",
+    "build": "npm run build --workspace=@training112/site",
     "preview": "npm run preview --workspace=@training112/site",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

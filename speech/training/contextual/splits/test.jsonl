@@ -1,0 +1,173 @@
+{"text": "Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": [], "family": "single"}
+{"text": "Что заставило вас набрать сто двенадцать?", "labels": ["incident"], "history": [], "family": "single"}
+{"text": "Где конкретно требуется наша бригада?", "labels": ["address"], "history": [], "family": "single"}
+{"text": "Продиктуйте населённый пункт и местоположение.", "labels": ["address"], "history": [], "family": "single"}
+{"text": "Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": [], "family": "single"}
+{"text": "Подскажите, с кем имею дело.", "labels": ["name"], "history": [], "family": "single"}
+{"text": "Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": [], "family": "single"}
+{"text": "Какой у вас номер сотового?", "labels": ["phone"], "history": [], "family": "single"}
+{"text": "Из присутствующих есть кто-то с травмами?", "labels": ["victims"], "history": [], "family": "single"}
+{"text": "Врач нужен кому-либо из вас?", "labels": ["victims"], "history": [], "family": "single"}
+{"text": "Уточню: раненых всего сколько?", "labels": ["victim_count"], "history": [], "family": "single"}
+{"text": "Какое число людей пострадало?", "labels": ["victim_count"], "history": [], "family": "single"}
+{"text": "Это пожилой человек или молодой?", "labels": ["age"], "history": [], "family": "single"}
+{"text": "Примерный возраст потерпевшего можете сказать?", "labels": ["age"], "history": [], "family": "single"}
+{"text": "На голос пострадавший как-то реагирует?", "labels": ["consciousness"], "history": [], "family": "single"}
+{"text": "С ним удаётся установить контакт?", "labels": ["consciousness"], "history": [], "family": "single"}
+{"text": "Грудная клетка поднимается при вдохе?", "labels": ["breathing"], "history": [], "family": "single"}
+{"text": "Он может дышать без посторонней помощи?", "labels": ["breathing"], "history": [], "family": "single"}
+{"text": "Ситуация для вас прямо сейчас опасная?", "labels": ["danger"], "history": [], "family": "single"}
+{"text": "Место, где вы ждёте, не представляет угрозы?", "labels": ["danger"], "history": [], "family": "single"}
+{"text": "Горение где именно наблюдается?", "labels": ["fire"], "history": [], "family": "single"}
+{"text": "Скажите, из какого места валит дым.", "labels": ["fire"], "history": [], "family": "single"}
+{"text": "При нём было что-нибудь, похожее на оружие?", "labels": ["weapon"], "history": [], "family": "single"}
+{"text": "Он чем-то вооружён или с пустыми руками?", "labels": ["weapon"], "history": [], "family": "single"}
+{"text": "По каким приметам можно узнать нарушителя?", "labels": ["description"], "history": [], "family": "single"}
+{"text": "Внешность злоумышленника можете описать?", "labels": ["description"], "history": [], "family": "single"}
+{"text": "Регистрационные знаки транспорта различили?", "labels": ["vehicle"], "history": [], "family": "single"}
+{"text": "Марку и расцветку автомобиля сообщите.", "labels": ["vehicle"], "history": [], "family": "single"}
+{"text": "Машину с сотрудниками уже выслали на место.", "labels": ["help_sent"], "history": [], "family": "single"}
+{"text": "Заявка принята, спасательная группа выдвинулась.", "labels": ["help_sent"], "history": [], "family": "single"}
+{"text": "Пока никто из сотрудников к вам не выехал.", "labels": ["not_sent"], "history": [], "family": "single"}
+{"text": "Отправка бригады ещё не состоялась.", "labels": ["not_sent"], "history": [], "family": "single"}
+{"text": "Вижу, что вам тяжело, будем разбираться вместе.", "labels": ["reassure"], "history": [], "family": "single"}
+{"text": "Попробуйте не паниковать, я остаюсь с вами.", "labels": ["reassure"], "history": [], "family": "single"}
+{"text": "Мне ваши жалобы надоели.", "labels": ["dismissal"], "history": [], "family": "single"}
+{"text": "Ищите помощь сами, не занимайте линию.", "labels": ["dismissal"], "history": [], "family": "single"}
+{"text": "Ожидайте, не разрывая соединение.", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "Сейчас уточню у коллег, побудьте на телефоне.", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "Сеанс связи пока не завершайте.", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "Пожалуйста, трубку не вешайте, это ещё не всё.", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "Начало вашей фразы пропало, повторите её.", "labels": ["repeat"], "history": [], "family": "single"}
+{"text": "Снова назовите то же самое, пожалуйста.", "labels": ["repeat"], "history": [], "family": "single"}
+{"text": "Благодарю за сведения, на этом закончим.", "labels": ["goodbye"], "history": [], "family": "single"}
+{"text": "Теперь можете повесить трубку.", "labels": ["goodbye"], "history": [], "family": "single"}
+{"text": "Алло алло, слышите меня?", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "Слышите, что я говорю?", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "Прием, вы здесь?", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "Приветствую, служба 112.", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "Извините, последнюю фразу не разобрал.", "labels": ["repeat"], "history": ["Что произошло?", "В подъезде дым."], "family": "repair"}
+{"text": "Можно это еще раз?", "labels": ["repeat"], "history": ["Что произошло?", "В подъезде дым."], "family": "repair"}
+{"text": "Связь прервалась, повторите ответ.", "labels": ["repeat"], "history": ["Что произошло?", "В подъезде дым."], "family": "repair"}
+{"text": "А, что вы сказали сейчас?", "labels": ["repeat"], "history": ["Что произошло?", "В подъезде дым."], "family": "repair"}
+{"text": "Выезд бригады пока не подтвержден.", "labels": ["not_sent"], "history": [], "family": "negation"}
+{"text": "Машину к вам еще не направляли.", "labels": ["not_sent"], "history": [], "family": "negation"}
+{"text": "Подождите прощаться, останьтесь на связи.", "labels": ["hold"], "history": [], "family": "negation"}
+{"text": "Трубку пока класть нельзя.", "labels": ["hold"], "history": [], "family": "negation"}
+{"text": "Пожарный расчет к вам уже выдвинулся.", "labels": ["help_sent"], "history": [], "family": "negation"}
+{"text": "Все записано, можете отключаться.", "labels": ["goodbye"], "history": [], "family": "negation"}
+{"text": "Включи мне любимую песню.", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "Докажи математическую теорему.", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "Когда следующий поезд в Париж?", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "Подбери рецепт блинов.", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "А сколько их там?", "labels": ["victim_count"], "history": ["Расскажите подробнее.", "После удара двое выбрались, остальные внутри."], "family": "context"}
+{"text": "Сколько людей осталось внутри?", "labels": ["victim_count"], "history": ["Расскажите подробнее.", "После удара двое выбрались, остальные внутри."], "family": "context"}
+{"text": "А сколько их там?", "labels": ["victim_count"], "history": ["Расскажите подробнее.", "На лестнице люди, которым плохо."], "family": "context"}
+{"text": "Сколько людей осталось внутри?", "labels": ["victim_count"], "history": ["Расскажите подробнее.", "На лестнице люди, которым плохо."], "family": "context"}
+{"text": "А точный адрес?", "labels": ["address"], "history": ["Расскажите подробнее.", "На парковке клубится дым."], "family": "context"}
+{"text": "Уточните, где это находится.", "labels": ["address"], "history": ["Расскажите подробнее.", "На парковке клубится дым."], "family": "context"}
+{"text": "А точный адрес?", "labels": ["address"], "history": ["Расскажите подробнее.", "Это случилось у автобусной остановки."], "family": "context"}
+{"text": "Уточните, где это находится.", "labels": ["address"], "history": ["Расскажите подробнее.", "Это случилось у автобусной остановки."], "family": "context"}
+{"text": "Какое у вас имя?", "labels": ["name"], "history": ["Расскажите подробнее.", "Хотите, скажу, как меня зовут."], "family": "context"}
+{"text": "Так как вас зовут?", "labels": ["name"], "history": ["Расскажите подробнее.", "Хотите, скажу, как меня зовут."], "family": "context"}
+{"text": "Какое у вас имя?", "labels": ["name"], "history": ["Расскажите подробнее.", "Да, со мной сейчас говорите."], "family": "context"}
+{"text": "Так как вас зовут?", "labels": ["name"], "history": ["Расскажите подробнее.", "Да, со мной сейчас говорите."], "family": "context"}
+{"text": "Тогда называйте.", "labels": ["phone"], "history": ["Расскажите подробнее.", "Со мной можно будет связаться по этому номеру."], "family": "context"}
+{"text": "Да, запишу, говорите номер.", "labels": ["phone"], "history": ["Расскажите подробнее.", "Со мной можно будет связаться по этому номеру."], "family": "context"}
+{"text": "Тогда называйте.", "labels": ["phone"], "history": ["Расскажите подробнее.", "Давайте дам номер для обратного звонка."], "family": "context"}
+{"text": "Да, запишу, говорите номер.", "labels": ["phone"], "history": ["Расскажите подробнее.", "Давайте дам номер для обратного звонка."], "family": "context"}
+{"text": "Объясните, что за ситуация.", "labels": ["incident"], "history": ["Расскажите подробнее.", "Нужна экстренная помощь, пожалуйста."], "family": "context"}
+{"text": "Какая именно беда?", "labels": ["incident"], "history": ["Расскажите подробнее.", "Нужна экстренная помощь, пожалуйста."], "family": "context"}
+{"text": "Объясните, что за ситуация.", "labels": ["incident"], "history": ["Расскажите подробнее.", "У нас здесь чрезвычайная ситуация."], "family": "context"}
+{"text": "Какая именно беда?", "labels": ["incident"], "history": ["Расскажите подробнее.", "У нас здесь чрезвычайная ситуация."], "family": "context"}
+{"text": "А лет ему сколько?", "labels": ["age"], "history": ["Расскажите подробнее.", "Пострадал подросток."], "family": "context"}
+{"text": "Скажите его примерный возраст.", "labels": ["age"], "history": ["Расскажите подробнее.", "Пострадал подросток."], "family": "context"}
+{"text": "А лет ему сколько?", "labels": ["age"], "history": ["Расскажите подробнее.", "Пожилой прохожий упал."], "family": "context"}
+{"text": "Скажите его примерный возраст.", "labels": ["age"], "history": ["Расскажите подробнее.", "Пожилой прохожий упал."], "family": "context"}
+{"text": "А можно это уточнить?", "labels": ["address"], "history": ["Вы можете назвать адрес?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "Тогда сообщите подробнее.", "labels": ["address"], "history": ["Вы можете назвать адрес?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "А можно это уточнить?", "labels": ["name"], "history": ["Вы можете назвать свое имя?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "Тогда сообщите подробнее.", "labels": ["name"], "history": ["Вы можете назвать свое имя?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "А можно это уточнить?", "labels": ["phone"], "history": ["Вы можете продиктовать телефон?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "Тогда сообщите подробнее.", "labels": ["phone"], "history": ["Вы можете продиктовать телефон?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "А можно это уточнить?", "labels": ["incident"], "history": ["Можете описать происшествие?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "Тогда сообщите подробнее.", "labels": ["incident"], "history": ["Можете описать происшествие?", "Могу, записывайте."], "family": "counterfactual"}
+{"text": "А можно это уточнить?", "labels": ["other"], "history": ["Алло.", "Здравствуйте."], "family": "ambiguous"}
+{"text": "Тогда сообщите подробнее.", "labels": ["other"], "history": ["Алло.", "Здравствуйте."], "family": "ambiguous"}
+{"text": "А сколько их там?", "labels": ["other"], "history": ["Алло.", "Здравствуйте."], "family": "ambiguous"}
+{"text": "Адрес мы уже выяснили. Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Уточните данные.", "На парковке клубится дым."], "family": "correction"}
+{"text": "Адрес повторять не требуется. Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Уточните данные.", "На парковке клубится дым."], "family": "correction"}
+{"text": "Адрес мы уже выяснили. Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Уточните данные.", "На парковке клубится дым."], "family": "correction"}
+{"text": "Адрес повторять не требуется. Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Уточните данные.", "На парковке клубится дым."], "family": "correction"}
+{"text": "Адрес мы уже выяснили. Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Уточните данные.", "На парковке клубится дым."], "family": "correction"}
+{"text": "Адрес повторять не требуется. Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Уточните данные.", "На парковке клубится дым."], "family": "correction"}
+{"text": "Имя мы уже выяснили. Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Уточните данные.", "Хотите, скажу, как меня зовут."], "family": "correction"}
+{"text": "Имя повторять не требуется. Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Уточните данные.", "Хотите, скажу, как меня зовут."], "family": "correction"}
+{"text": "Имя мы уже выяснили. Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Уточните данные.", "Хотите, скажу, как меня зовут."], "family": "correction"}
+{"text": "Имя повторять не требуется. Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Уточните данные.", "Хотите, скажу, как меня зовут."], "family": "correction"}
+{"text": "Имя мы уже выяснили. Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Уточните данные.", "Хотите, скажу, как меня зовут."], "family": "correction"}
+{"text": "Имя повторять не требуется. Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Уточните данные.", "Хотите, скажу, как меня зовут."], "family": "correction"}
+{"text": "Телефон мы уже выяснили. Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Уточните данные.", "Со мной можно будет связаться по этому номеру."], "family": "correction"}
+{"text": "Телефон повторять не требуется. Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Уточните данные.", "Со мной можно будет связаться по этому номеру."], "family": "correction"}
+{"text": "Телефон мы уже выяснили. Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Уточните данные.", "Со мной можно будет связаться по этому номеру."], "family": "correction"}
+{"text": "Телефон повторять не требуется. Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Уточните данные.", "Со мной можно будет связаться по этому номеру."], "family": "correction"}
+{"text": "Телефон мы уже выяснили. Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Уточните данные.", "Со мной можно будет связаться по этому номеру."], "family": "correction"}
+{"text": "Телефон повторять не требуется. Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Уточните данные.", "Со мной можно будет связаться по этому номеру."], "family": "correction"}
+{"text": "Описание происшествия мы уже выяснили. Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Уточните данные.", "Нужна экстренная помощь, пожалуйста."], "family": "correction"}
+{"text": "Описание происшествия повторять не требуется. Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Уточните данные.", "Нужна экстренная помощь, пожалуйста."], "family": "correction"}
+{"text": "Описание происшествия мы уже выяснили. Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Уточните данные.", "Нужна экстренная помощь, пожалуйста."], "family": "correction"}
+{"text": "Описание происшествия повторять не требуется. Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Уточните данные.", "Нужна экстренная помощь, пожалуйста."], "family": "correction"}
+{"text": "Описание происшествия мы уже выяснили. Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Уточните данные.", "Нужна экстренная помощь, пожалуйста."], "family": "correction"}
+{"text": "Описание происшествия повторять не требуется. Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Уточните данные.", "Нужна экстренная помощь, пожалуйста."], "family": "correction"}
+{"text": "Где конкретно требуется наша бригада? После этого скажите: Представьтесь: кто сообщает об этом?", "labels": ["address", "name"], "history": [], "family": "compound"}
+{"text": "Продиктуйте населённый пункт и местоположение. После этого скажите: Подскажите, с кем имею дело.", "labels": ["address", "name"], "history": [], "family": "compound"}
+{"text": "Из присутствующих есть кто-то с травмами? После этого скажите: Где конкретно требуется наша бригада?", "labels": ["victims", "address"], "history": [], "family": "compound"}
+{"text": "Врач нужен кому-либо из вас? После этого скажите: Продиктуйте населённый пункт и местоположение.", "labels": ["victims", "address"], "history": [], "family": "compound"}
+{"text": "На голос пострадавший как-то реагирует? После этого скажите: Грудная клетка поднимается при вдохе?", "labels": ["consciousness", "breathing"], "history": [], "family": "compound"}
+{"text": "С ним удаётся установить контакт? После этого скажите: Он может дышать без посторонней помощи?", "labels": ["consciousness", "breathing"], "history": [], "family": "compound"}
+{"text": "Это пожилой человек или молодой? После этого скажите: Уточню: раненых всего сколько?", "labels": ["age", "victim_count"], "history": [], "family": "compound"}
+{"text": "Примерный возраст потерпевшего можете сказать? После этого скажите: Какое число людей пострадало?", "labels": ["age", "victim_count"], "history": [], "family": "compound"}
+{"text": "Если связь оборвётся, по какому номеру вас набирать? После этого скажите: Представьтесь: кто сообщает об этом?", "labels": ["phone", "name"], "history": [], "family": "compound"}
+{"text": "Какой у вас номер сотового? После этого скажите: Подскажите, с кем имею дело.", "labels": ["phone", "name"], "history": [], "family": "compound"}
+{"text": "Объясните причину обращения в службу спасения.", "labels": ["incident"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Что заставило вас набрать сто двенадцать?", "labels": ["incident"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Где конкретно требуется наша бригада?", "labels": ["address"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Продиктуйте населённый пункт и местоположение.", "labels": ["address"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Представьтесь: кто сообщает об этом?", "labels": ["name"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Подскажите, с кем имею дело.", "labels": ["name"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Если связь оборвётся, по какому номеру вас набирать?", "labels": ["phone"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Какой у вас номер сотового?", "labels": ["phone"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Из присутствующих есть кто-то с травмами?", "labels": ["victims"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Врач нужен кому-либо из вас?", "labels": ["victims"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Уточню: раненых всего сколько?", "labels": ["victim_count"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Какое число людей пострадало?", "labels": ["victim_count"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Это пожилой человек или молодой?", "labels": ["age"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Примерный возраст потерпевшего можете сказать?", "labels": ["age"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "На голос пострадавший как-то реагирует?", "labels": ["consciousness"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "С ним удаётся установить контакт?", "labels": ["consciousness"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Грудная клетка поднимается при вдохе?", "labels": ["breathing"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Он может дышать без посторонней помощи?", "labels": ["breathing"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Ситуация для вас прямо сейчас опасная?", "labels": ["danger"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Место, где вы ждёте, не представляет угрозы?", "labels": ["danger"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Горение где именно наблюдается?", "labels": ["fire"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Скажите, из какого места валит дым.", "labels": ["fire"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "При нём было что-нибудь, похожее на оружие?", "labels": ["weapon"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Он чем-то вооружён или с пустыми руками?", "labels": ["weapon"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "По каким приметам можно узнать нарушителя?", "labels": ["description"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Внешность злоумышленника можете описать?", "labels": ["description"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Регистрационные знаки транспорта различили?", "labels": ["vehicle"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Марку и расцветку автомобиля сообщите.", "labels": ["vehicle"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Машину с сотрудниками уже выслали на место.", "labels": ["help_sent"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Заявка принята, спасательная группа выдвинулась.", "labels": ["help_sent"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Пока никто из сотрудников к вам не выехал.", "labels": ["not_sent"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Отправка бригады ещё не состоялась.", "labels": ["not_sent"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Вижу, что вам тяжело, будем разбираться вместе.", "labels": ["reassure"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Попробуйте не паниковать, я остаюсь с вами.", "labels": ["reassure"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Мне ваши жалобы надоели.", "labels": ["dismissal"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Ищите помощь сами, не занимайте линию.", "labels": ["dismissal"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Ожидайте, не разрывая соединение.", "labels": ["hold"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Сейчас уточню у коллег, побудьте на телефоне.", "labels": ["hold"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Начало вашей фразы пропало, повторите её.", "labels": ["repeat"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Снова назовите то же самое, пожалуйста.", "labels": ["repeat"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}
+{"text": "Благодарю за сведения, на этом закончим.", "labels": ["goodbye"], "history": ["Ваш адрес?", "На парковке клубится дым."], "family": "history_distractor"}
+{"text": "Теперь можете повесить трубку.", "labels": ["goodbye"], "history": ["Ваш адрес?", "Это случилось у автобусной остановки."], "family": "history_distractor"}

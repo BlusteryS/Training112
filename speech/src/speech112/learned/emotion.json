@@ -1,0 +1,49 @@
+{
+  "encoder_sha256": "39dcd6f039c9dfa269795259cec99ca85c75a2002ba72efe186b8068a8d7ad03",
+  "labels": [
+    "joy",
+    "sadness",
+    "surprise",
+    "fear",
+    "anger"
+  ],
+  "metrics": [
+    {
+      "label": 0,
+      "development_f1": 0.6280193236714976,
+      "C": 1,
+      "threshold": 0.6
+    },
+    {
+      "label": 1,
+      "development_f1": 0.6105769230769231,
+      "C": 10,
+      "threshold": 0.6
+    },
+    {
+      "label": 2,
+      "development_f1": 0.6108374384236454,
+      "C": 10,
+      "threshold": 0.7
+    },
+    {
+      "label": 3,
+      "development_f1": 0.6514285714285715,
+      "C": 10,
+      "threshold": 0.8
+    },
+    {
+      "label": 4,
+      "development_f1": 0.32,
+      "C": 10,
+      "threshold": 0.8
+    }
+  ],
+  "train_size": 6593,
+  "dev_size": 935,
+  "weights_sha256": "717bc7ba0bcc935ef5923e331a905772b64603baef6b1fa3cc4b2761e7ea60dd",
+  "source": "sagteam/cedr_v1@abafbe63cf92c33791b217e8f4f3460f816f1d96",
+  "source_sha256": "6d26c21daed57be1657a80a78fe04c4865ad249f49070b6c5e00b2f90f811e1a",
+  "use": "Text emotion research only; not voice emotion or an automatic grade.",
+  "reproduced_with_formatted_source_sha256": "6d26c21daed57be1657a80a78fe04c4865ad249f49070b6c5e00b2f90f811e1a"
+}

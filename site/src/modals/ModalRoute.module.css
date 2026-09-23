@@ -1,9 +1,0 @@
-.content {
-  display: grid;
-  min-height: 256px;
-  place-items: center;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  line-height: 1.4;
-  text-align: center;
-}

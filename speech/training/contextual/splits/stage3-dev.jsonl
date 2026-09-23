@@ -1,0 +1,483 @@
+{"text": "опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": [], "family": "single"}
+{"text": "чем вызван ваш звонок", "labels": ["incident"], "history": [], "family": "single"}
+{"text": "уточните место куда требуется направить помощь", "labels": ["address"], "history": [], "family": "single"}
+{"text": "на какой улице и в каком доме это случилось", "labels": ["address"], "history": [], "family": "single"}
+{"text": "как ваше имя и фамилия", "labels": ["name"], "history": [], "family": "single"}
+{"text": "как я могу вас называть", "labels": ["name"], "history": [], "family": "single"}
+{"text": "дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": [], "family": "single"}
+{"text": "запишу ваш контактный телефон", "labels": ["phone"], "history": [], "family": "single"}
+{"text": "кто то нуждается в помощи медиков", "labels": ["victims"], "history": [], "family": "single"}
+{"text": "никто не получил повреждений", "labels": ["victims"], "history": [], "family": "single"}
+{"text": "скажите число травмированных", "labels": ["victim_count"], "history": [], "family": "single"}
+{"text": "много ли раненых людей", "labels": ["victim_count"], "history": [], "family": "single"}
+{"text": "пострадавшему примерно сколько лет", "labels": ["age"], "history": [], "family": "single"}
+{"text": "укажите сколько ему полных лет", "labels": ["age"], "history": [], "family": "single"}
+{"text": "когда вы к нему обращаетесь есть ответ", "labels": ["consciousness"], "history": [], "family": "single"}
+{"text": "сознание сохранено", "labels": ["consciousness"], "history": [], "family": "single"}
+{"text": "можете заметить как он дышит", "labels": ["breathing"], "history": [], "family": "single"}
+{"text": "самостоятельное дыхание сохраняется", "labels": ["breathing"], "history": [], "family": "single"}
+{"text": "ничто не угрожает вашей безопасности", "labels": ["danger"], "history": [], "family": "single"}
+{"text": "в том месте где вы стоите безопасно", "labels": ["danger"], "history": [], "family": "single"}
+{"text": "пламя вам оттуда видно", "labels": ["fire"], "history": [], "family": "single"}
+{"text": "уточните откуда дымит", "labels": ["fire"], "history": [], "family": "single"}
+{"text": "нападающий вооружен чем нибудь", "labels": ["weapon"], "history": [], "family": "single"}
+{"text": "угрожающий человек держит нож", "labels": ["weapon"], "history": [], "family": "single"}
+{"text": "какие особенности внешности вы заметили", "labels": ["description"], "history": [], "family": "single"}
+{"text": "опишите одежду подозреваемого", "labels": ["description"], "history": [], "family": "single"}
+{"text": "какой государственный номер у этого автомобиля", "labels": ["vehicle"], "history": [], "family": "single"}
+{"text": "машину какого цвета вы видели", "labels": ["vehicle"], "history": [], "family": "single"}
+{"text": "бригаду к вам уже отправили", "labels": ["help_sent"], "history": [], "family": "single"}
+{"text": "полицейские уже в пути к вам", "labels": ["help_sent"], "history": [], "family": "single"}
+{"text": "я еще не направил к вам помощь", "labels": ["not_sent"], "history": [], "family": "single"}
+{"text": "бригада до сих пор не выехала", "labels": ["not_sent"], "history": [], "family": "single"}
+{"text": "понимаю ваше беспокойство я вас слушаю", "labels": ["reassure"], "history": [], "family": "single"}
+{"text": "попробуйте говорить спокойнее мы поможем", "labels": ["reassure"], "history": [], "family": "single"}
+{"text": "у меня нет на вас времени", "labels": ["dismissal"], "history": [], "family": "single"}
+{"text": "хватит кричать на меня", "labels": ["dismissal"], "history": [], "family": "single"}
+{"text": "не прерывайте связь пожалуйста", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "пожалуйста дождитесь на линии", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "не отключайте телефон разговор еще идет", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "заканчивать звонок пока нельзя", "labels": ["hold"], "history": [], "family": "single"}
+{"text": "последнее сообщение было плохо слышно", "labels": ["repeat"], "history": [], "family": "single"}
+{"text": "повторите то что только что сказали", "labels": ["repeat"], "history": [], "family": "single"}
+{"text": "спасибо можете отключаться", "labels": ["goodbye"], "history": [], "family": "single"}
+{"text": "хорошего дня до свидания", "labels": ["goodbye"], "history": [], "family": "single"}
+{"text": "алло меня слышно", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "здравствуйте вы меня слышите", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "мы на связи", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "добрый вечер", "labels": ["contact"], "history": [], "family": "contact"}
+{"text": "что что", "labels": ["repeat"], "history": ["что произошло", "В подъезде дым."], "family": "repair"}
+{"text": "не услышал еще раз", "labels": ["repeat"], "history": ["что произошло", "В подъезде дым."], "family": "repair"}
+{"text": "можете повторить", "labels": ["repeat"], "history": ["что произошло", "В подъезде дым."], "family": "repair"}
+{"text": "повторите сказанное", "labels": ["repeat"], "history": ["что произошло", "В подъезде дым."], "family": "repair"}
+{"text": "спасателей еще не отправили", "labels": ["not_sent"], "history": [], "family": "negation"}
+{"text": "помощь пока не выезжала", "labels": ["not_sent"], "history": [], "family": "negation"}
+{"text": "разговор не завершайте", "labels": ["hold"], "history": [], "family": "negation"}
+{"text": "спасатели направлены", "labels": ["help_sent"], "history": [], "family": "negation"}
+{"text": "теперь можно завершить разговор", "labels": ["goodbye"], "history": [], "family": "negation"}
+{"text": "посоветуй фильм", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "сколько стоит доллар", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "расскажи анекдот", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "какая столица франции", "labels": ["other"], "history": [], "family": "out_of_domain"}
+{"text": "их много", "labels": ["victim_count"], "history": ["расскажите подробнее", "В салоне заперты пассажиры."], "family": "context"}
+{"text": "сколько осталось", "labels": ["victim_count"], "history": ["расскажите подробнее", "В салоне заперты пассажиры."], "family": "context"}
+{"text": "их много", "labels": ["victim_count"], "history": ["расскажите подробнее", "Тут есть раненые."], "family": "context"}
+{"text": "сколько осталось", "labels": ["victim_count"], "history": ["расскажите подробнее", "Тут есть раненые."], "family": "context"}
+{"text": "можно точнее место", "labels": ["address"], "history": ["расскажите подробнее", "Дым идет из подъезда."], "family": "context"}
+{"text": "где конкретно", "labels": ["address"], "history": ["расскажите подробнее", "Дым идет из подъезда."], "family": "context"}
+{"text": "можно точнее место", "labels": ["address"], "history": ["расскажите подробнее", "Столкнулись автомобили."], "family": "context"}
+{"text": "где конкретно", "labels": ["address"], "history": ["расскажите подробнее", "Столкнулись автомобили."], "family": "context"}
+{"text": "назовитесь пожалуйста", "labels": ["name"], "history": ["расскажите подробнее", "Я могу представиться."], "family": "context"}
+{"text": "скажите как зовут", "labels": ["name"], "history": ["расскажите подробнее", "Я могу представиться."], "family": "context"}
+{"text": "назовитесь пожалуйста", "labels": ["name"], "history": ["расскажите подробнее", "Я очевидец происшествия."], "family": "context"}
+{"text": "скажите как зовут", "labels": ["name"], "history": ["расскажите подробнее", "Я очевидец происшествия."], "family": "context"}
+{"text": "какой именно", "labels": ["phone"], "history": ["расскажите подробнее", "Если связь оборвется, звоните мне."], "family": "context"}
+{"text": "можете назвать номер", "labels": ["phone"], "history": ["расскажите подробнее", "Если связь оборвется, звоните мне."], "family": "context"}
+{"text": "какой именно", "labels": ["phone"], "history": ["расскажите подробнее", "Запишете мой контакт?"], "family": "context"}
+{"text": "можете назвать номер", "labels": ["phone"], "history": ["расскажите подробнее", "Запишете мой контакт?"], "family": "context"}
+{"text": "поясните что там", "labels": ["incident"], "history": ["расскажите подробнее", "Тут такое творится."], "family": "context"}
+{"text": "в чем дело", "labels": ["incident"], "history": ["расскажите подробнее", "Тут такое творится."], "family": "context"}
+{"text": "поясните что там", "labels": ["incident"], "history": ["расскажите подробнее", "Пожалуйста, помогите нам."], "family": "context"}
+{"text": "в чем дело", "labels": ["incident"], "history": ["расскажите подробнее", "Пожалуйста, помогите нам."], "family": "context"}
+{"text": "сколько лет", "labels": ["age"], "history": ["расскажите подробнее", "Травму получил мальчик."], "family": "context"}
+{"text": "примерно какого он возраста", "labels": ["age"], "history": ["расскажите подробнее", "Травму получил мальчик."], "family": "context"}
+{"text": "сколько лет", "labels": ["age"], "history": ["расскажите подробнее", "Женщине стало плохо."], "family": "context"}
+{"text": "примерно какого он возраста", "labels": ["age"], "history": ["расскажите подробнее", "Женщине стало плохо."], "family": "context"}
+{"text": "поясните это", "labels": ["address"], "history": ["вы можете назвать адрес", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "что именно вы имеете в виду", "labels": ["address"], "history": ["вы можете назвать адрес", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "поясните это", "labels": ["name"], "history": ["вы можете назвать свое имя", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "что именно вы имеете в виду", "labels": ["name"], "history": ["вы можете назвать свое имя", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "поясните это", "labels": ["phone"], "history": ["вы можете продиктовать телефон", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "что именно вы имеете в виду", "labels": ["phone"], "history": ["вы можете продиктовать телефон", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "поясните это", "labels": ["incident"], "history": ["можете описать происшествие", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "что именно вы имеете в виду", "labels": ["incident"], "history": ["можете описать происшествие", "Да, сейчас скажу."], "family": "counterfactual"}
+{"text": "поясните это", "labels": ["other"], "history": ["алло", "Здравствуйте."], "family": "ambiguous"}
+{"text": "что именно вы имеете в виду", "labels": ["other"], "history": ["алло", "Здравствуйте."], "family": "ambiguous"}
+{"text": "их много", "labels": ["other"], "history": ["алло", "Здравствуйте."], "family": "ambiguous"}
+{"text": "адрес мне уже известен как ваше имя и фамилия", "labels": ["name"], "history": ["уточните данные", "Дым идет из подъезда."], "family": "correction"}
+{"text": "адрес успел записать как ваше имя и фамилия", "labels": ["name"], "history": ["уточните данные", "Дым идет из подъезда."], "family": "correction"}
+{"text": "адрес мне уже известен дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["уточните данные", "Дым идет из подъезда."], "family": "correction"}
+{"text": "адрес успел записать дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["уточните данные", "Дым идет из подъезда."], "family": "correction"}
+{"text": "адрес мне уже известен опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["уточните данные", "Дым идет из подъезда."], "family": "correction"}
+{"text": "адрес успел записать опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["уточните данные", "Дым идет из подъезда."], "family": "correction"}
+{"text": "имя мне уже известен уточните место куда требуется направить помощь", "labels": ["address"], "history": ["уточните данные", "Я могу представиться."], "family": "correction"}
+{"text": "имя успел записать уточните место куда требуется направить помощь", "labels": ["address"], "history": ["уточните данные", "Я могу представиться."], "family": "correction"}
+{"text": "имя мне уже известен дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["уточните данные", "Я могу представиться."], "family": "correction"}
+{"text": "имя успел записать дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["уточните данные", "Я могу представиться."], "family": "correction"}
+{"text": "имя мне уже известен опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["уточните данные", "Я могу представиться."], "family": "correction"}
+{"text": "имя успел записать опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["уточните данные", "Я могу представиться."], "family": "correction"}
+{"text": "телефон мне уже известен уточните место куда требуется направить помощь", "labels": ["address"], "history": ["уточните данные", "Если связь оборвется, звоните мне."], "family": "correction"}
+{"text": "телефон успел записать уточните место куда требуется направить помощь", "labels": ["address"], "history": ["уточните данные", "Если связь оборвется, звоните мне."], "family": "correction"}
+{"text": "телефон мне уже известен как ваше имя и фамилия", "labels": ["name"], "history": ["уточните данные", "Если связь оборвется, звоните мне."], "family": "correction"}
+{"text": "телефон успел записать как ваше имя и фамилия", "labels": ["name"], "history": ["уточните данные", "Если связь оборвется, звоните мне."], "family": "correction"}
+{"text": "телефон мне уже известен опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["уточните данные", "Если связь оборвется, звоните мне."], "family": "correction"}
+{"text": "телефон успел записать опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["уточните данные", "Если связь оборвется, звоните мне."], "family": "correction"}
+{"text": "описание происшествия мне уже известен уточните место куда требуется направить помощь", "labels": ["address"], "history": ["уточните данные", "Тут такое творится."], "family": "correction"}
+{"text": "описание происшествия успел записать уточните место куда требуется направить помощь", "labels": ["address"], "history": ["уточните данные", "Тут такое творится."], "family": "correction"}
+{"text": "описание происшествия мне уже известен как ваше имя и фамилия", "labels": ["name"], "history": ["уточните данные", "Тут такое творится."], "family": "correction"}
+{"text": "описание происшествия успел записать как ваше имя и фамилия", "labels": ["name"], "history": ["уточните данные", "Тут такое творится."], "family": "correction"}
+{"text": "описание происшествия мне уже известен дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["уточните данные", "Тут такое творится."], "family": "correction"}
+{"text": "описание происшествия успел записать дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["уточните данные", "Тут такое творится."], "family": "correction"}
+{"text": "уточните место куда требуется направить помощь затем уточните как ваше имя и фамилия", "labels": ["address", "name"], "history": [], "family": "compound"}
+{"text": "на какой улице и в каком доме это случилось затем уточните как я могу вас называть", "labels": ["address", "name"], "history": [], "family": "compound"}
+{"text": "кто то нуждается в помощи медиков затем уточните уточните место куда требуется направить помощь", "labels": ["victims", "address"], "history": [], "family": "compound"}
+{"text": "никто не получил повреждений затем уточните на какой улице и в каком доме это случилось", "labels": ["victims", "address"], "history": [], "family": "compound"}
+{"text": "когда вы к нему обращаетесь есть ответ затем уточните можете заметить как он дышит", "labels": ["consciousness", "breathing"], "history": [], "family": "compound"}
+{"text": "сознание сохранено затем уточните самостоятельное дыхание сохраняется", "labels": ["consciousness", "breathing"], "history": [], "family": "compound"}
+{"text": "пострадавшему примерно сколько лет затем уточните скажите число травмированных", "labels": ["age", "victim_count"], "history": [], "family": "compound"}
+{"text": "укажите сколько ему полных лет затем уточните много ли раненых людей", "labels": ["age", "victim_count"], "history": [], "family": "compound"}
+{"text": "дайте номер по которому с вами можно связаться затем уточните как ваше имя и фамилия", "labels": ["phone", "name"], "history": [], "family": "compound"}
+{"text": "запишу ваш контактный телефон затем уточните как я могу вас называть", "labels": ["phone", "name"], "history": [], "family": "compound"}
+{"text": "опишите пожалуйста что случилось у вас", "labels": ["incident"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "чем вызван ваш звонок", "labels": ["incident"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "уточните место куда требуется направить помощь", "labels": ["address"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "на какой улице и в каком доме это случилось", "labels": ["address"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "как ваше имя и фамилия", "labels": ["name"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "как я могу вас называть", "labels": ["name"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "дайте номер по которому с вами можно связаться", "labels": ["phone"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "запишу ваш контактный телефон", "labels": ["phone"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "кто то нуждается в помощи медиков", "labels": ["victims"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "никто не получил повреждений", "labels": ["victims"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "скажите число травмированных", "labels": ["victim_count"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "много ли раненых людей", "labels": ["victim_count"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "пострадавшему примерно сколько лет", "labels": ["age"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "укажите сколько ему полных лет", "labels": ["age"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "когда вы к нему обращаетесь есть ответ", "labels": ["consciousness"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "сознание сохранено", "labels": ["consciousness"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "можете заметить как он дышит", "labels": ["breathing"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "самостоятельное дыхание сохраняется", "labels": ["breathing"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "ничто не угрожает вашей безопасности", "labels": ["danger"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "в том месте где вы стоите безопасно", "labels": ["danger"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "пламя вам оттуда видно", "labels": ["fire"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "уточните откуда дымит", "labels": ["fire"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "нападающий вооружен чем нибудь", "labels": ["weapon"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "угрожающий человек держит нож", "labels": ["weapon"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "какие особенности внешности вы заметили", "labels": ["description"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "опишите одежду подозреваемого", "labels": ["description"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "какой государственный номер у этого автомобиля", "labels": ["vehicle"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "машину какого цвета вы видели", "labels": ["vehicle"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "бригаду к вам уже отправили", "labels": ["help_sent"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "полицейские уже в пути к вам", "labels": ["help_sent"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "я еще не направил к вам помощь", "labels": ["not_sent"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "бригада до сих пор не выехала", "labels": ["not_sent"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "понимаю ваше беспокойство я вас слушаю", "labels": ["reassure"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "попробуйте говорить спокойнее мы поможем", "labels": ["reassure"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "у меня нет на вас времени", "labels": ["dismissal"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "хватит кричать на меня", "labels": ["dismissal"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "не прерывайте связь пожалуйста", "labels": ["hold"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "пожалуйста дождитесь на линии", "labels": ["hold"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "последнее сообщение было плохо слышно", "labels": ["repeat"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "повторите то что только что сказали", "labels": ["repeat"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "спасибо можете отключаться", "labels": ["goodbye"], "history": ["ваш адрес", "Дым идет из подъезда."], "family": "history_distractor"}
+{"text": "хорошего дня до свидания", "labels": ["goodbye"], "history": ["ваш адрес", "Столкнулись автомобили."], "family": "history_distractor"}
+{"text": "я поставил напоминание о встрече завтра в пять вечера", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "в какой день недели мероприятие благотворительного фонда фокус медиа", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "дай мне информацию про сегодняшний хоккейный матч", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "когда у меня обеденный перерыв", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "удали все данные в событии", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста отмени мою следующую стрижку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "можешь удалить текущее событие", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "удали все мои встречи на сегодня", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "добавь в мой календарь мамин ужин на пятое мая", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "эй google сохрани следующий поле чудес для моего свидания с костей", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "скажи мне об этом позже", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "напомни мне когда моя аренда подошла к концу", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "какая альтернатива муке", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "покажи мне кулинарные сайты", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "покажи рецепт фрикаделек", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "как долго нужно готовить цыпленка", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пропылесось дом olly", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пропылесось гостиную", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "я хочу чтобы робот пылесос запустился сегодня в час дня", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "вычисти пылесосом ковровый освежитель с ковра", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста запусти мою кофемашину в четыре часа дня", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "свари мне какой нибудь кофе", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "как мне установить таймер на моей кофемашине", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста сделай мне капучино", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "поменяй цвет на красный", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "сделай комнату голубой", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "установка освещения", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста поменяй цвет освещения на красный", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "уменьши яркость света в доме", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "убавь свет", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "я хочу чтобы в комнате было менее ярко", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "уменьши свет на чуть чуть", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "выключи свет в спальне", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "убедись что свет на кухне выключен", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "olly можешь ли ты пожалуйста выключить свет в моей спальне", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "установи освещение на яркий уровень", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "тут жутко темно", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи диско освещение", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста включи светильники в моем доме", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "сделай светильники немного ярче", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста включи свет", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "ярче свет", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "выключить свет", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "выключи пылесос", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "выключи wemo", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста выключи мою умную розетку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "выключи пожалуйста умную розетку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста включи умную розетку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "не мог бы ты включить умную розетку яндекс", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "если выключатель включен тогда включи если нет то выключи", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи эту розетку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "мне нравится эта песня как она называется повтори ее один раз", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "как насчет ты сохранишь эту музыку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "мне нравится джаз", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "я люблю музыку в стиле рок", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "что это мы слушаем", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "какой название текущей песни", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "где я могу найти эту песню", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "есть ли у меня вся музыка сплин", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи шаффл на spotify", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи полный повтор", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "перемешай этот плейлист", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста проверь мои плейлисты с джазом", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "возобнови историю", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи доктора живаго с того места где я остановился", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "воспроизведи книгу герой нашего времени", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "продолжи читать аудиокнигу", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "сыграй со мной в девятку подстройся под мой уровень мастерства всегда давай мне выигрывать", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "начни танки онлайн", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "сыграй в тетрис", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "давай посмотрим наш любимый футбольный матч на т в", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста вопроизведи все песни клавы коки", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "пожалуйста включи классическую музыку", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи песни из моего плейлиста", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "перемешай и включи песни танцевального жанра", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "хочу посмотреть предыдущий эпизод", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "воспроизведи мне новый подкаст от битый час", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "olly давай послушаем подкаст отвратительные мужики", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "какой следующий эпизод подкаста сыграй это", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "алиса пожалуйста включи радио pandora", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "запусти дорожное радио", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "включи станцию на свое усмотрение", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "можешь найти радио которое я слушал вчера на spotify", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "идет ли сейчас снег", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "какая температура на улице", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "какой будет погода в субботу", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "погода нижний новгород", "labels": ["other"], "history": [], "family": "massive_ood"}
+{"text": "еще раз пожалуйста адрес", "history": [], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста адрес", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста адрес", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста адрес", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать адрес", "history": [], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать адрес", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать адрес", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать адрес", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста точный адрес", "history": [], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста точный адрес", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста точный адрес", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста точный адрес", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать точный адрес", "history": [], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать точный адрес", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать точный адрес", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать точный адрес", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста улицу и номер дома", "history": [], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста улицу и номер дома", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста улицу и номер дома", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста улицу и номер дома", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать улицу и номер дома", "history": [], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать улицу и номер дома", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать улицу и номер дома", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать улицу и номер дома", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["address"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваше имя", "history": [], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваше имя", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваше имя", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваше имя", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваше имя", "history": [], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваше имя", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваше имя", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваше имя", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста как вас зовут", "history": [], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста как вас зовут", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста как вас зовут", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста как вас зовут", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать как вас зовут", "history": [], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать как вас зовут", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать как вас зовут", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать как вас зовут", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста имя заявителя", "history": [], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста имя заявителя", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста имя заявителя", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста имя заявителя", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать имя заявителя", "history": [], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать имя заявителя", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать имя заявителя", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать имя заявителя", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["name"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер телефона", "history": [], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер телефона", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер телефона", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер телефона", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер телефона", "history": [], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер телефона", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер телефона", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер телефона", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста контактный номер", "history": [], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста контактный номер", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста контактный номер", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста контактный номер", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать контактный номер", "history": [], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать контактный номер", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать контактный номер", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать контактный номер", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер для связи", "history": [], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер для связи", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер для связи", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер для связи", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер для связи", "history": [], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер для связи", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер для связи", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер для связи", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["phone"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что произошло", "history": [], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что произошло", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что произошло", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что произошло", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что произошло", "history": [], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что произошло", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что произошло", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что произошло", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что случилось", "history": [], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что случилось", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что случилось", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что случилось", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что случилось", "history": [], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что случилось", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что случилось", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что случилось", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание происшествия", "history": [], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание происшествия", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание происшествия", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание происшествия", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание происшествия", "history": [], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание происшествия", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание происшествия", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание происшествия", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["incident"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста количество пострадавших", "history": [], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста количество пострадавших", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста количество пострадавших", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста количество пострадавших", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать количество пострадавших", "history": [], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать количество пострадавших", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать количество пострадавших", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать количество пострадавших", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько человек пострадало", "history": [], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько человек пострадало", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько человек пострадало", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько человек пострадало", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько человек пострадало", "history": [], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько человек пострадало", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько человек пострадало", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько человек пострадало", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["victim_count"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваш возраст", "history": [], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваш возраст", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваш возраст", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста ваш возраст", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваш возраст", "history": [], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваш возраст", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваш возраст", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать ваш возраст", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько вам лет", "history": [], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько вам лет", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько вам лет", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста сколько вам лет", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько вам лет", "history": [], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько вам лет", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько вам лет", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать сколько вам лет", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["age"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста марку автомобиля", "history": [], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста марку автомобиля", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста марку автомобиля", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста марку автомобиля", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать марку автомобиля", "history": [], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать марку автомобиля", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать марку автомобиля", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать марку автомобиля", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер машины", "history": [], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер машины", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер машины", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста номер машины", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер машины", "history": [], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер машины", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер машины", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать номер машины", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["vehicle"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста приметы человека", "history": [], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста приметы человека", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста приметы человека", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста приметы человека", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать приметы человека", "history": [], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать приметы человека", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать приметы человека", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать приметы человека", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание подозреваемого", "history": [], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание подозреваемого", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание подозреваемого", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста описание подозреваемого", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание подозреваемого", "history": [], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание подозреваемого", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание подозреваемого", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать описание подозреваемого", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["description"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста какое оружие", "history": [], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста какое оружие", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста какое оружие", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста какое оружие", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать какое оружие", "history": [], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать какое оружие", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать какое оружие", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать какое оружие", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста вид оружия", "history": [], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста вид оружия", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста вид оружия", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста вид оружия", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать вид оружия", "history": [], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать вид оружия", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать вид оружия", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать вид оружия", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["weapon"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что горит", "history": [], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что горит", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что горит", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста что горит", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что горит", "history": [], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что горит", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что горит", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать что горит", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста место возгорания", "history": [], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста место возгорания", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста место возгорания", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста место возгорания", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать место возгорания", "history": [], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать место возгорания", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать место возгорания", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать место возгорания", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["fire"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста дышит ли пострадавший", "history": [], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста дышит ли пострадавший", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста дышит ли пострадавший", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста дышит ли пострадавший", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать дышит ли пострадавший", "history": [], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать дышит ли пострадавший", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать дышит ли пострадавший", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать дышит ли пострадавший", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние дыхания", "history": [], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние дыхания", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние дыхания", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние дыхания", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние дыхания", "history": [], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние дыхания", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние дыхания", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние дыхания", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["breathing"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста в сознании ли человек", "history": [], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста в сознании ли человек", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста в сознании ли человек", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста в сознании ли человек", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать в сознании ли человек", "history": [], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать в сознании ли человек", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать в сознании ли человек", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать в сознании ли человек", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние сознания", "history": [], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние сознания", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние сознания", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "еще раз пожалуйста состояние сознания", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние сознания", "history": [], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние сознания", "history": ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние сознания", "history": ["как вас зовут", "Меня зовут Алексей."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}
+{"text": "мне надо повторно записать состояние сознания", "history": ["где вы находитесь", "Улица Полевая, дом восемь."], "labels": ["consciousness"], "action": "repeat", "family": "explicit_object_repeat"}

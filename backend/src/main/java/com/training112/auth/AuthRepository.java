@@ -24,20 +24,25 @@ public final class AuthRepository {
     public AuthRepository(Pool pool) { this.pool = pool; }
 
     public Future<Account> findByLogin(String login) {
-        return pool.preparedQuery("SELECT id, login, password_hash, role FROM app_user WHERE login = $1")
+        return pool.preparedQuery("SELECT id, login, password_hash, role FROM app_user WHERE login = $1 AND NOT blocked")
                 .execute(Tuple.of(login)).map(rows -> rows.size() == 0 ? null : account(rows.iterator().next()));
     }
 
     public Future<Account> createAdmin(String login, String passwordHash) {
-        return pool.preparedQuery("""
+        UUID id = UUID.randomUUID();
+        return pool.withTransaction(db -> db.preparedQuery("""
                 INSERT INTO app_user (id, login, password_hash, role) VALUES ($1, $2, $3, 'admin')
                 ON CONFLICT (login) DO NOTHING RETURNING id, login, password_hash, role
-                """).execute(Tuple.of(UUID.randomUUID(), login, passwordHash)).compose(rows -> {
+                """).execute(Tuple.of(id, login, passwordHash)).compose(rows -> {
                     if (rows.size() == 0) {
                         return Future.failedFuture(new ApiException(409, "login_taken", "Этот логин уже занят."));
                     }
-                    return Future.succeededFuture(account(rows.iterator().next()));
-                });
+                    Account created = account(rows.iterator().next());
+                    return db.preparedQuery("""
+                            INSERT INTO audit_event(action,entity_id,detail)
+                            VALUES ('user.created',$1,'{"role":"admin","source":"console"}'::jsonb)
+                            """).execute(Tuple.of(id)).map(created);
+                }));
     }
 
     public Future<Void> createSession(UUID userId, String tokenHash, OffsetDateTime expiresAt, String previousTokenHash) {
@@ -57,7 +62,7 @@ public final class AuthRepository {
         return pool.preparedQuery("""
                 SELECT u.id, u.login, u.password_hash, u.role FROM auth_session s
                 JOIN app_user u ON u.id = s.user_id
-                WHERE s.token_hash = $1 AND s.expires_at > now()
+                WHERE s.token_hash = $1 AND s.expires_at > now() AND NOT u.blocked
                 """).execute(Tuple.of(tokenHash))
                 .map(rows -> rows.size() == 0 ? null : account(rows.iterator().next()));
     }

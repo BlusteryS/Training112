@@ -1,46 +1,23 @@
 package com.training112.speech;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import org.zeromq.ZMQ;
 
-public record SpeechConfig(List<String> endpoints, String serverKey,
-                           String publicKey, String secretKey) {
-    public static SpeechConfig fromEnvironment() {
-        Map<String, String> env = System.getenv();
-        List<String> endpoints = Arrays.stream(env.getOrDefault("SPEECH_ENDPOINTS", "tcp://speech:5555")
-                .split(",", -1)).map(String::trim).toList();
-        for (String endpoint : endpoints) {
-            URI uri = URI.create(endpoint);
-            if (!"tcp".equals(uri.getScheme()) || uri.getHost() == null || uri.getPort() < 1
-                    || uri.getPort() > 65535 || uri.getRawUserInfo() != null
-                    || !uri.getRawPath().isEmpty() || uri.getRawQuery() != null || uri.getRawFragment() != null) {
-                throw new IllegalArgumentException("SPEECH_ENDPOINTS must contain tcp://host:port addresses");
-            }
+/** One co-located Speech service; remote routing is deliberately unsupported. */
+public record SpeechConfig(String endpoint) {
+    public SpeechConfig {
+        URI uri = URI.create(endpoint);
+        if (!"tcp".equals(uri.getScheme()) || !"127.0.0.1".equals(uri.getHost())
+                || uri.getPort() < 1 || uri.getPort() > 65535
+                || uri.getRawUserInfo() != null || !uri.getRawPath().isEmpty()
+                || uri.getRawQuery() != null || uri.getRawFragment() != null) {
+            throw new IllegalArgumentException("SPEECH_ENDPOINT must be tcp://127.0.0.1:port");
         }
-        if (endpoints.size() > 16 || endpoints.stream().distinct().count() != endpoints.size()) {
-            throw new IllegalArgumentException("Configure between 1 and 16 distinct Speech endpoints");
-        }
-        String server = env.getOrDefault("SPEECH_CURVE_SERVER_KEY", "");
-        String pub = env.getOrDefault("SPEECH_CURVE_PUBLIC_KEY", "");
-        String secret = env.getOrDefault("SPEECH_CURVE_SECRET_KEY", "");
-        if (!(server.isEmpty() && pub.isEmpty() && secret.isEmpty())
-                && !(server.length() == 40 && pub.length() == 40 && secret.length() == 40)) {
-            throw new IllegalArgumentException("Supply all three 40-character Z85 CURVE keys or none");
-        }
-        if (!server.isEmpty()) {
-            for (String key : List.of(server, pub, secret)) {
-                byte[] decoded = ZMQ.Curve.z85Decode(key);
-                if (decoded == null || decoded.length != 32) {
-                    throw new IllegalArgumentException("CURVE keys must use Z85 encoding");
-                }
-            }
-        }
-        return new SpeechConfig(endpoints, server, pub, secret);
     }
-
-    @Override
-    public String toString() { return "SpeechConfig[endpoints=" + endpoints + "]"; }
+    public static SpeechConfig fromEnvironment() { return from(System.getenv()); }
+    static SpeechConfig from(Map<String, String> env) {
+        if (env.containsKey("SPEECH_ENDPOINTS"))
+            throw new IllegalArgumentException("Use one local SPEECH_ENDPOINT; clusters are unsupported");
+        return new SpeechConfig(env.getOrDefault("SPEECH_ENDPOINT", "tcp://127.0.0.1:5555"));
+    }
 }

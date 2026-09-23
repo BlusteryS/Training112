@@ -1,0 +1,8 @@
+{
+  "url": "https://huggingface.co/datasets/AmazonScience/massive/resolve/469ea92fbfd8c862306396c44add0b8e88153702/ru-RU/massive-train.parquet",
+  "sha256": "89ecdc8ddfd00b38d05624c8061dbd10ea7b63f4587ee82750e0e48ebdfb91eb",
+  "bytes": 1011532,
+  "license": "CC-BY-4.0",
+  "source": "Amazon MASSIVE Russian official train split",
+  "use": "Out-of-domain assistant commands, excluding dialogue-control intents"
+}

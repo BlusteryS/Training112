@@ -1,0 +1,353 @@
+{
+  "operator": {
+    "baseline": {
+      "correct": 25,
+      "total": 44,
+      "coverage": 0.6363636363636364,
+      "accuracy_including_abstentions": 0.5681818181818182,
+      "accepted_precision": 0.8928571428571429
+    },
+    "trained": {
+      "correct": 38,
+      "total": 44,
+      "coverage": 0.8863636363636364,
+      "accuracy_including_abstentions": 0.8636363636363636,
+      "accepted_precision": 0.9743589743589743
+    },
+    "ungated_baseline_top1": 0.7954545454545454,
+    "ungated_trained_top1": 0.9772727272727273,
+    "cases": [
+      {
+        "text": "Объясните причину обращения в службу спасения.",
+        "expected": "incident",
+        "trained": "incident",
+        "milliseconds": 8.975749999081017,
+        "baseline": "incident"
+      },
+      {
+        "text": "Что заставило вас набрать сто двенадцать?",
+        "expected": "incident",
+        "trained": null,
+        "milliseconds": 4.32304200148792,
+        "baseline": null
+      },
+      {
+        "text": "Где конкретно требуется наша бригада?",
+        "expected": "address",
+        "trained": null,
+        "milliseconds": 3.17233399982797,
+        "baseline": null
+      },
+      {
+        "text": "Продиктуйте населённый пункт и местоположение.",
+        "expected": "address",
+        "trained": "address",
+        "milliseconds": 2.838250000422704,
+        "baseline": "phone"
+      },
+      {
+        "text": "Представьтесь: кто сообщает об этом?",
+        "expected": "name",
+        "trained": "name",
+        "milliseconds": 2.712749999773223,
+        "baseline": null
+      },
+      {
+        "text": "Подскажите, с кем имею дело.",
+        "expected": "name",
+        "trained": "name",
+        "milliseconds": 2.5562080008967314,
+        "baseline": null
+      },
+      {
+        "text": "Если связь оборвётся, по какому номеру вас набирать?",
+        "expected": "phone",
+        "trained": "phone",
+        "milliseconds": 3.622332998929778,
+        "baseline": "phone"
+      },
+      {
+        "text": "Какой у вас номер сотового?",
+        "expected": "phone",
+        "trained": "phone",
+        "milliseconds": 2.5851250011328375,
+        "baseline": null
+      },
+      {
+        "text": "Из присутствующих есть кто-то с травмами?",
+        "expected": "victims",
+        "trained": "victims",
+        "milliseconds": 3.328291999423527,
+        "baseline": "victims"
+      },
+      {
+        "text": "Врач нужен кому-либо из вас?",
+        "expected": "victims",
+        "trained": "victims",
+        "milliseconds": 2.412374999039457,
+        "baseline": "victims"
+      },
+      {
+        "text": "Уточню: раненых всего сколько?",
+        "expected": "victim_count",
+        "trained": "victim_count",
+        "milliseconds": 2.532124999561347,
+        "baseline": "victim_count"
+      },
+      {
+        "text": "Какое число людей пострадало?",
+        "expected": "victim_count",
+        "trained": "victim_count",
+        "milliseconds": 2.4388749989157077,
+        "baseline": "victim_count"
+      },
+      {
+        "text": "Это пожилой человек или молодой?",
+        "expected": "age",
+        "trained": "age",
+        "milliseconds": 2.6494169997022254,
+        "baseline": "age"
+      },
+      {
+        "text": "Примерный возраст потерпевшего можете сказать?",
+        "expected": "age",
+        "trained": "age",
+        "milliseconds": 2.669083998625865,
+        "baseline": "age"
+      },
+      {
+        "text": "На голос пострадавший как-то реагирует?",
+        "expected": "consciousness",
+        "trained": "consciousness",
+        "milliseconds": 2.918833000876475,
+        "baseline": null
+      },
+      {
+        "text": "С ним удаётся установить контакт?",
+        "expected": "consciousness",
+        "trained": "consciousness",
+        "milliseconds": 3.178249999109539,
+        "baseline": "consciousness"
+      },
+      {
+        "text": "Грудная клетка поднимается при вдохе?",
+        "expected": "breathing",
+        "trained": "breathing",
+        "milliseconds": 2.7723749990400393,
+        "baseline": "breathing"
+      },
+      {
+        "text": "Он может дышать без посторонней помощи?",
+        "expected": "breathing",
+        "trained": "breathing",
+        "milliseconds": 2.9571249997388804,
+        "baseline": "breathing"
+      },
+      {
+        "text": "Ситуация для вас прямо сейчас опасная?",
+        "expected": "danger",
+        "trained": "danger",
+        "milliseconds": 2.7227080008742632,
+        "baseline": null
+      },
+      {
+        "text": "Место, где вы ждёте, не представляет угрозы?",
+        "expected": "danger",
+        "trained": "danger",
+        "milliseconds": 2.888917000746005,
+        "baseline": null
+      },
+      {
+        "text": "Горение где именно наблюдается?",
+        "expected": "fire",
+        "trained": "fire",
+        "milliseconds": 2.5132909995591035,
+        "baseline": "fire"
+      },
+      {
+        "text": "Скажите, из какого места валит дым.",
+        "expected": "fire",
+        "trained": "fire",
+        "milliseconds": 3.204291000656667,
+        "baseline": "fire"
+      },
+      {
+        "text": "При нём было что-нибудь, похожее на оружие?",
+        "expected": "weapon",
+        "trained": "weapon",
+        "milliseconds": 3.5189589998481097,
+        "baseline": "weapon"
+      },
+      {
+        "text": "Он чем-то вооружён или с пустыми руками?",
+        "expected": "weapon",
+        "trained": "weapon",
+        "milliseconds": 3.0948749990784563,
+        "baseline": "weapon"
+      },
+      {
+        "text": "По каким приметам можно узнать нарушителя?",
+        "expected": "description",
+        "trained": "description",
+        "milliseconds": 2.6282909984729486,
+        "baseline": "description"
+      },
+      {
+        "text": "Внешность злоумышленника можете описать?",
+        "expected": "description",
+        "trained": "description",
+        "milliseconds": 3.2409590003226185,
+        "baseline": "description"
+      },
+      {
+        "text": "Регистрационные знаки транспорта различили?",
+        "expected": "vehicle",
+        "trained": "vehicle",
+        "milliseconds": 2.7093749995401595,
+        "baseline": null
+      },
+      {
+        "text": "Марку и расцветку автомобиля сообщите.",
+        "expected": "vehicle",
+        "trained": "vehicle",
+        "milliseconds": 3.1825419991946546,
+        "baseline": "vehicle"
+      },
+      {
+        "text": "Машину с сотрудниками уже выслали на место.",
+        "expected": "help_sent",
+        "trained": "vehicle",
+        "milliseconds": 3.6042499996256083,
+        "baseline": null
+      },
+      {
+        "text": "Заявка принята, спасательная группа выдвинулась.",
+        "expected": "help_sent",
+        "trained": "help_sent",
+        "milliseconds": 3.5937920001742896,
+        "baseline": null
+      },
+      {
+        "text": "Пока никто из сотрудников к вам не выехал.",
+        "expected": "not_sent",
+        "trained": null,
+        "milliseconds": 3.6237500007700874,
+        "baseline": null
+      },
+      {
+        "text": "Отправка бригады ещё не состоялась.",
+        "expected": "not_sent",
+        "trained": "not_sent",
+        "milliseconds": 3.1350420013041003,
+        "baseline": "not_sent"
+      },
+      {
+        "text": "Вижу, что вам тяжело, будем разбираться вместе.",
+        "expected": "reassure",
+        "trained": "reassure",
+        "milliseconds": 2.662083001268911,
+        "baseline": null
+      },
+      {
+        "text": "Попробуйте не паниковать, я остаюсь с вами.",
+        "expected": "reassure",
+        "trained": null,
+        "milliseconds": 3.4644580009626225,
+        "baseline": null
+      },
+      {
+        "text": "Мне ваши жалобы надоели.",
+        "expected": "dismissal",
+        "trained": "dismissal",
+        "milliseconds": 2.603250000902335,
+        "baseline": "repeat"
+      },
+      {
+        "text": "Ищите помощь сами, не занимайте линию.",
+        "expected": "dismissal",
+        "trained": "dismissal",
+        "milliseconds": 2.996584000356961,
+        "baseline": "hold"
+      },
+      {
+        "text": "Ожидайте, не разрывая соединение.",
+        "expected": "hold",
+        "trained": "hold",
+        "milliseconds": 2.864624999347143,
+        "baseline": "hold"
+      },
+      {
+        "text": "Сейчас уточню у коллег, побудьте на телефоне.",
+        "expected": "hold",
+        "trained": "hold",
+        "milliseconds": 4.235750000589178,
+        "baseline": "hold"
+      },
+      {
+        "text": "Сеанс связи пока не завершайте.",
+        "expected": "hold",
+        "trained": "hold",
+        "milliseconds": 2.7079999999841675,
+        "baseline": "hold"
+      },
+      {
+        "text": "Пожалуйста, трубку не вешайте, это ещё не всё.",
+        "expected": "hold",
+        "trained": "hold",
+        "milliseconds": 3.0707499990967335,
+        "baseline": null
+      },
+      {
+        "text": "Начало вашей фразы пропало, повторите её.",
+        "expected": "repeat",
+        "trained": "repeat",
+        "milliseconds": 3.083708001213381,
+        "baseline": "repeat"
+      },
+      {
+        "text": "Снова назовите то же самое, пожалуйста.",
+        "expected": "repeat",
+        "trained": "repeat",
+        "milliseconds": 2.9699580009037163,
+        "baseline": "repeat"
+      },
+      {
+        "text": "Благодарю за сведения, на этом закончим.",
+        "expected": "goodbye",
+        "trained": null,
+        "milliseconds": 3.382416998647386,
+        "baseline": null
+      },
+      {
+        "text": "Теперь можете повесить трубку.",
+        "expected": "goodbye",
+        "trained": "goodbye",
+        "milliseconds": 2.6997080003638985,
+        "baseline": "goodbye"
+      }
+    ]
+  },
+  "out_of_domain": {
+    "total": 2702,
+    "overlap_excluded": 32,
+    "accepted_as_operator": 5,
+    "source": "Official ParaPhraser TEST; headlines, not emergency questions"
+  },
+  "emotion": {
+    "total": 1866,
+    "overlap_excluded": 16,
+    "macro_f1": 0.5608878968420419,
+    "per_label_f1": [
+      0.595797280593325,
+      0.6431095406360424,
+      0.5742092457420924,
+      0.5855263157894737,
+      0.4057971014492754
+    ],
+    "deployed": false,
+    "limitation": "Text emotion only; not acoustic emotion, not a grade"
+  },
+  "encoder": "multilingual-e5-small INT8",
+  "baseline_definition": "Same E5 encoder without trained head",
+  "limitation": "Repeated internal test across versions; independent operator/speaker acceptance still required."
+}

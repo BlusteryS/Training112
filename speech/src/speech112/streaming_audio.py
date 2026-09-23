@@ -9,7 +9,7 @@ import numpy as np
 
 from speech112.audio import VadAudioChannel
 from speech112.config import AudioConfig, VadConfig
-from speech112.providers import AudioChunk, VoiceActivityDetector
+from speech112.providers import AudioChunk, RecognitionStream, VoiceActivityDetector
 from speech112.telephone_noise import RecordedPhoneNoise
 
 SendJson = Callable[[dict[str, object]], Awaitable[None]]
@@ -26,8 +26,9 @@ class StreamingAudio(VadAudioChannel):
         send_json: SendJson,
         send_bytes: SendBytes,
         noise: RecordedPhoneNoise,
+        recognizer: RecognitionStream,
     ):
-        super().__init__(audio.input_sample_rate, audio.block_ms, vad, detector)
+        super().__init__(audio.input_sample_rate, audio.block_ms, vad, detector, recognizer)
         self._send_json = send_json
         self._send_bytes = send_bytes
         self._frame_bytes = audio.input_sample_rate * audio.block_ms // 1000 * 2
@@ -53,9 +54,17 @@ class StreamingAudio(VadAudioChannel):
         interval = self._output_samples / self._rate
         while not self._closed:
             await asyncio.sleep(max(0, deadline - loop.time()))
+            if self._suspended:
+                deadline = loop.time() + interval
+                continue
             # Bound unacknowledged transport independently from the TTS queue.
-            while len(self._pending) * interval >= 0.4:
+            # Playback acknowledgements traverse both the public connection and SSH.
+            # A 128 ms window throttles below real time when RTT exceeds that window.
+            # Keep credit bounded, but larger than RTT + browser jitter buffering.
+            while len(self._pending) * interval >= 0.768:
                 await self._wait_oldest()
+            if self._suspended or self._closed:
+                continue
             samples = self._noise.render(self._output_samples)
             offset = 0
             while self._voice and offset < len(samples):
@@ -90,6 +99,8 @@ class StreamingAudio(VadAudioChannel):
         self._enqueue_frame(np.frombuffer(data, dtype="<i2").astype(np.float32) / 32768.0)
 
     async def play(self, chunk: AudioChunk) -> bool:
+        if self._closed or self._suspended:
+            return False
         if chunk.sample_rate != self._rate:
             raise ValueError("Частота TTS не совпадает с частотой серверного микшера")
         generation = self._playback_generation
@@ -98,6 +109,8 @@ class StreamingAudio(VadAudioChannel):
             await self._changed.wait()
             if generation != self._playback_generation:
                 return False
+        if len(chunk.samples) > self._rate:
+            raise ValueError("Output chunks must not exceed one second")
         self._voice.append(np.asarray(chunk.samples, dtype=np.float32).copy())
         self._queued_samples += len(chunk.samples)
         self._update_playing()

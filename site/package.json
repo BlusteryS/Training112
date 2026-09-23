@@ -10,8 +10,6 @@
     "typecheck": "tsc -p tsconfig.json --pretty false && tsc -p tsconfig.node.json --pretty false"
   },
   "dependencies": {
-    "@training112/components": "0.1.0",
-    "@training112/icons": "0.1.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router-dom": "7.18.3"

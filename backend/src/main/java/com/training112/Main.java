@@ -9,7 +9,8 @@ public final class Main {
 
     public static void main(String[] args) {
         AppConfig config = AppConfig.fromEnvironment();
-        Vertx vertx = Vertx.vertx();
+        Vertx vertx = Vertx.vertx(new io.vertx.core.VertxOptions()
+                .setEventLoopPoolSize(2).setWorkerPoolSize(4));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 vertx.close().toCompletionStage().toCompletableFuture().get(20, TimeUnit.SECONDS);

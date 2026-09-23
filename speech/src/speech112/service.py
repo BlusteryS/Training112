@@ -1,4 +1,6 @@
-"""Private ZeroMQ endpoint for the application backend."""
+"""Private protocol v2: immutable scenario admission, binary audio and same-node resume."""
+
+from __future__ import annotations
 
 import asyncio
 import json
@@ -6,81 +8,58 @@ import logging
 import os
 import signal
 import time
-from collections import deque
+import uuid
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import zmq
 import zmq.asyncio
 
-from speech112.config import AppConfig
-from speech112.llm import OpenAiCompatibleDialogueModel
-from speech112.metrics import TurnMetrics
-from speech112.qwen_tts import QwenSynthesizer
+from speech112.config import AppConfig, capacity
+from speech112.runtime.bundle import ScenarioBundle
+from speech112.runtime.dialogue import ScenarioDialogue
+from speech112.runtime.factory import open_models
+from speech112.runtime.models import OnnxVad
+from speech112.runtime.scheduler import Overloaded
 from speech112.session import VoiceSession
-from speech112.streaming_audio import SendJson, StreamingAudio
-from speech112.stt import GigaAmRecognizer
+from speech112.streaming_audio import StreamingAudio
 from speech112.telephone_noise import PhoneRecordings, RecordedPhoneNoise
 from speech112.transport_security import secure_socket
-from speech112.tts_runtime import open_tts
-from speech112.vad import SileroDetector
-from speech112.wait_estimate import estimate_wait_seconds
 
 LOG = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
 class Peer:
-    inbox: asyncio.Queue[tuple[bytes, bytes]] = field(
-        default_factory=lambda: asyncio.Queue(maxsize=64)
-    )
-    task: asyncio.Task[None] | None = None
-    ready_at: float | None = None
+    attempt_id: str
+    bundle: ScenarioBundle
+    inbox: asyncio.Queue = field(default_factory=lambda: asyncio.Queue(maxsize=64))
+    task: asyncio.Task | None = None
+    suspended_until: float | None = None
 
 
 class Observer:
-    def __init__(self, send: SendJson) -> None:
+    def __init__(self, send):
         self.send = send
 
-    async def emit(self, event: str, **data: Any) -> None:
-        payload = {
-            key: value.as_dict() if isinstance(value, TurnMetrics) else value
-            for key, value in data.items()
-        }
+    async def emit(self, event, **payload):
         await self.send({"type": event, **payload})
 
 
 class SpeechService:
-    def __init__(
-        self,
-        socket: zmq.asyncio.Socket,
-        config: AppConfig,
-        stt: GigaAmRecognizer,
-        llm: OpenAiCompatibleDialogueModel,
-        tts: QwenSynthesizer,
-        recordings: PhoneRecordings,
-        max_sessions: int,
-    ) -> None:
-        self.socket = socket
-        self.config = config
-        self.stt = stt
-        self.llm = llm
-        self.tts = tts
-        self.recordings = recordings
+    def __init__(self, socket, config, models, recordings, max_sessions):
+        self.socket, self.config, self.recordings = socket, config, recordings
+        self.scheduler, self.vad, self.asr, self.intent, self.voices = models
         self.max_sessions = max_sessions
         self.peers: dict[bytes, Peer] = {}
-        self.durations: deque[float] = deque(maxlen=32)
 
-    async def send(self, identity: bytes, kind: bytes, payload: bytes) -> None:
-        # A stalled backend must never suspend another conversation's audio.
-        await self.socket.send_multipart([identity, kind, payload], flags=zmq.DONTWAIT)
+    async def event(self, identity, value):
+        await self.socket.send_multipart(
+            [identity, b"event", json.dumps(value, ensure_ascii=False).encode()], flags=zmq.DONTWAIT
+        )
 
-    async def event(self, identity: bytes, value: dict) -> None:
-        await self.send(identity, b"event", json.dumps(value, ensure_ascii=False).encode())
-
-    async def receive(self) -> None:
+    async def receive(self):
         try:
             while True:
                 frames = await self.socket.recv_multipart()
@@ -88,105 +67,104 @@ class SpeechService:
                     continue
                 identity, kind, payload = frames
                 try:
-                    peer = self.peers.get(identity)
-                    if peer is not None:
-                        if peer.task is not None and not peer.task.cancelling():
-                            try:
-                                peer.inbox.put_nowait((kind, payload))
-                            except asyncio.QueueFull:
-                                peer.task.cancel()
+                    if identity in self.peers:
+                        peer = self.peers[identity]
+                        if (kind == b"audio" and len(payload) != 1024) or len(payload) > 4096:
+                            raise ValueError("Invalid session frame")
+                        if peer.inbox.full():
+                            await self.event(
+                                identity, {"type": "unavailable", "code": "overloaded"}
+                            )
+                            peer.task.cancel()
+                        else:
+                            peer.inbox.put_nowait((kind, payload))
                         continue
                     if kind != b"command":
-                        continue
+                        raise ValueError("Admission command required")
                     command = json.loads(payload)
-                    if command["type"] == "voices":
+                    if not isinstance(command, dict):
+                        raise ValueError("Command must be an object")
+                    # Acknowledgements/end may cross the final closed event in flight.
+                    # They must not recreate a conversation or start a new admission.
+                    if command.get("type") in ("played", "end"):
+                        continue
+                    if command.get("type") == "ping":
+                        await self.event(identity, {"type": "pong"})
+                        continue
+                    if command.get("type") == "health":
                         await self.event(
                             identity,
                             {
-                                "type": "voices",
-                                "default": self.config.voice_id,
-                                "voices": [
-                                    {"id": v.id, "name": v.caller_name, "age": v.caller_age}
-                                    for v in self.config.voices
-                                ],
+                                "type": "health",
+                                "protocol": 2,
+                                "active": len(self.peers),
+                                "capacity": self.max_sessions,
+                                "pending_inference": self.scheduler.pending,
+                                "understanding_sha256": getattr(self.intent, "version", None),
                             },
                         )
-                    elif command["type"] == "start":
-                        if command.get("version") != 1:
-                            raise ValueError("Несовместимая версия аудиопротокола")
-                        if len(self.peers) >= self.max_sessions:
-                            await self.event(
-                                identity,
-                                {
-                                    "type": "busy",
-                                    "message": "Все линии заняты.",
-                                    "estimated_wait_seconds": estimate_wait_seconds(
-                                        [p.ready_at for p in self.peers.values()],
-                                        self.durations,
-                                        time.monotonic(),
-                                    ),
-                                },
-                            )
-                            continue
-                        config = self.config.for_random_voice()
-                        peer = Peer()
-                        self.peers[identity] = peer
-                        peer.task = asyncio.create_task(self.conversation(identity, peer, config))
-                        peer.task.add_done_callback(
-                            lambda task, key=identity: self.release(key)
-                        )
-                except (ValueError, KeyError, TypeError):
+                        continue
+                    if command.get("type") != "start" or command.get("version") != 2:
+                        raise ValueError("Unsupported protocol")
+                    attempt = str(uuid.UUID(command["attempt_id"]))
+                    if any(p.attempt_id == attempt for p in self.peers.values()):
+                        raise ValueError("Attempt already admitted on this node")
+                    if len(self.peers) >= self.max_sessions:
+                        await self.event(identity, {"type": "busy", "code": "capacity_exceeded"})
+                        continue
+                    bundle = ScenarioBundle.parse(command["artifact"].encode(), command["sha256"])
+                    if bundle.document["voice_id"] not in self.voices:
+                        raise ValueError("Scenario voice is not installed on this node")
+                    peer = Peer(attempt, bundle)
+                    self.peers[identity] = peer
+                    peer.task = asyncio.create_task(self.conversation(identity, peer))
+                    peer.task.add_done_callback(
+                        lambda task, key=identity: self.peers.pop(key, None)
+                    )
+                except (ValueError, KeyError, TypeError) as error:
+                    LOG.warning("Rejected speech command: %s", error)
                     with suppress(zmq.ZMQError):
                         await self.event(
-                            identity,
-                            {"type": "unavailable", "message": "Некорректный запрос сеанса."},
+                            identity, {"type": "unavailable", "code": "invalid_request"}
                         )
+                    if identity in self.peers:
+                        self.peers[identity].task.cancel()
                 except zmq.ZMQError:
-                    LOG.warning("Backend disconnected or exceeded its transport queue")
+                    LOG.warning("Gateway transport unavailable")
         finally:
-            tasks = [peer.task for peer in self.peers.values() if peer.task is not None]
+            tasks = [p.task for p in self.peers.values()]
             for task in tasks:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
 
-    def release(self, identity: bytes) -> None:
-        peer = self.peers.pop(identity, None)
-        if peer is not None and peer.ready_at is not None:
-            self.durations.append(time.monotonic() - peer.ready_at)
+    async def conversation(self, identity, peer):
+        async def event(value):
+            await self.event(identity, {**value, "attempt_id": peer.attempt_id})
 
-    async def conversation(self, identity: bytes, peer: Peer, config: AppConfig) -> None:
-        audio = None
+        async def send_audio(payload):
+            await self.socket.send_multipart([identity, b"audio", payload], flags=zmq.DONTWAIT)
+
+        audio = StreamingAudio(
+            self.config.audio,
+            self.config.vad,
+            OnnxVad(self.vad),
+            event,
+            send_audio,
+            RecordedPhoneNoise(self.recordings, self.config.telephone.level),
+            self.asr.stream(),
+        )
+        dialogue = ScenarioDialogue(peer.bundle, self.intent, uuid.UUID(peer.attempt_id).int)
+        session = VoiceSession(
+            self.config.conversation,
+            audio,
+            dialogue,
+            self.voices[peer.bundle.document["voice_id"]],
+            Observer(event),
+        )
         tasks = set()
-
-        async def send_event(value: dict[str, object]) -> None:
-            if value.get("type") == "ready":
-                peer.ready_at = time.monotonic()
-            await self.event(identity, value)
-
-        async def send_audio(value: bytes) -> None:
-            await self.send(identity, b"audio", value)
-
         try:
-            if not self.tts.available or not await self.llm.ready():
-                await send_event({"type": "unavailable", "message": "Речевой сервис не готов."})
-                return
-            detector = await asyncio.to_thread(SileroDetector, config.audio.input_sample_rate)
-            audio = StreamingAudio(
-                config.audio,
-                config.vad,
-                detector,
-                send_event,
-                send_audio,
-                RecordedPhoneNoise(self.recordings, config.telephone.level),
-            )
-            session = VoiceSession(
-                config,
-                audio,
-                self.stt,
-                self.llm,
-                self.tts.speaker(config.voice_id),
-                Observer(send_event),
-            )
+            voice = self.voices[peer.bundle.document["voice_id"]]
+            await self.scheduler.run(voice.require, peer.bundle.utterances())
             tasks = {
                 asyncio.create_task(session.run()),
                 asyncio.create_task(self.receive_audio(identity, peer, audio)),
@@ -196,91 +174,98 @@ class SpeechService:
                 task.result()
         except asyncio.CancelledError:
             raise
-        except Exception:
-            LOG.exception("Conversation failed")
+        except Exception as error:
+            LOG.exception("Speech attempt %s failed", peer.attempt_id)
             with suppress(zmq.ZMQError):
-                await send_event(
-                    {"type": "unavailable", "message": "Разговор прерван из-за ошибки сервиса."}
+                await event(
+                    {
+                        "type": "unavailable",
+                        "code": "overloaded" if isinstance(error, Overloaded) else "runtime_failed",
+                    }
                 )
         finally:
-            if audio is not None:
-                audio.close()
+            audio.close()
             for task in tasks:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
             with suppress(zmq.ZMQError):
-                await send_event({"type": "closed"})
+                await event({"type": "closed"})
 
-    async def receive_audio(self, identity: bytes, peer: Peer, audio: StreamingAudio) -> None:
+    async def receive_audio(self, identity, peer, audio):
         while True:
-            async with asyncio.timeout(15):
+            remaining = (
+                peer.suspended_until - time.monotonic() if peer.suspended_until is not None else 15
+            )
+            if remaining <= 0:
+                raise TimeoutError("Reconnect grace period expired")
+            async with asyncio.timeout(min(15, remaining)):
                 kind, payload = await peer.inbox.get()
             if kind == b"audio":
                 audio.feed_pcm16(payload)
                 continue
             if kind != b"command":
-                raise ValueError("Unknown message kind")
-            event = json.loads(payload)
-            match event["type"]:
-                case "end":
-                    return
+                raise ValueError("Unknown frame kind")
+            value = json.loads(payload)
+            match value["type"]:
                 case "ping":
                     await self.event(identity, {"type": "pong"})
+                case "end":
+                    return
+                case "suspend":
+                    if peer.suspended_until is None:
+                        peer.suspended_until = time.monotonic() + 30
+                        audio.suspend()
+                        await self.event(identity, {"type": "suspended"})
+                case "resume":
+                    if peer.suspended_until is None:
+                        raise ValueError("Session is not suspended")
+                    peer.suspended_until = None
+                    audio.resume()
                 case "played":
-                    generation, sequence = event["generation"], event["id"]
-                    if type(generation) is not int or type(sequence) is not int:
+                    if any(
+                        type(value.get(k)) is not int or not 0 <= value[k] <= 0xFFFFFFFF
+                        for k in ("generation", "id")
+                    ):
                         raise ValueError("Invalid playback acknowledgement")
-                    audio.acknowledge(generation, sequence)
+                    audio.acknowledge(value["generation"], value["id"])
                 case _:
                     raise ValueError("Unknown command")
 
 
-async def serve() -> None:
+async def serve():
     config = AppConfig.load(Path(os.environ.get("SPEECH_CONFIG", "config/default.toml")))
-    max_sessions = int(os.environ.get("SPEECH_MAX_SESSIONS", "1"))
-    if not 1 <= max_sessions <= 128:
-        raise ValueError("SPEECH_MAX_SESSIONS must be between 1 and 128")
-    if (config.audio.input_sample_rate, config.audio.output_sample_rate, config.audio.block_ms) != (
-        16000,
-        24000,
-        32,
-    ):
-        raise ValueError("Protocol v1 requires 16 kHz input, 24 kHz output and 32 ms frames")
     recordings = await asyncio.to_thread(
-        PhoneRecordings.load, Path(config.telephone.directory), config.audio.output_sample_rate
+        PhoneRecordings.load, Path(config.telephone.directory), 24000
     )
-    stt = await asyncio.to_thread(GigaAmRecognizer, config.stt)
-    await asyncio.to_thread(stt.warmup)
-    async with open_tts(config) as tts:
-        llm = OpenAiCompatibleDialogueModel(config.llm)
+    async with open_models(config) as models:
         context = zmq.asyncio.Context()
         socket = context.socket(zmq.ROUTER)
         socket.setsockopt(zmq.LINGER, 0)
         socket.setsockopt(zmq.SNDHWM, 32)
         socket.setsockopt(zmq.RCVHWM, 64)
-        socket.setsockopt(zmq.MAXMSGSIZE, 4096)
+        socket.setsockopt(zmq.MAXMSGSIZE, 524288)
         socket.setsockopt(zmq.ROUTER_MANDATORY, 1)
         try:
             with secure_socket(context, socket):
-                socket.bind(os.environ.get("SPEECH_BIND", "tcp://0.0.0.0:5555"))
-                service = SpeechService(socket, config, stt, llm, tts, recordings, max_sessions)
+                endpoint = os.environ.get("SPEECH_BIND", "tcp://127.0.0.1:5555")
+                from urllib.parse import urlparse
+                if urlparse(endpoint).hostname != "127.0.0.1":
+                    raise ValueError("Speech must bind to the host loopback interface")
+                socket.bind(endpoint)
+                service = SpeechService(socket, config, models, recordings, capacity())
                 task = asyncio.create_task(service.receive())
-                loop = asyncio.get_running_loop()
                 for signum in (signal.SIGINT, signal.SIGTERM):
-                    loop.add_signal_handler(signum, task.cancel)
-                LOG.info("Speech ready; conversation limit: %s", max_sessions)
+                    asyncio.get_running_loop().add_signal_handler(signum, task.cancel)
+                LOG.info(
+                    "CPU Speech ready; node capacity=%s (must be load-tested)", service.max_sessions
+                )
                 with suppress(asyncio.CancelledError):
                     await task
         finally:
             socket.close()
             context.term()
-            await llm.close()
 
 
-def main() -> None:
+def main():
     logging.basicConfig(level=logging.INFO)
     asyncio.run(serve())
-
-
-if __name__ == "__main__":
-    main()

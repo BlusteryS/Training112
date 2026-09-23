@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "paraphraser-train.jsonl",
+      "url": "https://huggingface.co/datasets/merionum/ru_paraphraser/resolve/43265056790b8f7c59e0139acb4be0a8dad2c8f4/train.jsonl",
+      "sha256": "c5b486526eb6eefe3d723e31ea80114cf1f7a60529024af610c3628ee5271c18",
+      "bytes": 2170689
+    },
+    {
+      "path": "cedr-main_train-00000-of-00001.parquet",
+      "url": "https://huggingface.co/datasets/sagteam/cedr_v1/resolve/abafbe63cf92c33791b217e8f4f3460f816f1d96/main/train-00000-of-00001.parquet",
+      "sha256": "6d26c21daed57be1657a80a78fe04c4865ad249f49070b6c5e00b2f90f811e1a",
+      "bytes": 757345
+    },
+    {
+      "path": "paraphraser-test.jsonl",
+      "url": "https://huggingface.co/datasets/merionum/ru_paraphraser/resolve/43265056790b8f7c59e0139acb4be0a8dad2c8f4/test.jsonl",
+      "sha256": "3358a2efd2a3a6bcc7d60a47ccd5c397d976d73569cbdee9b2e32891c0cf2f6f",
+      "bytes": 604778
+    },
+    {
+      "path": "cedr-main_test-00000-of-00001.parquet",
+      "url": "https://huggingface.co/datasets/sagteam/cedr_v1/resolve/abafbe63cf92c33791b217e8f4f3460f816f1d96/main/test-00000-of-00001.parquet",
+      "sha256": "45c72e49d06ffb1db34aa3082f24c28148c1bfba6aa16ee150b7d43c52de2dc3",
+      "bytes": 187983
+    },
+    {
+      "path": "golos-validation.parquet",
+      "url": "https://huggingface.co/datasets/bond005/sberdevices_golos_10h_crowd/resolve/e634b6b810e4d30c81b4c6d8262379fe8b9f708c/data/validation-00000-of-00001-58253c41d3f63473.parquet",
+      "sha256": "97987326be264f6c5ddfd424d4a09e1854d643ff4b50da6b682f9943151101ac",
+      "bytes": 98317636
+    },
+    {
+      "path": "paraphraser-README.md",
+      "url": "https://huggingface.co/datasets/merionum/ru_paraphraser/resolve/43265056790b8f7c59e0139acb4be0a8dad2c8f4/README.md",
+      "sha256": "f031eb0125b12f290ba88983c938607b8fc0ef7cfe75a8145b0457c9c663b40e",
+      "bytes": 3033
+    },
+    {
+      "path": "cedr-README.md",
+      "url": "https://huggingface.co/datasets/sagteam/cedr_v1/resolve/abafbe63cf92c33791b217e8f4f3460f816f1d96/README.md",
+      "sha256": "c6e7d1a2ba89488ad49f9a051a647ec166a712a5a58d31ffdd24d78c70995154",
+      "bytes": 9185
+    },
+    {
+      "path": "golos-mirror-card.md",
+      "url": "https://huggingface.co/datasets/bond005/sberdevices_golos_10h_crowd/resolve/e634b6b810e4d30c81b4c6d8262379fe8b9f708c/README.md",
+      "sha256": "125813b4b07aff38ef9307fe94cbf5cf61ae5c42048675576c6eafea44567014",
+      "bytes": 6752
+    },
+    {
+      "path": "rubert-base/README.md",
+      "url": "https://huggingface.co/cointegrated/rubert-tiny2/resolve/e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae/README.md",
+      "sha256": "6eec7047e9db76ee30e4c9dd542a25cf0c4f1f93a2119db56cd10f0c393fc00f",
+      "bytes": 2401
+    },
+    {
+      "path": "rubert-base/config.json",
+      "url": "https://huggingface.co/cointegrated/rubert-tiny2/resolve/e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae/config.json",
+      "sha256": "adee8b3e344bcb8379f44d0b3577c267d52881341e05d973c43e49974778dfff",
+      "bytes": 693
+    },
+    {
+      "path": "rubert-base/model.safetensors",
+      "url": "https://huggingface.co/cointegrated/rubert-tiny2/resolve/e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae/model.safetensors",
+      "sha256": "26ebb6db2a68593c54c74902d7a74f332da66297693f965cc9f1b0af4abf3894",
+      "bytes": 117529600
+    },
+    {
+      "path": "rubert-base/special_tokens_map.json",
+      "url": "https://huggingface.co/cointegrated/rubert-tiny2/resolve/e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae/special_tokens_map.json",
+      "sha256": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+      "bytes": 112
+    },
+    {
+      "path": "rubert-base/tokenizer.json",
+      "url": "https://huggingface.co/cointegrated/rubert-tiny2/resolve/e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae/tokenizer.json",
+      "sha256": "45cc9f974145661db6bc020795839d1dc371adc19a9c78b910393209b4fe5efc",
+      "bytes": 1741842
+    },
+    {
+      "path": "rubert-base/tokenizer_config.json",
+      "url": "https://huggingface.co/cointegrated/rubert-tiny2/resolve/e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae/tokenizer_config.json",
+      "sha256": "74aab51b71a8d116c035464df96c600770f9844696b8965e397b2b1649010686",
+      "bytes": 401
+    }
+  ]
+}

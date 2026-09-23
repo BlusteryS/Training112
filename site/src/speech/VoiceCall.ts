@@ -1,5 +1,6 @@
 export type SpeechEvent =
-  | { type: 'ready' | 'listening' | 'barge_in' | 'closed' | 'ended' | 'pong' }
+  | { type: 'ready' | 'resumed' | 'listening' | 'barge_in' | 'closed' | 'pong' }
+  | { type: 'ended'; message?: string }
   | { type: 'waiting'; estimated_wait_seconds: number }
   | { type: 'transcript'; text: string }
   | { type: 'assistant'; text: string; turn: number }
@@ -12,7 +13,7 @@ type CallCallbacks = {
   ready: () => void;
   waiting: (seconds: number) => void;
   text: (speaker: 'operator' | 'caller', text: string, turn?: number) => void;
-  closed: () => void;
+  closed: (failed: boolean) => void;
 };
 
 /** Microphone capture stays connected throughout playback and interruption. */
@@ -20,8 +21,7 @@ export class VoiceCall {
   private closed = false;
   private ready = false;
   private generation = 0;
-  private scheduledAt = 0;
-  private readonly sources = new Set<AudioBufferSourceNode>();
+  private playback?: AudioWorkletNode;
   private stream?: MediaStream;
   private context?: AudioContext;
   private capture?: AudioWorkletNode;
@@ -30,11 +30,16 @@ export class VoiceCall {
   private connectionTimer?: ReturnType<typeof setTimeout>;
   private heartbeat?: ReturnType<typeof setInterval>;
   private lastServerActivity = 0;
+  private reconnectUntil = 0;
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
   private readonly onPageHide = () => this.close();
 
-  constructor(private readonly callbacks: CallCallbacks) {}
+  constructor(private readonly callbacks: CallCallbacks, private readonly attemptId: string) {}
 
   async start() {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Для звонка откройте тренажёр по HTTPS. Доступ к микрофону по HTTP разрешён только на localhost. Обратитесь к администратору.');
+    }
     window.addEventListener('pagehide', this.onPageHide);
     this.callbacks.status('Разрешите доступ к микрофону.');
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: {
@@ -53,10 +58,27 @@ export class VoiceCall {
     microphone.contentHint = 'speech';
     microphone.onended = () => this.close('Микрофон отключён.');
     this.context = new AudioContext({ latencyHint: 'interactive', sampleRate: 48000 });
-    await this.context.audioWorklet.addModule('/audio-worklet.js');
+    await Promise.all([
+      this.context.audioWorklet.addModule('/audio-worklet.js'),
+      this.context.audioWorklet.addModule('/playback-worklet.js'),
+    ]);
     if (this.closed) return;
     await this.context.resume();
     if (this.closed) return;
+    this.playback = new AudioWorkletNode(this.context, 'pcm24-playback', {
+      numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1],
+    });
+    this.playback.connect(this.context.destination);
+    this.playback.onprocessorerror = () => this.close('Ошибка воспроизведения звука.');
+    this.playback.port.onmessage = ({ data }: MessageEvent<{ type: string; generation: number; id: number }>) => {
+      if (this.closed) return;
+      if (data.type === 'overflow') {
+        this.close('Переполнен буфер воспроизведения. Подключитесь повторно.');
+      } else if (data.type === 'played' && data.generation === this.generation
+        && this.socket?.readyState === WebSocket.OPEN) {
+        this.socket.send(JSON.stringify(data));
+      }
+    };
     this.capture = new AudioWorkletNode(this.context, 'pcm16-capture');
     this.input = this.context.createMediaStreamSource(this.stream);
     this.input.connect(this.capture);
@@ -70,33 +92,36 @@ export class VoiceCall {
       }
     };
 
+    this.capture.port.onmessage = ({ data }: MessageEvent<ArrayBuffer>) => {
+      const socket = this.socket;
+      if (!this.ready || this.closed || !socket) return;
+      if (socket.bufferedAmount > 8192) {
+        this.reconnect();
+      } else if (socket.readyState === WebSocket.OPEN) socket.send(data);
+    };
+    this.connect();
+  }
+
+  private connect() {
+    if (this.closed) return;
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${protocol}://${location.host}/api/speech/session`);
+    const socket = new WebSocket(`${protocol}://${location.host}/api/speech/session?attempt_id=${encodeURIComponent(this.attemptId)}`);
     this.socket = socket;
     socket.binaryType = 'arraybuffer';
-    this.connectionTimer = setTimeout(() => this.close('Сервер не ответил. Попробуйте позже.'), 90_000);
-    this.capture.port.onmessage = ({ data }: MessageEvent<ArrayBuffer>) => {
-      if (!this.ready || this.closed) return;
-      if (socket.bufferedAmount > 32000) {
-        this.close('Соединение не успевает передавать звук. Подключитесь повторно.');
-      } else if (socket.readyState === WebSocket.OPEN) {
-        socket.send(data);
-      }
-    };
+    this.connectionTimer = setTimeout(() => this.reconnect(), 10_000);
     socket.onopen = () => {
       if (this.closed) return;
-      clearTimeout(this.connectionTimer);
       this.lastServerActivity = Date.now();
       this.heartbeat = setInterval(() => {
         if (Date.now() - this.lastServerActivity > 20_000) {
-          this.close('Сервер не отвечает. Проверьте соединение.');
+          this.reconnect();
         } else if (socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({ type: 'ping' }));
         }
       }, 5_000);
     };
-    socket.onerror = () => this.close('Не удалось подключиться. Проверьте соединение и вход в аккаунт.');
-    socket.onclose = () => this.close('Разговор завершён.');
+    socket.onerror = () => socket.close();
+    socket.onclose = () => this.reconnect();
     socket.onmessage = ({ data }: MessageEvent<string | ArrayBuffer>) => {
       if (this.closed) return;
       this.lastServerActivity = Date.now();
@@ -109,6 +134,26 @@ export class VoiceCall {
     };
   }
 
+  private reconnect() {
+    if (this.closed) return;
+    this.ready = false;
+    this.stopPlayback();
+    clearTimeout(this.connectionTimer);
+    clearInterval(this.heartbeat);
+    clearTimeout(this.reconnectTimer);
+    if (this.socket) {
+      this.socket.onclose = this.socket.onerror = this.socket.onmessage = null;
+      this.socket.close();
+    }
+    if (!this.reconnectUntil) this.reconnectUntil = Date.now() + 25_000;
+    if (Date.now() >= this.reconnectUntil) {
+      this.close('Не удалось восстановить этот звонок. Данные попытки сохранены.');
+      return;
+    }
+    this.callbacks.status('Восстанавливаем текущий звонок…');
+    this.reconnectTimer = setTimeout(() => this.connect(), 750);
+  }
+
   private event(event: SpeechEvent) {
     switch (event.type) {
       case 'waiting':
@@ -118,16 +163,18 @@ export class VoiceCall {
         break;
       case 'pong':
         break;
+      case 'resumed':
       case 'ready':
         if (this.ready) break;
         clearTimeout(this.connectionTimer);
         this.ready = true;
+        this.reconnectUntil = 0;
         this.callbacks.ready();
-        this.callbacks.status('Звонящий подключён. Можно говорить и перебивать.');
+        this.callbacks.status('Заявитель на линии. Выслушайте его и задавайте уточняющие вопросы.');
         break;
       case 'listening':
       case 'barge_in':
-        this.callbacks.status('Слушаю…');
+        this.callbacks.status('Микрофон включён. Говорите с заявителем.');
         break;
       case 'transcript':
         this.callbacks.text('operator', event.text);
@@ -137,8 +184,8 @@ export class VoiceCall {
         break;
       case 'audio_stop':
         if (event.generation > this.generation) {
-          this.stopPlayback();
           this.generation = event.generation;
+          this.stopPlayback();
         }
         break;
       case 'metrics':
@@ -147,13 +194,13 @@ export class VoiceCall {
       case 'error':
       case 'busy':
       case 'unavailable':
-        this.close(event.message);
+        this.close(event.message || 'Звонок остановлен сервером. Повторите попытку.', true);
         break;
       case 'ended':
-        this.close('Звонящий завершил разговор.');
+        this.close(event.message ?? 'Заявитель завершил разговор.', false);
         break;
       case 'closed':
-        this.close();
+        this.close('Соединение со звонком закрыто.');
         break;
     }
   }
@@ -168,42 +215,22 @@ export class VoiceCall {
     if (rate !== 24000) throw new Error('Invalid sample rate');
     if (generation < this.generation) return;
     if (generation > this.generation) {
-      this.stopPlayback();
       this.generation = generation;
+      this.stopPlayback();
     }
-    if (this.scheduledAt - context.currentTime > 0.5) throw new Error('Playback queue exceeded');
-    const samples = new Float32Array(packet, 12);
-    const buffer = context.createBuffer(1, samples.length, rate);
-    buffer.copyToChannel(samples, 0);
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-    source.connect(context.destination);
-    const start = Math.max(context.currentTime + 0.015, this.scheduledAt);
-    this.scheduledAt = start + buffer.duration;
-    this.sources.add(source);
-    source.onended = () => {
-      this.sources.delete(source);
-      source.disconnect();
-      if (!this.closed && generation === this.generation && this.socket?.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: 'played', generation, id }));
-      }
-    };
-    source.start(start);
+    this.playback?.port.postMessage({
+      type: 'audio', generation, id, samples: new Float32Array(packet, 12),
+    }, [packet]);
   }
 
   private stopPlayback() {
-    for (const source of this.sources) {
-      source.onended = null;
-      source.stop();
-      source.disconnect();
-    }
-    this.sources.clear();
-    this.scheduledAt = this.context?.currentTime ?? 0;
+    this.playback?.port.postMessage({ type: 'reset', generation: this.generation });
   }
 
-  close(message = 'Разговор завершён.') {
+  close(message?: string, failed = message !== undefined) {
     if (this.closed) return;
     this.closed = true;
+    clearTimeout(this.reconnectTimer);
     this.ready = false;
     clearTimeout(this.connectionTimer);
     clearInterval(this.heartbeat);
@@ -212,15 +239,16 @@ export class VoiceCall {
       this.socket.onclose = null;
       this.socket.onerror = null;
       this.socket.onmessage = null;
-      if (this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: 'end' }));
+      if (this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: 'end', failed }));
       this.socket.close();
     }
     this.capture?.disconnect();
+    this.playback?.disconnect();
     this.input?.disconnect();
     this.stream?.getTracks().forEach((track) => { track.onended = null; track.stop(); });
     this.stopPlayback();
     if (this.context && this.context.state !== 'closed') void this.context.close();
-    this.callbacks.status(message);
-    this.callbacks.closed();
+    this.callbacks.status(message ?? 'Разговор завершён.');
+    this.callbacks.closed(failed);
   }
 }

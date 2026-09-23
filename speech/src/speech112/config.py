@@ -1,163 +1,112 @@
 from __future__ import annotations
 
 import os
-import random
 import tomllib
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
 class AudioConfig:
-    input_sample_rate: int
-    output_sample_rate: int
-    block_ms: int
+    input_sample_rate: int = 16000
+    output_sample_rate: int = 24000
+    block_ms: int = 32
 
 
 @dataclass(frozen=True, slots=True)
 class VadConfig:
-    threshold: float
-    barge_in_threshold: float
-    speech_start_ms: int
-    silence_end_ms: int
-    pre_roll_ms: int
-    max_utterance_seconds: int
-
-
-@dataclass(frozen=True, slots=True)
-class SttConfig:
-    model: str
-    device: str
-    language: str
-    fp16_encoder: bool
-    download_root: str = ".models/gigaam"
-
-
-@dataclass(frozen=True, slots=True)
-class LlmConfig:
-    base_url: str
-    api_key: str
-    model: str
-    temperature: float
-    top_p: float
-    first_sentence_min_chars: int
+    threshold: float = 0.55
+    barge_in_threshold: float = 0.72
+    speech_start_ms: int = 96
+    silence_end_ms: int = 320
+    pre_roll_ms: int = 224
+    max_utterance_seconds: int = 30
 
 
 @dataclass(frozen=True, slots=True)
 class ConversationConfig:
-    idle_seconds: float
-    idle_repeat_seconds: float
-    part_pause_ms: int
-
-    def __post_init__(self) -> None:
-        if not 0 < self.idle_seconds <= self.idle_repeat_seconds:
-            raise ValueError("Интервалы ожидания должны быть положительными и не убывать")
-        if not 0 <= self.part_pause_ms <= 1000:
-            raise ValueError("Пауза между частями ответа должна быть от 0 до 1000 мс")
+    idle_seconds: float = 8
+    idle_repeat_seconds: float = 15
+    resume_seconds: int = 30
 
 
 @dataclass(frozen=True, slots=True)
 class TelephoneConfig:
-    directory: str
-    level: float
-
-    def __post_init__(self) -> None:
-        if not 0 <= self.level <= 1:
-            raise ValueError("Громкость телефонного фона должна быть от 0 до 1")
+    directory: str = "assets/telephone"
+    level: float = 0.35
 
 
 @dataclass(frozen=True, slots=True)
-class QwenTtsConfig:
-    device: str
-    chunk_size: int
-    max_sequence_length: int
-    model_dir: str = ".models/qwen3-tts-1.7b-base"
-    python: str = "/opt/qwen/bin/python"
+class RuntimeConfig:
+    workers: int = 2
+    queue_size: int = 32
+    model_threads: int = 1
+    vad_model: str = ".models/silero/silero_vad.onnx"
+    asr_directory: str = ".models/t-one"
+    intent_provider: str = "contextual"
+    intent_directory: str = ".models/e5-small-int8"
+    context_directory: str | None = None
+    audio_cache: str = ".cache/audio"
 
 
 @dataclass(frozen=True, slots=True)
 class VoiceConfig:
     id: str
-    caller_name: str
-    caller_age: int
-    reference_audio: str
-    reference_start_seconds: float
-    reference_end_seconds: float
-    reference_text: str
-
-
-@dataclass(frozen=True, slots=True)
-class ScenarioConfig:
-    caller_name: str
-    caller_age: int
-    emotion: str
-    location: str
-    incident: str
-    difficulty: str
+    model: str
 
 
 @dataclass(frozen=True, slots=True)
 class AppConfig:
     audio: AudioConfig
     vad: VadConfig
-    stt: SttConfig
-    llm: LlmConfig
     conversation: ConversationConfig
     telephone: TelephoneConfig
-    tts: QwenTtsConfig
-    scenario: ScenarioConfig
+    runtime: RuntimeConfig
     voices: tuple[VoiceConfig, ...]
-    voice_id: str
-
-    def for_random_voice(self) -> AppConfig:
-        return self.for_voice(random.choice(self.voices).id)
-
-    def for_voice(self, voice_id: str) -> AppConfig:
-        voice = next((voice for voice in self.voices if voice.id == voice_id), None)
-        if voice is None:
-            raise ValueError("Неизвестный персонаж")
-        return replace(
-            self,
-            voice_id=voice_id,
-            scenario=replace(
-                self.scenario, caller_name=voice.caller_name, caller_age=voice.caller_age
-            ),
-        )
 
     @classmethod
     def load(cls, path: Path) -> AppConfig:
         with path.open("rb") as stream:
             values = tomllib.load(stream)
-        values = _expand_environment(values)
-        voices = tuple(VoiceConfig(id=key, **value) for key, value in values["voices"].items())
-        voice = next((voice for voice in voices if voice.id == values["voice_id"]), None)
-        if voice is None:
-            raise ValueError("Неизвестный персонаж по умолчанию")
-        return cls(
-            audio=AudioConfig(**values["audio"]),
-            vad=VadConfig(**values["vad"]),
-            stt=SttConfig(**values["stt"]),
-            llm=LlmConfig(**values["llm"]),
-            conversation=ConversationConfig(**values["conversation"]),
-            telephone=TelephoneConfig(**values["telephone"]),
-            tts=QwenTtsConfig(**values["tts"]),
-            scenario=ScenarioConfig(
-                **values["scenario"], caller_name=voice.caller_name, caller_age=voice.caller_age
-            ),
-            voices=voices,
-            voice_id=voice.id,
+        if values.pop("version", None) != 2:
+            raise ValueError("Only CPU runtime configuration version 2 is supported")
+        unknown = set(values) - {"audio", "vad", "conversation", "telephone", "runtime", "voices"}
+        if unknown:
+            raise ValueError(f"Unknown configuration sections: {sorted(unknown)}")
+        config = cls(
+            AudioConfig(**values.get("audio", {})),
+            VadConfig(**values.get("vad", {})),
+            ConversationConfig(**values.get("conversation", {})),
+            TelephoneConfig(**values.get("telephone", {})),
+            RuntimeConfig(**values.get("runtime", {})),
+            tuple(VoiceConfig(key, **value) for key, value in values.get("voices", {}).items()),
         )
+        if config.audio != AudioConfig():
+            raise ValueError("Audio protocol requires 16 kHz PCM16 input / 24 kHz output / 32 ms")
+        r, v, c = config.runtime, config.vad, config.conversation
+        if (
+            not 1 <= r.workers <= 32
+            or not 0 <= r.queue_size <= 256
+            or not 1 <= r.model_threads <= 8
+        ):
+            raise ValueError("Invalid CPU worker/thread/queue limits")
+        if r.intent_provider != "contextual":
+            raise ValueError("Live runtime requires the contextual semantic parser")
+        if not 0 < v.threshold <= v.barge_in_threshold < 1:
+            raise ValueError("Invalid VAD thresholds")
+        if not 32 <= v.speech_start_ms <= v.pre_roll_ms <= 1024:
+            raise ValueError("Invalid speech start / pre-roll")
+        if not 96 <= v.silence_end_ms <= 1500 or not 1 <= v.max_utterance_seconds <= 60:
+            raise ValueError("Invalid end-of-turn settings")
+        if not 0 < c.idle_seconds <= c.idle_repeat_seconds or c.resume_seconds != 30:
+            raise ValueError("Invalid idle or reconnect settings")
+        if not 0 <= config.telephone.level <= 1 or not config.voices:
+            raise ValueError("A voice and valid ambience level are required")
+        return config
 
 
-def _expand_environment(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {key: _expand_environment(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [_expand_environment(item) for item in value]
-    if isinstance(value, str):
-        expanded = os.path.expandvars(value)
-        if "${" in expanded:
-            raise ValueError(f"Unresolved environment variable in configuration: {value}")
-        return expanded
+def capacity() -> int:
+    value = int(os.environ.get("SPEECH_MAX_SESSIONS", "20"))
+    if not 1 <= value <= 128:
+        raise ValueError("SPEECH_MAX_SESSIONS must be between 1 and 128")
     return value

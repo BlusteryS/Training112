@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Protocol
 
 import numpy as np
@@ -20,22 +19,13 @@ class AudioChunk:
 
 class VoiceActivityDetector(Protocol):
     def probability(self, frame: NDArray[np.float32]) -> float: ...
-
     def reset(self) -> None: ...
 
 
-class SpeechRecognizer(Protocol):
-    async def transcribe(self, audio: NDArray[np.float32]) -> str: ...
-
-
-class DialogueControl(Enum):
-    END_CALL = "end_call"
-
-
-class DialogueModel(Protocol):
-    def stream_reply(
-        self, messages: list[dict[str, str]]
-    ) -> AsyncIterator[str | DialogueControl]: ...
+class RecognitionStream(Protocol):
+    async def accept(self, frame: NDArray[np.float32]) -> str: ...
+    async def finish(self) -> str: ...
+    def reset(self) -> None: ...
 
 
 class SpeechSynthesizer(Protocol):
@@ -47,15 +37,10 @@ class AudioChannel(Protocol):
 
     @property
     def playback_generation(self) -> int: ...
-
     async def detect_speech(self) -> None: ...
-
     async def play(self, chunk: AudioChunk) -> bool: ...
-
     async def drain(self) -> None: ...
-
     def interrupt(self) -> None: ...
-
     def close(self) -> None: ...
 
 
