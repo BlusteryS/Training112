@@ -5,9 +5,10 @@ export type User = {
   id: string;
   login: string;
   role: 'user' | 'teacher' | 'admin';
+  workstation?: string;
 };
 
-type Credentials = { login: string; password: string };
+type Credentials = { login: string; password: string; workstation: string };
 type AuthResponse = { user: User };
 
 export const authApi = {

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api';
 import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario } from './types';
+import { PanelCard, PanelItemTitle, PanelList, PanelListItem, PanelSubtitle, PanelTitle } from './Panel';
 
 export function Lessons() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -50,7 +51,7 @@ export function Lessons() {
       setMessage('Занятие создано. Когда участники будут готовы, нажмите «Открыть приём звонков» в списке ниже.');
     });
   }
-  return <section aria-labelledby="lessons-title"><h2 id="lessons-title">Занятия</h2>
+  return <div><PanelTitle>Занятия</PanelTitle>
     <p>Выберите группу и утверждённый сценарий. После запуска каждый участник увидит задание у себя и сможет принять учебный звонок от виртуального заявителя.</p>
     <form onSubmit={create}><fieldset disabled={busy}><legend>Назначить занятие</legend>
       <p><label>Кому <select required value={group} onChange={(e) => setGroup(e.target.value)}>
@@ -65,10 +66,10 @@ export function Lessons() {
       <button disabled={scenarios.find((s) => s.id === scenario)?.status !== 'approved' || !groups.find((g) => g.id === group)?.member_count}>Создать занятие</button>
     </fieldset></form>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
-    <h3>Назначенные занятия</h3>
+    <PanelSubtitle>Назначенные занятия</PanelSubtitle>
     {!lessons.length && <p>Занятий пока нет.</p>}
-    {lessons.map((lesson) => <article key={lesson.id}>
-      <h4>{lesson.title} — {lesson.group_name}</h4>
+    {lessons.map((lesson) => <PanelCard key={lesson.id}>
+      <PanelItemTitle>{lesson.title} — {lesson.group_name}</PanelItemTitle>
       <p>{lessonNames[lesson.status] ?? lesson.status}.</p>
       {lesson.status === 'planned' && <button disabled={busy} onClick={() => void act(async () => {
         await api(`training/lessons/${lesson.id}/start`, {});
@@ -80,9 +81,9 @@ export function Lessons() {
           await api(`training/lessons/${lesson.id}/finish`, {}); setMessage('Занятие завершено.');
         })}>Завершить занятие для всех</button>
       </>}
-      <ul>{assignments.filter((a) => a.lesson_id === lesson.id).map((a) => <li key={a.id}>
+      <PanelList>{assignments.filter((a) => a.lesson_id === lesson.id).map((a) => <PanelListItem key={a.id}>
         {a.learner_login} — {a.attempt_status ? attemptNames[a.attempt_status] ?? a.attempt_status : lesson.status === 'completed' ? 'Не приступил' : 'Ожидает приёма звонка'}
-      </li>)}</ul>
-    </article>)}
-  </section>;
+      </PanelListItem>)}</PanelList>
+    </PanelCard>)}
+  </div>;
 }

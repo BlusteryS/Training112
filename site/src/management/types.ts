@@ -7,6 +7,9 @@ export type Assignment = {
   title: string; group_name: string; mode: string; status: string;
   instructions: string | null; difficulty: string | null;
   attempt_id: string | null; attempt_status: string | null;
+  created_at: string | null;
+  caller_phone: string | null;
+  card: Record<string, string> | null;
 };
 export type ScenarioDocument = {
   schema_version: number; title: string; voice_id: string;

@@ -3,6 +3,7 @@ import type { User } from '../auth/api';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
 import { TeacherWorkspace } from './TeacherWorkspace';
+import { ManagementPanel, PanelList, PanelListItem, PanelTitle } from './Panel';
 
 const roleNames: Record<string, string> = {
   user: 'Обучающийся',
@@ -10,12 +11,12 @@ const roleNames: Record<string, string> = {
   admin: 'Администратор',
 };
 
-export function Management() {
+export function Management({ filter = '' }: { filter?: string }) {
   const { user } = useAuth();
-  return user.role === 'admin' ? <Accounts /> : user.role === 'teacher' ? <TeacherWorkspace /> : null;
+  return user.role === 'admin' ? <Accounts filter={filter} /> : user.role === 'teacher' ? <TeacherWorkspace /> : null;
 }
 
-function Accounts() {
+function Accounts({ filter }: { filter: string }) {
   const { user } = useAuth();
   const [users, setUsers] = useState<(User & { blocked: boolean })[]>([]);
   const [error, setError] = useState('');
@@ -34,7 +35,7 @@ function Accounts() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Ошибка создания пользователя.'); }
     finally { setBusy(false); }
   }
-  return <section><h2>Пользователи системы</h2>
+  return <ManagementPanel><PanelTitle>Пользователи системы</PanelTitle>
     <form onSubmit={create}>
       <p><label>Логин <input name="login" required pattern="[a-z0-9_]{3,32}" autoComplete="off" /></label></p>
       <p><label>Пароль <input name="password" type="password" required minLength={8} maxLength={128} autoComplete="new-password" /></label></p>
@@ -42,7 +43,7 @@ function Accounts() {
       <button disabled={busy}>Создать пользователя</button>
     </form>
     {error && <p role="alert">{error}</p>}
-    <ul>{users.map((entry) => <li key={entry.id}>
+    <PanelList>{users.filter((entry) => entry.login.toLocaleLowerCase('ru').includes(filter.trim().toLocaleLowerCase('ru'))).map((entry) => <PanelListItem key={entry.id}>
       {entry.login} — {roleNames[entry.role]} — {entry.blocked ? 'доступ заблокирован' : 'доступ разрешён'}{' '}
       {entry.id !== user.id && <>
         <label>Роль{' '}
@@ -59,8 +60,8 @@ function Accounts() {
           await api(`admin/users/${entry.id}/access`, { blocked: !entry.blocked });
         })}>{entry.blocked ? 'Разблокировать' : 'Заблокировать'}</button>
       </>}
-    </li>)}</ul>
-  </section>;
+    </PanelListItem>)}</PanelList>
+  </ManagementPanel>;
 
   async function actAccount(work: () => Promise<void>) {
     if (busy) return;

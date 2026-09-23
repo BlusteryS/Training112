@@ -1,0 +1,82 @@
+.backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .6);
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.call {
+  position: relative;
+  display: flex;
+  width: min(660px, 100%);
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #1f85d9;
+  color: #fff;
+  gap: 12px;
+}
+
+.details {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.title {
+  width: 100%;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.number {
+  width: 100%;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.accept {
+  width: 100%;
+  padding: 16px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: #000;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+  cursor: pointer;
+}
+
+.accept:hover,
+.accept:focus-visible {
+  background: #f3f3f3;
+  outline: none;
+}
+
+.close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: block;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}

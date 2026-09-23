@@ -10,9 +10,11 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public final class AuthRepository {
-    public record Account(UUID id, String login, String passwordHash, String role) {
+    public record Account(UUID id, String login, String passwordHash, String role, String workstation) {
         public JsonObject toJson() {
-            return new JsonObject().put("id", id.toString()).put("login", login).put("role", role);
+            JsonObject json = new JsonObject().put("id", id.toString()).put("login", login).put("role", role);
+            if (workstation != null) json.put("workstation", workstation);
+            return json;
         }
 
         @Override
@@ -45,26 +47,28 @@ public final class AuthRepository {
                 }));
     }
 
-    public Future<Void> createSession(UUID userId, String tokenHash, OffsetDateTime expiresAt, String previousTokenHash) {
-        return pool.withTransaction(connection -> replaceSession(connection, userId, tokenHash, expiresAt, previousTokenHash));
+    public Future<Void> createSession(UUID userId, String tokenHash, OffsetDateTime expiresAt,
+                                      String previousTokenHash, String workstation) {
+        return pool.withTransaction(connection -> replaceSession(connection, userId, tokenHash, expiresAt,
+                previousTokenHash, workstation));
     }
 
     private Future<Void> replaceSession(SqlClient client, UUID userId, String tokenHash,
-                                         OffsetDateTime expiresAt, String previousTokenHash) {
+                                         OffsetDateTime expiresAt, String previousTokenHash, String workstation) {
         return client.preparedQuery("DELETE FROM auth_session WHERE token_hash = $1")
                 .execute(Tuple.of(previousTokenHash))
                 .compose(ignored -> client.preparedQuery("""
-                        INSERT INTO auth_session (token_hash, user_id, expires_at) VALUES ($1, $2, $3)
-                        """).execute(Tuple.of(tokenHash, userId, expiresAt))).mapEmpty();
+                        INSERT INTO auth_session (token_hash, user_id, expires_at, workstation) VALUES ($1, $2, $3, $4)
+                        """).execute(Tuple.of(tokenHash, userId, expiresAt, workstation))).mapEmpty();
     }
 
     public Future<Account> findSession(String tokenHash) {
         return pool.preparedQuery("""
-                SELECT u.id, u.login, u.password_hash, u.role FROM auth_session s
+                SELECT u.id, u.login, u.password_hash, u.role, s.workstation FROM auth_session s
                 JOIN app_user u ON u.id = s.user_id
                 WHERE s.token_hash = $1 AND s.expires_at > now() AND NOT u.blocked
                 """).execute(Tuple.of(tokenHash))
-                .map(rows -> rows.size() == 0 ? null : account(rows.iterator().next()));
+                .map(rows -> rows.size() == 0 ? null : sessionAccount(rows.iterator().next()));
     }
 
     public Future<Void> deleteSession(String tokenHash) {
@@ -92,6 +96,11 @@ public final class AuthRepository {
     }
 
     private static Account account(Row row) {
-        return new Account(row.getUUID("id"), row.getString("login"), row.getString("password_hash"), row.getString("role"));
+        return new Account(row.getUUID("id"), row.getString("login"), row.getString("password_hash"), row.getString("role"), null);
+    }
+
+    private static Account sessionAccount(Row row) {
+        return new Account(row.getUUID("id"), row.getString("login"), row.getString("password_hash"),
+                row.getString("role"), row.getString("workstation"));
     }
 }

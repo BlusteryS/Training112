@@ -1,0 +1,132 @@
+.root {
+  color: #fff;
+}
+
+.title {
+  margin: 8px 0 16px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.subtitle {
+  margin: 18px 0 12px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.itemTitle {
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.steps {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+
+.steps > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.steps span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  background: #2f353a;
+}
+
+.root button,
+.root input,
+.root select,
+.root textarea {
+  padding: 10px 12px;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+}
+
+.root button {
+  background: #2f353a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.root button:hover:not(:disabled),
+.root button:focus-visible {
+  background: #ec653b;
+}
+
+.root button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.root input,
+.root select,
+.root textarea {
+  background: #fff;
+  color: #000;
+}
+
+.root form,
+.card,
+.list {
+  margin: 12px 0;
+  padding: 16px;
+  border-radius: 6px;
+  background: #49555d;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.listItem {
+  padding: 10px 0;
+  border-bottom: 1px solid #838f97;
+}
+
+.listItem:last-child {
+  border-bottom: 0;
+}
+
+.root p {
+  margin: 12px 0;
+  line-height: 1.45;
+}
+
+.root fieldset {
+  margin: 12px 0;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+}
+
+.root legend {
+  padding: 0 8px;
+}
+
+.root details {
+  margin: 12px 0;
+}
+
+.root summary {
+  cursor: pointer;
+}
+
+.root a {
+  color: #fff;
+}

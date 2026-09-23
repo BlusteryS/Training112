@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api';
 import type { Group, Learner } from './types';
+import { PanelList, PanelListItem, PanelSubtitle, PanelTitle } from './Panel';
 
 export function Groups() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -41,8 +42,8 @@ export function Groups() {
       setGroup(created.id); form.reset(); setMessage('Группа создана. Добавьте участников ниже.');
     });
   }
-  return <section aria-labelledby="groups-title">
-    <h2 id="groups-title">Учебные группы</h2>
+  return <div>
+    <PanelTitle>Учебные группы</PanelTitle>
     <p>Группа — список обучающихся, которым вы назначаете одно занятие. Для индивидуального занятия создайте группу с одним участником.</p>
     <form onSubmit={create}><fieldset disabled={busy}><legend>Создать группу</legend>
       <p><label>Название группы <input name="name" required maxLength={200} placeholder="Диспетчеры — сентябрь" /></label></p>
@@ -54,18 +55,17 @@ export function Groups() {
       {groups.map((g) => <option key={g.id} value={g.id}>{g.name} — {g.service_code} ({g.member_count})</option>)}
     </select></label></p>
     {!groups.length && <p>Групп пока нет.</p>}
-    {group && loadedGroup !== group && <p role="status">Загружаем участников…</p>}
     {group && loadedGroup === group && <>
-      <h3>Участники ({members.length})</h3>
+      <PanelSubtitle>Участники ({members.length})</PanelSubtitle>
       <p>Изменения состава применяются к следующим запускам занятий. Уже выданные задания сохраняются.</p>
       {!members.length && <p>В группе пока никого нет. Выберите обучающихся ниже.</p>}
-      <ul>{members.map((m) => <li key={m.id}>{m.login}{m.blocked && ' — доступ заблокирован'}{' '}
+      <PanelList>{members.map((m) => <PanelListItem key={m.id}>{m.login}{m.blocked && ' — доступ заблокирован'}{' '}
         <button disabled={busy} onClick={() => void act(async () => {
           await api(`training/groups/${group}/members/remove`, { learner_id: m.id });
           setMembers(await api<Learner[]>(`training/groups/${group}/members`));
           setMessage('Участник исключён из группы.');
         })}>Исключить {m.login}</button>
-      </li>)}</ul>
+      </PanelListItem>)}</PanelList>
       <fieldset disabled={busy}><legend>Добавить обучающихся</legend>
         {!learners.length && <p>Нет доступных учётных записей обучающихся. Их создаёт администратор в разделе «Пользователи системы».</p>}
         {learners.filter((u) => !members.some((m) => m.id === u.id)).map((u) => <p key={u.id}><label>
@@ -79,5 +79,5 @@ export function Groups() {
       </fieldset>
     </>}
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
-  </section>;
+  </div>;
 }

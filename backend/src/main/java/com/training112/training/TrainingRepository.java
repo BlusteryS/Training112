@@ -372,11 +372,13 @@ public final class TrainingRepository {
            'status',l.status,'title',s.document->>'title','scenario_id',s.id,
            'group_name',g.name,'learner_login',u.login,
            'instructions',s.document->>'instructions','difficulty',s.document->>'difficulty',
+           'caller_phone',s.document#>>'{facts,phone}',
+           'card',latest.card,'created_at',l.created_at,
            'attempt_id',latest.id,'attempt_status',latest.status) AS value
         FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
         JOIN training_group g ON g.id=l.group_id JOIN scenario s ON s.id=l.scenario_id
         JOIN app_user u ON u.id=a.learner_id
-        LEFT JOIN LATERAL (SELECT t.id,t.status FROM training_attempt t
+        LEFT JOIN LATERAL (SELECT t.id,t.status,t.card FROM training_attempt t
           WHERE t.assignment_id=a.id ORDER BY t.created_at DESC LIMIT 1) latest ON true
         WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY l.created_at DESC,u.login LIMIT 1000
         """,

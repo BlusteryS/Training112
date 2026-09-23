@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { finishAttempt, startAssignedAttempt } from '../speech/trainingApi';
 import { VoiceCall } from '../speech/VoiceCall';
+import { startCooldown } from '../operatorAvailability';
 
 export type CallPhase = 'waiting' | 'active' | 'error' | 'finished';
 export type CallLine = { speaker: 'operator' | 'caller'; text: string; turn?: number };
@@ -11,11 +12,10 @@ function duration(seconds: number) {
   return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-export function SpeechScreen({ phase, phoneNumber, lines, elapsed, remaining, message, finishing, onCancel, onRetry, onEnd }: {
+export function SpeechScreen({ phase, phoneNumber, lines, elapsed, message, finishing, onCancel, onRetry, onEnd }: {
   phase: CallPhase;
   phoneNumber: string;
   lines: CallLine[];
-  remaining: number | null;
   elapsed: number;
   message: string;
   finishing: boolean;
@@ -23,24 +23,24 @@ export function SpeechScreen({ phase, phoneNumber, lines, elapsed, remaining, me
   onRetry: () => void;
   onEnd: () => void;
 }) {
-  if (phase !== 'active') return <main>
-    <h1>{phase === 'waiting' ? 'Подключаем учебный звонок' : phase === 'finished' ? 'Разговор завершён' : 'Звонок прерван'}</h1>
+  if (phase === 'waiting') return null;
+  if (phase !== 'active') return <div>
+    <div>{phase === 'finished' ? 'Разговор завершён' : 'Звонок прерван'}</div>
     <p role={phase === 'error' ? 'alert' : 'status'}>{message}</p>
-    {phase === 'waiting' && remaining !== null && <p>Ожидание подключения: около {remaining} сек.</p>}
     {phase === 'error' && <button disabled={finishing} onClick={onRetry}>Повторить подключение</button>}
     <button onClick={onCancel}>К моим заданиям</button>
-  </main>;
-  return <main aria-label="Учебный звонок">
-    <h1>{phoneNumber}</h1>
+  </div>;
+  return <div>
+    <div>{phoneNumber}</div>
     <p role="timer" aria-label="Длительность звонка">{duration(elapsed)}</p>
-    <section aria-label="Сообщения разговора" role="log" aria-live="polite" aria-relevant="additions text">
+    <div role="log" aria-live="polite" aria-relevant="additions text">
       {lines.map((line, index) => <p key={index}>
-        <strong>{line.speaker === 'caller' ? 'Заявитель' : 'Оператор'}:</strong> {line.text}
+        <span>{line.speaker === 'caller' ? 'Заявитель' : 'Оператор'}:</span> {line.text}
       </p>)}
-    </section>
+    </div>
     <p role="status">{message}</p>
     <button onClick={onEnd}>Завершить звонок</button>
-  </main>;
+  </div>;
 }
 
 export function SpeechPage() {
@@ -55,7 +55,6 @@ export function SpeechPage() {
   const [finishing, setFinishing] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [waitUntil, setWaitUntil] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now);
   const call = useRef<VoiceCall | null>(null);
 
@@ -82,13 +81,7 @@ export function SpeechPage() {
     let disposed = false;
     const callbacks = {
       status: (text: string) => { if (call.current === current) setMessage(text); },
-      waiting: (seconds: number) => {
-        if (call.current === current) {
-          const receivedAt = Date.now();
-          setNow(receivedAt);
-          setWaitUntil(receivedAt + seconds * 1_000);
-        }
-      },
+      waiting: () => {},
       ready: () => {
         if (call.current !== current) return;
         admitted = true;
@@ -109,6 +102,7 @@ export function SpeechPage() {
       closed: (failed: boolean) => {
         if (call.current !== current) return;
         call.current = null;
+        startCooldown(user.id);
         setPhase(failed ? 'error' : 'finished');
         void finish(failed);
       },
@@ -119,7 +113,6 @@ export function SpeechPage() {
     setStartedAt(null);
     const waitingAt = Date.now();
     setNow(waitingAt);
-    setWaitUntil(null);
     // Let StrictMode's setup/cleanup cycle finish before requesting the microphone.
     const start = setTimeout(() => {
       void startAssignedAttempt(user.id, assignmentId).then(async (id) => {
@@ -154,6 +147,5 @@ export function SpeechPage() {
     onEnd={() => call.current?.close()}
     onRetry={() => setAttempt((value) => value + 1)}
     phase={phase}
-    remaining={waitUntil === null ? null : Math.max(1, Math.ceil((waitUntil - now) / 1_000))}
   />;
 }

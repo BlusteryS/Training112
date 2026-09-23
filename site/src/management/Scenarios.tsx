@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ScenarioEditor, exportScenario } from './ScenarioEditor';
 import { scenarioNames, type Scenario, type ScenarioDocument } from './types';
+import { PanelCard, PanelSubtitle, PanelTitle } from './Panel';
 
 type SavedScenario = Scenario & { document: ScenarioDocument };
 type Editor = { document: ScenarioDocument; scenarioId?: string };
@@ -43,8 +44,8 @@ export function Scenarios() {
     catch (e) { setError(e instanceof Error ? e.message : 'Не удалось выполнить действие.'); }
     finally { setBusy(false); }
   }
-  return <section aria-labelledby="scenarios-title">
-    <h2 id="scenarios-title">Сценарии звонков</h2>
+  return <div>
+    <PanelTitle>Сценарии звонков</PanelTitle>
     <p>Сценарий задаёт происшествие и то, что знает виртуальный заявитель. Создайте его, проверьте сведения и утвердите перед назначением занятия.</p>
     {!editor && <p><button disabled={busy} onClick={() => void act(async () => {
       const document = await api<ScenarioDocument>('training/example');
@@ -79,8 +80,8 @@ export function Scenarios() {
       <p><label>Сценарий <select disabled={busy} value={scenario} onChange={(e) => setScenario(e.target.value)}>
         <option value="">Выберите сценарий</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
       </select></label>{' '}{scenario && <button disabled={busy} onClick={() => setReload((n) => n + 1)}>Обновить состояние</button>}</p>
-      {detail && <article>
-        <h3>{detail.document.title}</h3>
+      {detail && <PanelCard>
+        <PanelSubtitle>{detail.document.title}</PanelSubtitle>
         <p role="status">{scenarioNames[detail.status] ?? detail.status}</p>
         {detail.status === 'preparing' && <p>Сервер проверяет, понимает ли заявитель вопросы, и записывает его реплики. Дождитесь статуса «Готов к утверждению»; состояние обновляется автоматически.</p>}
         {detail.status === 'failed' && <p role="alert">Проверка диалога или запись голоса не удалась. Проверьте сведения и сохраните сценарий повторно. Если ошибка повторяется, администратору нужно проверить речевые модели и журнал обработчика сценариев.</p>}
@@ -102,8 +103,8 @@ export function Scenarios() {
             setScenario(''); setReload((n) => n + 1); setMessage('Сценарий убран из списка.');
           })}>Убрать из списка сценариев</button>
         </details>
-      </article>}
+      </PanelCard>}
     </>}
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
-  </section>;
+  </div>;
 }

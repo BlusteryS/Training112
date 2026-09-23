@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { difficultyNames, type ScenarioDocument } from './types';
+import { PanelSubtitle } from './Panel';
 
 const factNames: Record<string, string> = {
   caller_name: 'Имя заявителя', address: 'Место происшествия', incident: 'Что произошло',
@@ -33,7 +34,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
     catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить сценарий.'); }
   }
   return <form onSubmit={(event) => void submit(event)}>
-    <h3>{editing ? 'Редактировать сценарий' : 'Новый сценарий'}</h3>
+    <PanelSubtitle>{editing ? 'Редактировать сценарий' : 'Новый сценарий'}</PanelSubtitle>
     <p>Опишите происшествие и ответы заявителя. Эти сведения видны только преподавателю: обучающийся узнает их в разговоре.</p>
     <fieldset disabled={busy}><legend>Условия задания</legend>
       <p><label>Название <input required maxLength={200} value={document.title} onChange={(e) => setDocument({ ...document, title: e.target.value })} /></label></p>
@@ -57,7 +58,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
     </details>
     <p>После сохранения сервер проверит диалог и запишет голос заявителя. Затем просмотрите сценарий и утвердите его для занятий. Активный сценарий нельзя редактировать до завершения занятия.</p>
     {error && <p role="alert">{error}</p>}
-    <p><button disabled={busy}>{busy ? 'Сохраняем…' : editing ? 'Сохранить изменения' : 'Сохранить сценарий'}</button>{' '}
+    <p><button disabled={busy}>{editing ? 'Сохранить изменения' : 'Сохранить сценарий'}</button>{' '}
       <button type="button" disabled={busy} onClick={() => exportScenario(document)}>Скачать JSON</button>{' '}
       <button type="button" disabled={busy} onClick={onCancel}>Отменить редактирование</button></p>
   </form>;

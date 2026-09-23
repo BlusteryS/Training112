@@ -77,7 +77,9 @@ public final class AuthRoutes {
                     if (!valid || account == null) {
                         return Future.failedFuture(new ApiException(401, "invalid_credentials", "Неверный логин или пароль."));
                     }
-                    return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash).map(account);
+                    return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash,
+                            credentials.workstation()).map(new AuthRepository.Account(account.id(), account.login(),
+                            account.passwordHash(), account.role(), credentials.workstation()));
                 }))
                 .onSuccess(account -> {
                     context.response().addCookie(cookie(token, config.sessionTtl().toSeconds()));

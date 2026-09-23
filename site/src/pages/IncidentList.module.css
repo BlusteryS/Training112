@@ -1,0 +1,275 @@
+.board {
+  display: flex;
+  min-width: 0;
+  min-height: calc(100vh - 178px);
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 41px;
+  margin-bottom: 16px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.selectControl select,
+.footer select,
+.pagination select {
+  height: 41px;
+  padding: 0 36px 0 12px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 6px;
+  outline: 0;
+  appearance: none;
+  background-color: transparent;
+  background-image: url('../assets/workspace/chevron.svg');
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  color: #fff;
+}
+
+.selectControl select {
+  width: 229px;
+}
+
+.selectControl option,
+.footer option {
+  background: #49555d;
+  color: #fff;
+}
+
+.tableViewport {
+  min-height: 0;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.table {
+  min-width: 2003px;
+}
+
+.tableHead,
+.rowMain {
+  display: grid;
+  grid-template-columns: repeat(5, 80px) repeat(5, 100px) minmax(0, 1fr) 100px 128px minmax(0, 1fr) 80px 80px;
+  min-width: 2003px;
+}
+
+.tableHead {
+  height: 28px;
+  color: rgba(255, 255, 255, .8);
+  font-size: 14px;
+}
+
+.tableHead span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.row {
+  overflow: hidden;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+  background: #49555d;
+}
+
+.rowMain {
+  height: 36px;
+}
+
+.cell,
+.iconCell,
+.cellButton,
+.checkedCell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 8px 12px;
+  overflow: hidden;
+  border: 1px solid #838f97;
+  background: #49555d;
+  color: rgba(255, 255, 255, .8);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.darkCell {
+  justify-content: flex-start;
+  background: #2f353a;
+  color: #fff;
+}
+
+.statusCell {
+  justify-content: flex-start;
+}
+
+.iconCell,
+.cellButton,
+.checkedCell {
+  padding: 6px 12px;
+}
+
+.cellButton {
+  cursor: pointer;
+}
+
+.cellButton:hover,
+.cellButton:focus-visible {
+  background: #2f353a;
+}
+
+.iconCell img,
+.cellButton img {
+  width: 18px;
+  height: 18px;
+}
+
+.checkedCell {
+  padding: 0;
+}
+
+.checkedCell img {
+  width: 82px;
+  height: 38px;
+}
+
+.description {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 8px 12px;
+  overflow: hidden;
+  border: 1px solid #838f97;
+  background: #49555d;
+  white-space: nowrap;
+}
+
+.description > span:first-child {
+  color: rgba(255, 255, 255, .8);
+}
+
+.descriptionMeta {
+  color: rgba(255, 255, 255, .6);
+}
+
+.description img {
+  width: 16px;
+  height: 16px;
+}
+
+.empty {
+  padding: 18px 0;
+  color: rgba(255, 255, 255, .8);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 41px;
+  margin-top: 16px;
+  opacity: .8;
+}
+
+.footerSelect select {
+  width: auto;
+  min-width: 177px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  height: 41px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 6px;
+  gap: 12px;
+}
+
+.pagination select {
+  width: auto;
+  height: 39px;
+  padding-left: 0;
+  border: 0;
+}
+
+.pageButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageButtons button {
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pageButtons button:disabled {
+  opacity: .3;
+  cursor: default;
+}
+
+.pageButtons img {
+  width: 18px;
+  height: 18px;
+}
+
+.pageButtons button:first-child img {
+  transform: rotate(90deg);
+}
+
+.pageButtons button:last-child img {
+  transform: rotate(-90deg);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
