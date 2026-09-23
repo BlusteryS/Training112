@@ -17,13 +17,9 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
-      - "${SPEECH_LISTEN_ADDRESS:-127.0.0.1}:${SPEECH_PORT:-5555}:5555"
+      - "${SPEECH_LISTEN_ADDRESS:-127.0.0.1}:5555:5555"
     volumes:
-      - type: bind
-        source: ${SPEECH_MODELS_DIR:-./.models}
-        target: /app/.models
-        bind:
-          create_host_path: false
+      - speech_models:/app/.models
     read_only: true
     tmpfs:
       - /tmp:mode=1777
@@ -36,3 +32,6 @@ services:
       options:
         max-size: 10m
         max-file: "3"
+
+volumes:
+  speech_models:

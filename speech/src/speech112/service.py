@@ -5,6 +5,8 @@ import json
 import logging
 import os
 import signal
+import time
+from collections import deque
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,14 +18,15 @@ import zmq.asyncio
 from speech112.config import AppConfig
 from speech112.llm import OpenAiCompatibleDialogueModel
 from speech112.metrics import TurnMetrics
+from speech112.qwen_tts import QwenSynthesizer
 from speech112.session import VoiceSession
 from speech112.streaming_audio import SendJson, StreamingAudio
 from speech112.stt import GigaAmRecognizer
 from speech112.telephone_noise import PhoneRecordings, RecordedPhoneNoise
 from speech112.transport_security import secure_socket
 from speech112.tts_runtime import open_tts
-from speech112.qwen_tts import QwenSynthesizer
 from speech112.vad import SileroDetector
+from speech112.wait_estimate import estimate_wait_seconds
 
 LOG = logging.getLogger(__name__)
 
@@ -34,6 +37,7 @@ class Peer:
         default_factory=lambda: asyncio.Queue(maxsize=64)
     )
     task: asyncio.Task[None] | None = None
+    ready_at: float | None = None
 
 
 class Observer:
@@ -67,6 +71,7 @@ class SpeechService:
         self.recordings = recordings
         self.max_sessions = max_sessions
         self.peers: dict[bytes, Peer] = {}
+        self.durations: deque[float] = deque(maxlen=32)
 
     async def send(self, identity: bytes, kind: bytes, payload: bytes) -> None:
         # A stalled backend must never suspend another conversation's audio.
@@ -109,21 +114,26 @@ class SpeechService:
                     elif command["type"] == "start":
                         if command.get("version") != 1:
                             raise ValueError("Несовместимая версия аудиопротокола")
-                        config = self.config.for_voice(command["voice"])
                         if len(self.peers) >= self.max_sessions:
                             await self.event(
                                 identity,
                                 {
                                     "type": "busy",
-                                    "message": "Все линии заняты. Попробуйте позже.",
+                                    "message": "Все линии заняты.",
+                                    "estimated_wait_seconds": estimate_wait_seconds(
+                                        [p.ready_at for p in self.peers.values()],
+                                        self.durations,
+                                        time.monotonic(),
+                                    ),
                                 },
                             )
                             continue
+                        config = self.config.for_random_voice()
                         peer = Peer()
                         self.peers[identity] = peer
                         peer.task = asyncio.create_task(self.conversation(identity, peer, config))
                         peer.task.add_done_callback(
-                            lambda task, key=identity: self.peers.pop(key, None)
+                            lambda task, key=identity: self.release(key)
                         )
                 except (ValueError, KeyError, TypeError):
                     with suppress(zmq.ZMQError):
@@ -139,11 +149,18 @@ class SpeechService:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
 
+    def release(self, identity: bytes) -> None:
+        peer = self.peers.pop(identity, None)
+        if peer is not None and peer.ready_at is not None:
+            self.durations.append(time.monotonic() - peer.ready_at)
+
     async def conversation(self, identity: bytes, peer: Peer, config: AppConfig) -> None:
         audio = None
         tasks = set()
 
         async def send_event(value: dict[str, object]) -> None:
+            if value.get("type") == "ready":
+                peer.ready_at = time.monotonic()
             await self.event(identity, value)
 
         async def send_audio(value: bytes) -> None:

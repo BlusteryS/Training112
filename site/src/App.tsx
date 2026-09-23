@@ -71,10 +71,10 @@ export function App() {
         ) : session.status === 'anonymous' ? <LoginPage onLogin={handleLogin} /> : (
           <AuthContext.Provider value={{ user: session.user, logout }}>
             <Routes>
+              <Route element={<SpeechPage />} path="/session" />
               <Route element={<AppLayout />} path="/">
                 <Route element={<PageLayout />}>
                   <Route element={<ProfilePage />} index />
-                  <Route element={<SpeechPage />} path="session" />
                   <Route element={<SectionPage title="Документация" />} path="docs" />
                 </Route>
                 <Route element={<CatalogLayout />} path="ui">

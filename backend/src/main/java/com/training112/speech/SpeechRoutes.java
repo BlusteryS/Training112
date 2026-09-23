@@ -53,11 +53,6 @@ public final class SpeechRoutes {
                 context.fail(new ApiException(403, "forbidden_origin", "Запрос с этого сайта запрещён."));
                 return;
             }
-            String voice = context.request().getParam("voice");
-            if (voice == null || !voice.matches("[a-z0-9_-]{1,40}")) {
-                context.fail(new ApiException(400, "invalid_voice", "Выберите персонажа."));
-                return;
-            }
             context.request().toWebSocket().onSuccess(socket -> new Connection(context, socket).start())
                     .onFailure(context::fail);
         });
@@ -79,7 +74,6 @@ public final class SpeechRoutes {
         private boolean ready;
         private boolean validating;
         private long lastClientActivity = System.nanoTime();
-        private final long openedAt = System.nanoTime();
 
         Connection(RoutingContext request, ServerWebSocket socket) {
             this.request = request;
@@ -93,7 +87,6 @@ public final class SpeechRoutes {
             JsonObject command = new JsonObject().put("type", socket == null ? "voices" : "start")
                     .put("version", 1);
             if (socket != null) {
-                command.put("voice", request.request().getParam("voice"));
                 socket.setWriteQueueMaxSize(32768);
                 socket.binaryMessageHandler(data -> {
                     lastClientActivity = System.nanoTime();
@@ -108,6 +101,8 @@ public final class SpeechRoutes {
                         JsonObject event = new JsonObject(text);
                         switch (event.getString("type", "")) {
                             case "end" -> close();
+                            case "ping" -> socket.writeTextMessage(new JsonObject().put("type", "pong").encode())
+                                    .onFailure(error -> close());
                             case "played" -> {
                                 Object generation = event.getValue("generation");
                                 Object id = event.getValue("id");
@@ -134,8 +129,7 @@ public final class SpeechRoutes {
 
         void maintain() {
             long now = System.nanoTime();
-            if ((!ready && now - openedAt > 90_000_000_000L)
-                    || (ready && now - lastClientActivity > 15_000_000_000L)) {
+            if (now - lastClientActivity > (socket == null ? 90_000_000_000L : 15_000_000_000L)) {
                 fail("Сеанс завершён: соединение не отвечает.");
                 return;
             }

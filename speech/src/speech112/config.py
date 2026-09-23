@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import tomllib
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -30,7 +31,7 @@ class SttConfig:
     device: str
     language: str
     fp16_encoder: bool
-    download_root: str
+    download_root: str = ".models/gigaam"
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,11 +69,11 @@ class TelephoneConfig:
 
 @dataclass(frozen=True, slots=True)
 class QwenTtsConfig:
-    model_dir: str
-    python: str
     device: str
     chunk_size: int
     max_sequence_length: int
+    model_dir: str = ".models/qwen3-tts-1.7b-base"
+    python: str = "/opt/qwen/bin/python"
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +109,9 @@ class AppConfig:
     scenario: ScenarioConfig
     voices: tuple[VoiceConfig, ...]
     voice_id: str
+
+    def for_random_voice(self) -> AppConfig:
+        return self.for_voice(random.choice(self.voices).id)
 
     def for_voice(self, voice_id: str) -> AppConfig:
         voice = next((voice for voice in self.voices if voice.id == voice_id), None)

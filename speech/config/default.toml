@@ -18,7 +18,6 @@ model = "v3_rnnt"
 device = "cuda"
 language = "ru"
 fp16_encoder = true
-download_root = ".models/gigaam"
 
 [llm]
 base_url = "${SPEECH_LLM_URL}"
@@ -34,8 +33,6 @@ idle_repeat_seconds = 15
 part_pause_ms = 180
 
 [tts]
-model_dir = ".models/qwen3-tts-1.7b-base"
-python = "/opt/qwen/bin/python"
 device = "cuda:0"
 chunk_size = 8
 max_sequence_length = 2048

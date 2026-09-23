@@ -26,7 +26,7 @@ public record AppConfig(int port, String dbHost, int dbPort, String dbName, Stri
                 env.getOrDefault("DB_HOST", "localhost"), number(env, "DB_PORT", 5432, 1, 65535),
                 env.getOrDefault("DB_NAME", "training112"), env.getOrDefault("DB_USER", "training112"),
                 password, origin, "https".equals(uri.getScheme()),
-                Duration.ofHours(number(env, "SESSION_TTL_HOURS", 168, 1, 720)));
+                Duration.ofDays(7));
     }
 
     private static int number(Map<String, String> env, String key, int fallback, int min, int max) {

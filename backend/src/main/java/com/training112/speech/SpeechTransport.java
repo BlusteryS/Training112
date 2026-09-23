@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,80 +70,101 @@ public final class SpeechTransport {
         boolean catalog = "voices".equals(command.getString("type"));
         try (ZContext zmq = new ZContext()) {
             List<String> endpoints = config.endpoints();
-            for (int attempt = 0; attempt < endpoints.size() && !closed; attempt++) {
-                String endpoint = endpoints.get(Math.floorMod(firstNode + attempt, endpoints.size()));
-                boolean accepted = false;
-                try (ZMQ.Socket socket = zmq.createSocket(SocketType.DEALER)) {
-                    socket.setIdentity(UUID.randomUUID().toString().getBytes(StandardCharsets.US_ASCII));
-                    socket.setLinger(0);
-                    socket.setSndHWM(32);
-                    socket.setRcvHWM(32);
-                    socket.setMaxMsgSize(65536);
-                    socket.setSendTimeOut(100);
-                    socket.setReceiveTimeOut(2);
-                    if (!config.serverKey().isEmpty()) {
-                        socket.setCurveServerKey(config.serverKey().getBytes(StandardCharsets.US_ASCII));
-                        socket.setCurvePublicKey(config.publicKey().getBytes(StandardCharsets.US_ASCII));
-                        socket.setCurveSecretKey(config.secretKey().getBytes(StandardCharsets.US_ASCII));
-                    }
-                    socket.connect(endpoint);
-                    write(socket, Message.command(command));
-                    long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
-                    long pingAt = System.nanoTime();
-                    try {
-                        while (!closed) {
-                            Message message = read(socket);
-                            if (message != null) {
-                                if (!accepted) {
-                                    if (!"event".equals(message.kind())) throw new IllegalStateException("Expected admission event");
-                                    String type = message.event().getString("type");
-                                    if ("busy".equals(type) || "unavailable".equals(type)) {
-                                        LOG.info("Speech node {} declined admission: {}", endpoint, type);
-                                        break;
+            if (!catalog) waiting(5);
+            do {
+                long earliestAvailability = Long.MAX_VALUE;
+                for (int attempt = 0; attempt < endpoints.size() && !closed; attempt++) {
+                    String endpoint = endpoints.get(Math.floorMod(firstNode + attempt, endpoints.size()));
+                    boolean accepted = false;
+                    try (ZMQ.Socket socket = zmq.createSocket(SocketType.DEALER)) {
+                        socket.setIdentity(UUID.randomUUID().toString().getBytes(StandardCharsets.US_ASCII));
+                        socket.setLinger(0);
+                        socket.setSndHWM(32);
+                        socket.setRcvHWM(32);
+                        socket.setMaxMsgSize(65536);
+                        socket.setSendTimeOut(100);
+                        socket.setReceiveTimeOut(2);
+                        if (!config.serverKey().isEmpty()) {
+                            socket.setCurveServerKey(config.serverKey().getBytes(StandardCharsets.US_ASCII));
+                            socket.setCurvePublicKey(config.publicKey().getBytes(StandardCharsets.US_ASCII));
+                            socket.setCurveSecretKey(config.secretKey().getBytes(StandardCharsets.US_ASCII));
+                        }
+                        socket.connect(endpoint);
+                        write(socket, Message.command(command));
+                        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+                        long pingAt = System.nanoTime();
+                        try {
+                            while (!closed) {
+                                Message message = read(socket);
+                                if (message != null) {
+                                    if (!accepted) {
+                                        if (!"event".equals(message.kind())) throw new IllegalStateException("Expected admission event");
+                                        String type = message.event().getString("type");
+                                        if ("busy".equals(type) || "unavailable".equals(type)) {
+                                            Object estimate = message.event().getValue("estimated_wait_seconds");
+                                            if ("busy".equals(type) && estimate instanceof Number seconds
+                                                    && seconds.doubleValue() > 0 && Double.isFinite(seconds.doubleValue())) {
+                                                long wait = Math.min(86_400, Math.max(1, seconds.longValue()));
+                                                earliestAvailability = Math.min(earliestAvailability,
+                                                        System.nanoTime() + Duration.ofSeconds(wait).toNanos());
+                                                waiting(Math.max(1, (earliestAvailability - System.nanoTime()) / 1_000_000_000L));
+                                            }
+                                            LOG.debug("Speech node {} declined admission: {}", endpoint, type);
+                                            break;
+                                        }
+                                        if (!(catalog ? "voices" : "ready").equals(type)) {
+                                            throw new IllegalStateException("Unexpected admission event");
+                                        }
+                                        accepted = true;
+                                        LOG.info("Speech connection assigned to {}", endpoint);
                                     }
-                                    if (!(catalog ? "voices" : "ready").equals(type)) {
-                                        throw new IllegalStateException("Unexpected admission event");
+                                    deadline = System.nanoTime() + Duration.ofSeconds(15).toNanos();
+                                    if (!"event".equals(message.kind()) || !"pong".equals(message.event().getString("type"))) {
+                                        deliver(message);
                                     }
-                                    accepted = true;
-                                    LOG.info("Speech connection assigned to {}", endpoint);
+                                    if (catalog || ("event".equals(message.kind())
+                                            && "closed".equals(message.event().getString("type")))) return;
                                 }
-                                deadline = System.nanoTime() + Duration.ofSeconds(15).toNanos();
-                                if (!"event".equals(message.kind()) || !"pong".equals(message.event().getString("type"))) {
-                                    deliver(message);
+                                if (System.nanoTime() > deadline) {
+                                    if (accepted) throw new IllegalStateException("Speech heartbeat expired");
+                                    LOG.warn("Speech node {} did not answer admission", endpoint);
+                                    break;
                                 }
-                                if (catalog || ("event".equals(message.kind())
-                                        && "closed".equals(message.event().getString("type")))) return;
+                                if (accepted) {
+                                    for (int i = 0; i < 32; i++) {
+                                        Message queued = outgoing.poll();
+                                        if (queued == null) break;
+                                        write(socket, queued);
+                                    }
+                                    if (System.nanoTime() >= pingAt) {
+                                        write(socket, Message.command(new JsonObject().put("type", "ping")));
+                                        pingAt = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+                                    }
+                                }
                             }
-                            if (System.nanoTime() > deadline) {
-                                if (accepted) throw new IllegalStateException("Speech heartbeat expired");
-                                LOG.warn("Speech node {} did not answer admission", endpoint);
-                                break;
-                            }
-                            if (accepted) {
-                                for (int i = 0; i < 32; i++) {
-                                    Message queued = outgoing.poll();
-                                    if (queued == null) break;
-                                    write(socket, queued);
-                                }
-                                if (System.nanoTime() >= pingAt) {
-                                    write(socket, Message.command(new JsonObject().put("type", "ping")));
-                                    pingAt = System.nanoTime() + Duration.ofSeconds(5).toNanos();
-                                }
+                            // Once accepted, never migrate a live conversation to another node.
+                            if (accepted || closed) return;
+                        } finally {
+                            if (!catalog) {
+                                try { write(socket, Message.command(new JsonObject().put("type", "end"))); }
+                                catch (RuntimeException error) { LOG.debug("Could not send Speech close", error); }
                             }
                         }
-                        // Once accepted, never migrate a live conversation to another node.
-                        if (accepted || closed) return;
-                    } finally {
-                        if (!catalog) {
-                            try { write(socket, Message.command(new JsonObject().put("type", "end"))); }
-                            catch (RuntimeException error) { LOG.debug("Could not send Speech close", error); }
-                        }
+                    } catch (RuntimeException error) {
+                        if (accepted) throw error;
+                        LOG.warn("Speech node {} could not accept a connection", endpoint, error);
                     }
-                } catch (RuntimeException error) {
-                    if (accepted) throw error;
-                    LOG.warn("Speech node {} could not accept a connection", endpoint, error);
                 }
-            }
+                if (catalog) break;
+                waiting(earliestAvailability == Long.MAX_VALUE ? 5
+                        : Math.max(1, (earliestAvailability - System.nanoTime()) / 1_000_000_000L));
+                // Retry admission without building an unbounded queue on a Speech node.
+                long retryAt = System.nanoTime() + Duration.ofSeconds(3).toNanos();
+                while (!closed && System.nanoTime() < retryAt) {
+                    LockSupport.parkNanos(Duration.ofMillis(100).toNanos());
+                }
+                firstNode = Math.floorMod(firstNode + 1, endpoints.size());
+            } while (!closed);
             deliver(Message.command(new JsonObject().put("type", "unavailable")
                     .put("message", "Нет свободного доступного речевого сервера. Попробуйте позже.")));
         } catch (RuntimeException error) {
@@ -152,6 +174,11 @@ public final class SpeechTransport {
         } finally {
             terminated.complete(null);
         }
+    }
+
+    private void waiting(long seconds) {
+        deliver(Message.command(new JsonObject().put("type", "waiting")
+                .put("estimated_wait_seconds", seconds)));
     }
 
     private static void write(ZMQ.Socket socket, Message message) {

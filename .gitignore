@@ -16,3 +16,5 @@ speech/.cache/
 *.pyc
 
 *.[mM][dD]
+!README.md
+!speech/assets/telephone/ATTRIBUTION.md

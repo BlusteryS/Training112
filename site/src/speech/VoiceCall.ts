@@ -1,5 +1,6 @@
 export type SpeechEvent =
-  | { type: 'ready' | 'listening' | 'barge_in' | 'closed' | 'ended' }
+  | { type: 'ready' | 'listening' | 'barge_in' | 'closed' | 'ended' | 'pong' }
+  | { type: 'waiting'; estimated_wait_seconds: number }
   | { type: 'transcript'; text: string }
   | { type: 'assistant'; text: string; turn: number }
   | { type: 'audio_stop'; generation: number }
@@ -8,6 +9,8 @@ export type SpeechEvent =
 
 type CallCallbacks = {
   status: (message: string) => void;
+  ready: () => void;
+  waiting: (seconds: number) => void;
   text: (speaker: 'operator' | 'caller', text: string, turn?: number) => void;
   closed: () => void;
 };
@@ -25,9 +28,11 @@ export class VoiceCall {
   private input?: MediaStreamAudioSourceNode;
   private socket?: WebSocket;
   private connectionTimer?: ReturnType<typeof setTimeout>;
+  private heartbeat?: ReturnType<typeof setInterval>;
+  private lastServerActivity = 0;
   private readonly onPageHide = () => this.close();
 
-  constructor(private readonly voice: string, private readonly callbacks: CallCallbacks) {}
+  constructor(private readonly callbacks: CallCallbacks) {}
 
   async start() {
     window.addEventListener('pagehide', this.onPageHide);
@@ -66,7 +71,7 @@ export class VoiceCall {
     };
 
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${protocol}://${location.host}/api/speech/session?voice=${encodeURIComponent(this.voice)}`);
+    const socket = new WebSocket(`${protocol}://${location.host}/api/speech/session`);
     this.socket = socket;
     socket.binaryType = 'arraybuffer';
     this.connectionTimer = setTimeout(() => this.close('Сервер не ответил. Попробуйте позже.'), 90_000);
@@ -78,11 +83,23 @@ export class VoiceCall {
         socket.send(data);
       }
     };
-    socket.onopen = () => this.callbacks.status('Подключаем звонящего…');
+    socket.onopen = () => {
+      if (this.closed) return;
+      clearTimeout(this.connectionTimer);
+      this.lastServerActivity = Date.now();
+      this.heartbeat = setInterval(() => {
+        if (Date.now() - this.lastServerActivity > 20_000) {
+          this.close('Сервер не отвечает. Проверьте соединение.');
+        } else if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 5_000);
+    };
     socket.onerror = () => this.close('Не удалось подключиться. Проверьте соединение и вход в аккаунт.');
     socket.onclose = () => this.close('Разговор завершён.');
     socket.onmessage = ({ data }: MessageEvent<string | ArrayBuffer>) => {
       if (this.closed) return;
+      this.lastServerActivity = Date.now();
       try {
         if (typeof data === 'string') this.event(JSON.parse(data) as SpeechEvent);
         else this.play(data);
@@ -94,9 +111,18 @@ export class VoiceCall {
 
   private event(event: SpeechEvent) {
     switch (event.type) {
+      case 'waiting':
+        if (!this.ready && Number.isFinite(event.estimated_wait_seconds)) {
+          this.callbacks.waiting(Math.max(1, event.estimated_wait_seconds));
+        }
+        break;
+      case 'pong':
+        break;
       case 'ready':
+        if (this.ready) break;
         clearTimeout(this.connectionTimer);
         this.ready = true;
+        this.callbacks.ready();
         this.callbacks.status('Звонящий подключён. Можно говорить и перебивать.');
         break;
       case 'listening':
@@ -119,8 +145,6 @@ export class VoiceCall {
         if (!event.value.interrupted) this.callbacks.status('Говорите следующую реплику.');
         break;
       case 'error':
-        this.callbacks.status(event.message);
-        break;
       case 'busy':
       case 'unavailable':
         this.close(event.message);
@@ -182,6 +206,7 @@ export class VoiceCall {
     this.closed = true;
     this.ready = false;
     clearTimeout(this.connectionTimer);
+    clearInterval(this.heartbeat);
     window.removeEventListener('pagehide', this.onPageHide);
     if (this.socket) {
       this.socket.onclose = null;

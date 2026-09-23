@@ -21,4 +21,5 @@ COPY assets ./assets
 RUN useradd --uid 10001 --create-home speech && mkdir -p /app/.models && chown speech:speech /app/.models
 USER speech
 EXPOSE 5555
-ENTRYPOINT ["speech112"]
+COPY --chmod=755 entrypoint.sh /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
