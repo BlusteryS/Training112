@@ -8,12 +8,15 @@ export type Assignment = {
   instructions: string | null; difficulty: string | null;
   attempt_id: string | null; attempt_status: string | null;
   created_at: string | null;
+  workstation: string | null;
+  incident_source: string | null;
+  vis_operator: string | null;
   caller_phone: string | null;
   card_deadline_seconds: number | null;
   card: Record<string, string> | null;
 };
 export type ScenarioDocument = {
-  schema_version: number; title: string; voice_id: string;
+  schema_version: number; title: string; voice_id: string; origin: string;
   difficulty?: string; instructions?: string;
   facts: Record<string, string>;
   initial_state: string; states: string[];

@@ -373,17 +373,20 @@ public final class TrainingRepository {
            'group_name',g.name,'learner_login',u.login,
            'instructions',s.document->>'instructions','difficulty',s.document->>'difficulty',
            'caller_phone',s.document#>>'{facts,phone}',
-           'card',latest.card,'card_deadline_seconds',deadline.seconds,'created_at',l.created_at,
+           'card',latest.card,'card_deadline_seconds',deadline.seconds,'created_at',latest.created_at,
+           'workstation',latest.workstation,'incident_source',latest.incident_source,
+           'vis_operator',latest.vis_operator,
            'attempt_id',latest.id,'attempt_status',latest.status) AS value
         FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
         JOIN training_group g ON g.id=l.group_id JOIN scenario s ON s.id=l.scenario_id
         JOIN app_user u ON u.id=a.learner_id
-        LEFT JOIN LATERAL (SELECT t.id,t.status,t.card FROM training_attempt t
+        LEFT JOIN LATERAL (SELECT t.id,t.status,t.card,t.created_at,t.workstation,
+          t.incident_source,t.vis_operator FROM training_attempt t
           WHERE t.assignment_id=a.id ORDER BY t.created_at DESC LIMIT 1) latest ON true
         LEFT JOIN LATERAL (SELECT min((criterion->>'seconds')::integer) AS seconds
           FROM jsonb_array_elements(s.document->'rubric') criterion
           WHERE criterion->>'kind'='deadline' AND criterion->>'action'='accepted') deadline ON true
-        WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY l.created_at DESC,u.login LIMIT 1000
+        WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY latest.created_at DESC NULLS LAST,u.login LIMIT 1000
         """,
         Tuple.of(actor.id()));
   }
@@ -395,7 +398,9 @@ public final class TrainingRepository {
                 one(
                         db,
                         """
-                        SELECT la.id,l.mode,l.status FROM lesson_assignment la JOIN lesson l ON l.id=la.lesson_id
+                        SELECT la.id,l.mode,l.status,s.document->>'origin' AS origin
+                        FROM lesson_assignment la JOIN lesson l ON l.id=la.lesson_id
+                        JOIN scenario s ON s.id=l.scenario_id
                         WHERE la.id=$1 AND la.learner_id=$2 FOR UPDATE OF l,la
                         """,
                         Tuple.of(assignment, actor.id()))
@@ -403,18 +408,35 @@ public final class TrainingRepository {
                         row -> {
                           if (!"active".equals(row.getString("status")))
                             return Future.failedFuture(conflict("Занятие не активно."));
+                          String workstation = actor.workstation();
+                          if (workstation == null || !workstation.matches("[0-9]{1,4}"))
+                            return Future.failedFuture(
+                                new ApiException(
+                                    400,
+                                    "invalid_workstation",
+                                    "Сессия не содержит номер АРМ."));
+                          String origin = row.getString("origin");
+                          if (!IncidentOrigin.SOURCES.contains(origin))
+                            return Future.failedFuture(
+                                new ApiException(
+                                    400, "invalid_scenario", "У сценария не задан источник происшествия."));
                           boolean card = "card".equals(row.getString("mode"));
                           return db.preparedQuery(
                                   """
-                                  INSERT INTO training_attempt(id,assignment_id,status,started_at)
-                                  VALUES ($1,$2,$3::varchar,CASE WHEN $3::varchar='active' THEN now() ELSE NULL END)
+                                  INSERT INTO training_attempt(id,assignment_id,status,started_at,
+                                    workstation,incident_source,vis_operator)
+                                  VALUES ($1,$2,$3::varchar,CASE WHEN $3::varchar='active' THEN now() ELSE NULL END,
+                                    $4,$5,$6)
                                   ON CONFLICT (id) DO NOTHING
                                   """)
                               .execute(
                                   Tuple.of(
                                       attempt,
                                       assignment,
-                                      card ? "active" : "created"));
+                                      card ? "active" : "created",
+                                      workstation,
+                                      origin,
+                                      IncidentOrigin.visOperator(origin, actor.login())));
                         })
                     .compose(
                         ignored ->

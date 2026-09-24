@@ -133,37 +133,139 @@
 }
 
 .advancedSearch {
-  position: absolute;
-  z-index: 4;
-  top: 138px;
-  left: 0;
-  width: 448px;
-  padding: 16px 20px;
-  border-top: 1px solid rgba(0, 0, 0, .12);
-  background: #ebecec;
   display: flex;
-  color: rgba(0, 0, 0, .8);
+  flex-direction: column;
+  padding: 20px;
+  background: #ebecec;
+  color: #000;
+  gap: 20px;
+}
+
+.dateRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 16px;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.dateRange,
+.dateBound,
+.dateCluster {
+  display: flex;
+  align-items: center;
+}
+
+.dateRange {
   gap: 12px;
 }
 
-.advancedSearch label {
-  min-width: 0;
-  flex: 1;
-  font-size: 13px;
+.dateBound {
+  gap: 12px;
 }
 
-.advancedSearch label span {
-  display: block;
-  margin-bottom: 4px;
+.dateCluster {
+  gap: 6px;
 }
 
-.advancedSearch input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid rgba(0, 0, 0, .2);
-  border-radius: 4px;
-  background: #fff;
+.dateCluster input {
+  min-height: 34px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 0.5px solid rgba(0, 0, 0, .2);
+  outline: 0;
+  background: transparent;
   color: #000;
+  font-size: 16px;
+  line-height: normal;
+}
+
+.digit2 {
+  width: 2ch;
+}
+
+.digit4 {
+  width: 4ch;
+}
+
+.dateSep,
+.dateDash {
+  color: #000;
+  opacity: .4;
+  font-size: 16px;
+  line-height: normal;
+}
+
+.dateCluster img {
+  width: 16px;
+  height: 16px;
+}
+
+.advancedGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 24px;
+}
+
+.advancedField {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advancedFieldWide {
+  grid-column: span 2;
+}
+
+.advancedField span {
+  color: #000;
+  font-size: 14px;
+  line-height: normal;
+  opacity: .6;
+}
+
+.advancedField input {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 0.5px solid rgba(0, 0, 0, .2);
+  outline: 0;
+  background: transparent;
+  color: #000;
+  font-size: 16px;
+  line-height: normal;
+}
+
+.advancedField input::placeholder {
+  color: #000;
+  opacity: .4;
+}
+
+.advancedActions {
+  display: flex;
+  gap: 16px;
+}
+
+.advancedActions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid #ec653b;
+  border-radius: 6px;
+  background: transparent;
+  color: #ec653b;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.advancedActions img {
+  width: 20px;
+  height: 20px;
 }
 
 .statusPanel {

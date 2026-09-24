@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { User } from '../auth/api';
 import { WorkspaceSwitch } from '../components/WorkspaceSwitch';
 import type { Assignment } from '../management/types';
 import boltIcon from '../assets/workspace/bolt.svg';
@@ -49,7 +48,7 @@ function operatorNumber(login: string) {
   return login.match(/\d+/)?.[0] ?? login;
 }
 
-function IncidentRow({ assignment, workstation }: { assignment: Assignment; workstation: string }) {
+function IncidentRow({ assignment }: { assignment: Assignment }) {
   const created = dateParts(assignment.created_at);
   const status = assignmentStatus(assignment);
   const description = assignment.instructions?.trim() || incidentType(assignment);
@@ -66,7 +65,7 @@ function IncidentRow({ assignment, workstation }: { assignment: Assignment; work
       <div className={styles.iconCell}><img src={boltIcon} alt="" /></div>
       <div className={styles.iconCell}><img src={timerIcon} alt="" /></div>
       <div className={styles.cell}>{operatorNumber(assignment.learner_login)}</div>
-      <div className={styles.cell}>{workstation}</div>
+      <div className={styles.cell}>{assignment.workstation ? assignment.workstation.padStart(3, '0') : ''}</div>
       <div className={styles.cell}>{shortNumber(assignment.id)}</div>
       <div className={styles.cell}>{created.date}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{created.time}</div>
@@ -86,16 +85,79 @@ function IncidentRow({ assignment, workstation }: { assignment: Assignment; work
   </div>;
 }
 
-export function IncidentList({ addressFilter, assignments, autoRefresh, filter, incidentFilter,
-  loading, onAutoRefresh, user }: {
-  addressFilter: string;
+export type IncidentSearch = {
+  from: number | null;
+  to: number | null;
+  incident: string;
+  signs: string;
+  address: string;
+  okrug: string;
+  district: string;
+  region: string;
+  caller: string;
+  operator: string;
+  arm: string;
+  descriptiveAddress: string;
+  service: string;
+  description: string;
+  channel: string;
+  source: string;
+  status: string;
+  cardNumber: string;
+  visOperator: string;
+};
+
+function same(left: string, right: string) {
+  return left.trim().toLocaleLowerCase('ru') === right.trim().toLocaleLowerCase('ru');
+}
+
+function parts(value: string) {
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function contains(query: string, values: Array<string | null | undefined>) {
+  const needle = query.trim().toLocaleLowerCase('ru');
+  return !needle || values.some((value) => (value ?? '').toLocaleLowerCase('ru').includes(needle));
+}
+
+function equals(query: string, value: string | null | undefined) {
+  const needle = query.trim().toLocaleLowerCase('ru');
+  return !needle || same(needle, value ?? '');
+}
+
+function oneOf(query: string, values: Array<string | null | undefined>) {
+  const wanted = parts(query);
+  if (!wanted.length) return true;
+  const have = values.flatMap((value) => parts(value ?? ''));
+  return wanted.some((part) => have.some((value) => same(part, value)));
+}
+
+function armKey(value: string) {
+  const text = value.trim();
+  return /^\d{1,4}$/.test(text) ? String(Number(text)) : '';
+}
+
+function armMatch(query: string, stored: string | null) {
+  const wanted = parts(query);
+  if (!wanted.length) return true;
+  const desk = stored ? armKey(stored) : '';
+  return Boolean(desk) && wanted.some((part) => armKey(part) === desk);
+}
+
+function operatorMatch(query: string, login: string) {
+  const needle = query.trim().toLocaleLowerCase('ru');
+  if (!needle) return true;
+  const number = (login.match(/\d+/)?.[0] ?? login).toLocaleLowerCase('ru');
+  return needle === login.toLocaleLowerCase('ru') || needle === number;
+}
+
+export function IncidentList({ assignments, autoRefresh, filter, loading, onAutoRefresh, search }: {
   assignments: Assignment[];
   autoRefresh: boolean;
   filter: string;
-  incidentFilter: string;
   loading: boolean;
   onAutoRefresh: (value: boolean) => void;
-  user: User;
+  search: IncidentSearch;
 }) {
   const [status, setStatus] = useState('');
   const [group, setGroup] = useState('');
@@ -103,16 +165,33 @@ export function IncidentList({ addressFilter, assignments, autoRefresh, filter, 
   const [pageSize, setPageSize] = useState(10);
   const groups = useMemo(() => [...new Set(assignments.map((item) => item.group_name))].sort(), [assignments]);
   const needle = filter.trim().toLocaleLowerCase('ru');
-  const addressNeedle = addressFilter.trim().toLocaleLowerCase('ru');
-  const incidentNeedle = incidentFilter.trim().toLocaleLowerCase('ru');
   const filtered = assignments.filter((assignment) => {
+    const card = assignment.card;
+    const created = assignment.created_at ? new Date(assignment.created_at).valueOf() : Number.NaN;
     const searchable = [assignment.title, assignment.group_name, assignment.learner_login,
-      assignment.card?.incident_code, assignment.card?.address, assignment.card?.description,
-      assignment.instructions].filter(Boolean).join(' ').toLocaleLowerCase('ru');
+      card?.incident_code, card?.address, card?.description, assignment.instructions]
+      .filter(Boolean).join(' ').toLocaleLowerCase('ru');
     return assignment.mode === 'call' && Boolean(assignment.attempt_status)
       && (!needle || searchable.includes(needle))
-      && (!addressNeedle || (assignment.card?.address ?? '').toLocaleLowerCase('ru').includes(addressNeedle))
-      && (!incidentNeedle || incidentType(assignment).toLocaleLowerCase('ru').includes(incidentNeedle))
+      && (search.from === null || (!Number.isNaN(search.from) && !Number.isNaN(created) && created >= search.from))
+      && (search.to === null || (!Number.isNaN(search.to) && !Number.isNaN(created) && created <= search.to))
+      && contains(search.incident, [incidentType(assignment)])
+      && contains(search.signs, [card?.incident_sign_2, card?.incident_sign_3])
+      && contains(search.address, [card?.address, card?.street, card?.house])
+      && oneOf(search.okrug, [card?.okrug])
+      && equals(search.district, card?.district)
+      && equals(search.region, card?.city)
+      && contains(search.caller, [card?.caller_name, card?.phone, assignment.caller_phone])
+      && operatorMatch(search.operator, assignment.learner_login)
+      && armMatch(search.arm, assignment.workstation)
+      && contains(search.descriptiveAddress, [card?.address_description])
+      && oneOf(search.service, [card?.services])
+      && contains(search.description, [card?.description])
+      && oneOf(search.channel, [card?.communication_channel])
+      && oneOf(search.source, [assignment.incident_source])
+      && oneOf(search.status, [assignmentStatus(assignment)])
+      && contains(search.cardNumber, [assignment.id, shortNumber(assignment.id)])
+      && equals(search.visOperator, assignment.vis_operator)
       && (!status || assignmentStatus(assignment) === status)
       && (!group || assignment.group_name === group);
   });
@@ -122,7 +201,7 @@ export function IncidentList({ addressFilter, assignments, autoRefresh, filter, 
   const first = filtered.length ? (currentPage - 1) * pageSize + 1 : 0;
   const last = Math.min(currentPage * pageSize, filtered.length);
 
-  useEffect(() => setPage(1), [addressFilter, filter, group, incidentFilter, pageSize, status]);
+  useEffect(() => setPage(1), [filter, group, pageSize, search, status]);
 
   if (loading) return null;
 
@@ -152,8 +231,7 @@ export function IncidentList({ addressFilter, assignments, autoRefresh, filter, 
           <span>Тип происшествия</span><span>Постр.</span><span>Статус</span><span>Адрес</span><span /><span>Проверено</span>
         </div>
         <div className={styles.rows}>
-          {rows.map((assignment) => <IncidentRow assignment={assignment} key={assignment.id}
-            workstation={user.workstation ?? '000'} />)}
+          {rows.map((assignment) => <IncidentRow assignment={assignment} key={assignment.id} />)}
         </div>
       </div>
     </div>

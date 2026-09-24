@@ -179,7 +179,9 @@
 .callerRow select,
 .addressPanel > input,
 .incidentPanel > input,
-.addressGrid input {
+.addressGrid input,
+.addressGrid select,
+.incidentPanel select {
   min-width: 0;
   height: 34px;
   padding: 7px 0;

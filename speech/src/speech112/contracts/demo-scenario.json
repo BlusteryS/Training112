@@ -2,6 +2,7 @@
   "schema_version": 1,
   "title": "Учебный сценарий: запах дыма",
   "voice_id": "demo",
+  "origin": "Служба 112",
   "facts": {
     "caller_name": "Алексей",
     "address": "Москва, учебная улица, дом 10",

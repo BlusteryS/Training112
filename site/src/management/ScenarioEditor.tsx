@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { incidentSources } from '../incidentSources';
 import { difficultyNames, type ScenarioDocument } from './types';
 import { PanelSubtitle } from './Panel';
 
@@ -38,6 +39,11 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
     <p>Опишите происшествие и ответы заявителя. Эти сведения видны только преподавателю: обучающийся узнает их в разговоре.</p>
     <fieldset disabled={busy}><legend>Условия задания</legend>
       <p><label>Название <input required maxLength={200} value={document.title} onChange={(e) => setDocument({ ...document, title: e.target.value })} /></label></p>
+      <p><label>Источник происшествия <select required value={document.origin ?? ''} onChange={(e) => setDocument({ ...document, origin: e.target.value })}>
+        <option value=""></option>
+        {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
+      </select></label></p>
+      <p>Источник записывается в карточку в момент начала попытки. Если это внешняя система, номер оператора, открывшего карточку, сохраняется как оператор, работавший с КП из ВИС.</p>
       <p><label>Уровень сложности <select value={document.difficulty ?? 'basic'} onChange={(e) => setDocument({ ...document, difficulty: e.target.value })}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label></p>

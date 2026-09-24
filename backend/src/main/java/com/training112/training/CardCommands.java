@@ -12,7 +12,22 @@ public final class CardCommands {
           "communication_channel", "country", "description", "district", "entrance", "floor",
           "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code",
           "incident_sign_2", "incident_sign_3", "incident_details",
-          "phone", "provided_phone", "scene_phone", "services", "street", "victims");
+          "okrug", "phone", "provided_phone", "scene_phone", "services", "street", "victims");
+  private static final Set<String> OKRUGS =
+      Set.of("ЦАО", "САО", "СВАО", "ВАО", "ЮВАО", "ЮАО", "ЮЗАО", "ЗАО", "СЗАО", "ЗелАО", "ТиНАО");
+  private static final Set<String> SIGN_2 =
+      Set.of(
+          "Квартира", "Частный дом", "Подъезд", "Транспорт", "Мусор", "Трава", "Лес", "Другое",
+          "Легковые автомобили", "Грузовой транспорт", "Общественный транспорт", "Пешеход",
+          "В сознании", "Без сознания", "Неизвестно", "Нападение", "Угроза", "Драка", "Кража",
+          "В квартире", "В подъезде", "На улице", "В организации", "Водоснабжение", "Канализация",
+          "Отопление", "Электроснабжение");
+  private static final Set<String> SIGN_3 =
+      Set.of(
+          "Открытое пламя", "Дым", "Запах гари", "Неизвестно", "Есть пострадавшие",
+          "Заблокированы люди", "Есть возгорание", "Без пострадавших", "Травма",
+          "Затруднено дыхание", "Боль", "Отравление", "Другое", "Да", "Нет", "Запах газа",
+          "Повреждение оборудования", "Прорыв", "Отключение", "Затопление", "Повреждение");
   private static final Map<String, Set<String>> TRANSITIONS =
       Map.of(
           "received", Set.of("accepted", "rejected"),
@@ -37,6 +52,12 @@ public final class CardCommands {
           throw invalid("Неверное значение поля.");
         copy.put(entry.getKey(), entry.getValue());
       }
+      String okrug = copy.getString("okrug", "");
+      if (!okrug.isEmpty() && !OKRUGS.contains(okrug)) throw invalid("Неизвестный округ.");
+      if (!allowed(copy.getString("incident_sign_2", ""), SIGN_2)
+          || !allowed(copy.getString("incident_sign_3", ""), SIGN_3)) {
+        throw invalid("Неизвестный признак происшествия.");
+      }
       return new Applied(copy, current);
     }
     if (!"card.status".equals(type)
@@ -52,6 +73,10 @@ public final class CardCommands {
     }
     if (!comment.isEmpty()) copy.put("comment", comment);
     return new Applied(copy, next);
+  }
+
+  private static boolean allowed(String value, Set<String> options) {
+    return value.isEmpty() || options.contains(value);
   }
 
   private static ApiException invalid(String message) {

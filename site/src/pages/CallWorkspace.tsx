@@ -2,12 +2,14 @@ import { useMemo, useState, type FormEvent } from 'react';
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { ToggleGroup } from '../components/call/ToggleGroup';
+import { moscowOkrugs } from '../incidentSources';
 import hangupIcon from '../assets/call/hangup.svg';
 import languageIcon from '../assets/call/language.svg';
 import locationIcon from '../assets/call/location.svg';
 import helpIcon from '../assets/call/help.svg';
 import plusIcon from '../assets/workspace/plus.svg';
 import closeIcon from '../assets/workspace/close.svg';
+import { incidentTypes } from './callIncidentTypes';
 import styles from './CallWorkspace.module.css';
 
 export type IncidentDraft = {
@@ -20,10 +22,14 @@ export type IncidentDraft = {
   caller_status: string;
   foreign_language: string;
   incident_code: string;
+  incident_sign_2: string;
+  incident_sign_3: string;
   incident_details: string;
   address: string;
+  address_description: string;
   country: string;
   city: string;
+  okrug: string;
   district: string;
   street: string;
   house: string;
@@ -36,20 +42,13 @@ export type IncidentDraft = {
 };
 
 const serviceOptions = ['101', '102', '103', '104', 'ДДС района'];
-const incidentOptions = [
-  { title: 'Пожар или задымление', services: ['101', '102', '103'] },
-  { title: 'Дорожно-транспортное происшествие', services: ['101', '102', '103'] },
-  { title: 'Требуется медицинская помощь', services: ['103'] },
-  { title: 'Нарушение общественного порядка', services: ['102'] },
-  { title: 'Запах газа или авария газового оборудования', services: ['101', '104'] },
-  { title: 'Авария коммунальных сетей', services: ['ДДС района'] },
-] as const;
 
 function initialDraft(phone: string, card?: Record<string, string> | null): IncidentDraft {
   return {
     phone, provided_phone: '', scene_phone: '', communication_channel: 'Мобильный телефон',
     foreign_phone: 'false', caller_name: '', caller_status: '', foreign_language: 'false',
-    incident_code: '', incident_details: '', address: '', country: 'Россия', city: 'Москва',
+    incident_code: '', incident_sign_2: '', incident_sign_3: '', incident_details: '',
+    address: '', address_description: '', country: 'Россия', city: 'Москва', okrug: '',
     district: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Нет',
     services: '', comment: '', ...card,
   };
@@ -93,8 +92,9 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
   }
 
   function selectIncident(value: string) {
-    const matched = incidentOptions.find(({ title }) => title === value);
+    const matched = incidentTypes.find((item) => item.name === value);
     setDraft((current) => ({ ...current, incident_code: value,
+      incident_sign_2: '', incident_sign_3: '',
       services: matched ? matched.services.join(', ') : current.services,
     }));
   }
@@ -195,12 +195,21 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
         <div className={styles.addressGrid}>
           <label>Страна<input value={draft.country} onChange={(event) => change('country', event.target.value)} /></label>
           <label>Город<input value={draft.city} onChange={(event) => change('city', event.target.value)} /></label>
+          <label>Округ<select required value={draft.okrug} onChange={(event) => change('okrug', event.target.value)}>
+            <option value=""></option>
+            {moscowOkrugs.map((okrug) => <option key={okrug} value={okrug}>{okrug}</option>)}
+          </select></label>
           <label>Район<input value={draft.district} onChange={(event) => change('district', event.target.value)} /></label>
           <label>Улица<input value={draft.street} onChange={(event) => change('street', event.target.value)} /></label>
           <label>Дом<input value={draft.house} onChange={(event) => change('house', event.target.value)} /></label>
           <label>Подъезд<input value={draft.entrance} onChange={(event) => change('entrance', event.target.value)} /></label>
           <label>Этаж<input value={draft.floor} onChange={(event) => change('floor', event.target.value)} /></label>
         </div>
+        <label className={styles.description}>Описательный адрес
+          <textarea maxLength={1999} value={draft.address_description}
+            onChange={(event) => change('address_description', event.target.value)}
+            placeholder="Опишите место, если точного адреса нет" />
+        </label>
         <label className={styles.description}>Описание со слов заявителя
           <textarea required maxLength={1999} value={draft.description}
             onChange={(event) => change('description', event.target.value)} placeholder="Введите описание происшествия" />
@@ -212,9 +221,17 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
         <div className={styles.panelTitle}>Что случилось?</div>
         <input required list="incident-types" value={draft.incident_code}
           onChange={(event) => selectIncident(event.target.value)} placeholder="Добавить тип происшествия" />
-        <datalist id="incident-types">{incidentOptions.map(({ title }) => <option key={title} value={title} />)}</datalist>
+        <datalist id="incident-types">{incidentTypes.map(({ name }) => <option key={name} value={name} />)}</datalist>
         {draft.incident_code && <div className={styles.chips}><button type="button"
           onClick={() => selectIncident('')}>{draft.incident_code} ×</button></div>}
+        {incidentTypes.find((item) => item.name === draft.incident_code)?.questions.map((question) =>
+          <label key={question.field} className={styles.details}>{question.label}
+            <select required value={draft[question.field]}
+              onChange={(event) => change(question.field, event.target.value)}>
+              <option value=""></option>
+              {question.options.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>)}
         <label className={styles.details}>Подробности происшествия
           <textarea required value={draft.incident_details}
             onChange={(event) => change('incident_details', event.target.value)}
