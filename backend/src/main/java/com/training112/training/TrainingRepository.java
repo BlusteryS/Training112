@@ -373,13 +373,16 @@ public final class TrainingRepository {
            'group_name',g.name,'learner_login',u.login,
            'instructions',s.document->>'instructions','difficulty',s.document->>'difficulty',
            'caller_phone',s.document#>>'{facts,phone}',
-           'card',latest.card,'created_at',l.created_at,
+           'card',latest.card,'card_deadline_seconds',deadline.seconds,'created_at',l.created_at,
            'attempt_id',latest.id,'attempt_status',latest.status) AS value
         FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
         JOIN training_group g ON g.id=l.group_id JOIN scenario s ON s.id=l.scenario_id
         JOIN app_user u ON u.id=a.learner_id
         LEFT JOIN LATERAL (SELECT t.id,t.status,t.card FROM training_attempt t
           WHERE t.assignment_id=a.id ORDER BY t.created_at DESC LIMIT 1) latest ON true
+        LEFT JOIN LATERAL (SELECT min((criterion->>'seconds')::integer) AS seconds
+          FROM jsonb_array_elements(s.document->'rubric') criterion
+          WHERE criterion->>'kind'='deadline' AND criterion->>'action'='accepted') deadline ON true
         WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY l.created_at DESC,u.login LIMIT 1000
         """,
         Tuple.of(actor.id()));

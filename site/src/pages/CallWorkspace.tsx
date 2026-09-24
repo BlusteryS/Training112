@@ -67,7 +67,7 @@ function elapsedParts(seconds: number) {
 }
 
 export function CallWorkspace({ user, phone, elapsed, message, connected, initialCard, incidentNumber,
-  saving, onEndCall, onCancel, onSave }: {
+  deadlineSeconds, saving, onEndCall, onCancel, onSave }: {
   user: User;
   phone: string;
   elapsed: number;
@@ -75,6 +75,7 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
   connected: boolean;
   initialCard?: Record<string, string> | null;
   incidentNumber: string;
+  deadlineSeconds?: number | null;
   saving: boolean;
   onEndCall: () => void;
   onCancel: () => void;

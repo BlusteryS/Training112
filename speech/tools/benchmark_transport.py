@@ -44,7 +44,7 @@ async def run(output):
         client.setsockopt(zmq.LINGER, 0)
         server.bind("inproc://one-call")
         client.connect("inproc://one-call")
-        service = SpeechService(server, config, models, recordings, 20)
+        service = SpeechService(server, config, models, recordings)
         serving = asyncio.create_task(service.receive())
         events = []
         incoming = asyncio.Queue()

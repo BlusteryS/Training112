@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -103,10 +102,3 @@ class AppConfig:
         if not 0 <= config.telephone.level <= 1 or not config.voices:
             raise ValueError("A voice and valid ambience level are required")
         return config
-
-
-def capacity() -> int:
-    value = int(os.environ.get("SPEECH_MAX_SESSIONS", "20"))
-    if not 1 <= value <= 128:
-        raise ValueError("SPEECH_MAX_SESSIONS must be between 1 and 128")
-    return value

@@ -9,6 +9,7 @@ export type Assignment = {
   attempt_id: string | null; attempt_status: string | null;
   created_at: string | null;
   caller_phone: string | null;
+  card_deadline_seconds: number | null;
   card: Record<string, string> | null;
 };
 export type ScenarioDocument = {

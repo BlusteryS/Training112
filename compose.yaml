@@ -35,7 +35,6 @@ services:
     environment:
       SPEECH_BIND: tcp://127.0.0.1:5555
       SPEECH_CONFIG: /app/config/default.toml
-      SPEECH_MAX_SESSIONS: "20"
       HF_HUB_OFFLINE: "1"
       OMP_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"

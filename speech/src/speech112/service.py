@@ -16,7 +16,7 @@ from pathlib import Path
 import zmq
 import zmq.asyncio
 
-from speech112.config import AppConfig, capacity
+from speech112.config import AppConfig
 from speech112.runtime.bundle import ScenarioBundle
 from speech112.runtime.dialogue import ScenarioDialogue
 from speech112.runtime.factory import open_models
@@ -48,10 +48,9 @@ class Observer:
 
 
 class SpeechService:
-    def __init__(self, socket, config, models, recordings, max_sessions):
+    def __init__(self, socket, config, models, recordings):
         self.socket, self.config, self.recordings = socket, config, recordings
         self.scheduler, self.vad, self.asr, self.intent, self.voices = models
-        self.max_sessions = max_sessions
         self.peers: dict[bytes, Peer] = {}
 
     async def event(self, identity, value):
@@ -98,7 +97,6 @@ class SpeechService:
                                 "type": "health",
                                 "protocol": 2,
                                 "active": len(self.peers),
-                                "capacity": self.max_sessions,
                                 "pending_inference": self.scheduler.pending,
                                 "understanding_sha256": getattr(self.intent, "version", None),
                             },
@@ -109,9 +107,6 @@ class SpeechService:
                     attempt = str(uuid.UUID(command["attempt_id"]))
                     if any(p.attempt_id == attempt for p in self.peers.values()):
                         raise ValueError("Attempt already admitted on this node")
-                    if len(self.peers) >= self.max_sessions:
-                        await self.event(identity, {"type": "busy", "code": "capacity_exceeded"})
-                        continue
                     bundle = ScenarioBundle.parse(command["artifact"].encode(), command["sha256"])
                     if bundle.document["voice_id"] not in self.voices:
                         raise ValueError("Scenario voice is not installed on this node")
@@ -252,13 +247,11 @@ async def serve():
                 if urlparse(endpoint).hostname != "127.0.0.1":
                     raise ValueError("Speech must bind to the host loopback interface")
                 socket.bind(endpoint)
-                service = SpeechService(socket, config, models, recordings, capacity())
+                service = SpeechService(socket, config, models, recordings)
                 task = asyncio.create_task(service.receive())
                 for signum in (signal.SIGINT, signal.SIGTERM):
                     asyncio.get_running_loop().add_signal_handler(signum, task.cancel)
-                LOG.info(
-                    "CPU Speech ready; node capacity=%s (must be load-tested)", service.max_sessions
-                )
+                LOG.info("CPU Speech ready; session count is not capped")
                 with suppress(asyncio.CancelledError):
                     await task
         finally:

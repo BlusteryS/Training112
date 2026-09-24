@@ -1,7 +1,12 @@
 import { api } from '../api';
 import type { Assignment } from '../management/types';
 
-export type AssignedAttempt = { id: string; phone: string; card: Record<string, string> | null };
+export type AssignedAttempt = {
+  id: string;
+  phone: string;
+  card: Record<string, string> | null;
+  deadlineSeconds: number | null;
+};
 
 type AttemptState = {
   id: string;
@@ -16,12 +21,14 @@ export async function startAssignedAttempt(learnerId: string, assignmentId: stri
     && item.mode === 'call' && item.status === 'active');
   if (!assignment) throw new Error('Задание недоступно. Возможно, преподаватель уже завершил занятие.');
   if (assignment.attempt_id && assignment.attempt_status && ['created', 'active', 'suspended'].includes(assignment.attempt_status)) {
-    return { id: assignment.attempt_id, phone: assignment.caller_phone?.trim() ?? '', card: assignment.card };
+    return { id: assignment.attempt_id, phone: assignment.caller_phone?.trim() ?? '',
+      card: assignment.card, deadlineSeconds: assignment.card_deadline_seconds };
   }
   const attempt = await api<AttemptState>('training/attempts', {
     id: crypto.randomUUID(), assignment_id: assignment.id,
   });
-  return { id: attempt.id, phone: assignment.caller_phone?.trim() ?? '', card: attempt.card };
+  return { id: attempt.id, phone: assignment.caller_phone?.trim() ?? '',
+    card: attempt.card, deadlineSeconds: assignment.card_deadline_seconds };
 }
 
 export async function saveAttemptCard(id: string, card: Record<string, string>) {

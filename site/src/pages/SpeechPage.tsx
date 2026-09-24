@@ -22,6 +22,7 @@ export function SpeechPage() {
   const [phase, setPhase] = useState<CallPhase>('waiting');
   const [phone, setPhone] = useState('');
   const [card, setCard] = useState<Record<string, string> | null>(null);
+  const [deadlineSeconds, setDeadlineSeconds] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -50,6 +51,7 @@ export function SpeechPage() {
     setAttemptId('');
     setPhone('');
     setCard(null);
+    setDeadlineSeconds(null);
     setMessage('');
     setStartedAt(null);
     setPhase('waiting');
@@ -91,6 +93,7 @@ export function SpeechPage() {
         setAttemptId(assigned.id);
         setPhone(assigned.phone);
         setCard(assigned.card);
+        setDeadlineSeconds(assigned.deadlineSeconds);
         if (disposed) {
           failAttempt();
           return;
@@ -172,5 +175,6 @@ export function SpeechPage() {
     elapsed={startedAt === null ? 0 : Math.max(0, Math.floor((now - startedAt) / 1_000))}
     message={message || (phase === 'active' ? 'Идёт разговор' : 'Разговор завершён')}
     connected={phase === 'active'} initialCard={card} incidentNumber={incidentNumber(attemptId)}
+    deadlineSeconds={deadlineSeconds}
     saving={saving} onEndCall={() => call.current?.close()} onCancel={() => void cancel()} onSave={save} />;
 }

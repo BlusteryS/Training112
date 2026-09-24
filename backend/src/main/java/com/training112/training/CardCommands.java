@@ -8,9 +8,10 @@ import java.util.Set;
 public final class CardCommands {
   private static final Set<String> FIELDS =
       Set.of(
-          "address", "caller_name", "caller_status", "city", "comment",
+          "address", "address_description", "landmark", "caller_name", "caller_status", "city", "comment",
           "communication_channel", "country", "description", "district", "entrance", "floor",
-          "foreign_language", "foreign_phone", "house", "incident_code", "incident_details",
+          "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code",
+          "incident_sign_2", "incident_sign_3", "incident_details",
           "phone", "provided_phone", "scene_phone", "services", "street", "victims");
   private static final Map<String, Set<String>> TRANSITIONS =
       Map.of(
