@@ -6,7 +6,6 @@ import { Materials } from './Materials';
 import { Reports } from './Reports';
 import { Results } from './Results';
 import { Scenarios } from './Scenarios';
-import { ManagementPanel } from './Panel';
 
 const sections = {
   lessons: 'Занятия',
@@ -21,7 +20,7 @@ type Section = keyof typeof sections;
 
 export function TeacherWorkspace() {
   const [section, setSection] = useState<Section>('lessons');
-  return <ManagementPanel>
+  return <div>
     <SectionTabs value={section} options={sections} onChange={setSection} />
     {section === 'lessons' && <Lessons />}
     {section === 'scenarios' && <Scenarios />}
@@ -29,5 +28,5 @@ export function TeacherWorkspace() {
     {section === 'materials' && <Materials />}
     {section === 'results' && <Results />}
     {section === 'reports' && <Reports />}
-  </ManagementPanel>;
+  </div>;
 }

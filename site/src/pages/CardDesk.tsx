@@ -5,12 +5,15 @@ import { WorkspaceHeader } from '../components/shell/WorkspaceHeader';
 import { ActionButton, ActionRow } from '../components/ui/ActionButton';
 import { Field } from '../components/ui/Field';
 import { Notice } from '../components/ui/Notice';
-import { finishAttempt, openCardAttempt, postCardStatus, saveAttemptCard } from '../speech/trainingApi';
+import { attemptEvents, finishAttempt, openCardAttempt, postCardStatus, type AttemptEvent } from '../speech/trainingApi';
+import type { Assignment } from '../management/types';
 import styles from '../App.module.css';
 import panel from '../management/Panel.module.css';
+import desk from './CardDesk.module.css';
 
 const labels: Record<string, string> = {
-  received: 'Не оповещено',
+  added: 'Добавлена',
+  received: 'Получена',
   accepted: 'Принята',
   rejected: 'Не принята',
   dispatched: 'Начало реагирования',
@@ -29,19 +32,28 @@ const transitions: Record<string, string[]> = {
   working: ['completed', 'refused'],
 };
 
+const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+});
+
+function text(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : 'нет';
+}
+
 export function CardDesk() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const assignmentId = search.get('assignment_id') ?? '';
   const [attemptId, setAttemptId] = useState('');
-  const [status, setStatus] = useState('received');
-  const [title, setTitle] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('added');
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [card, setCard] = useState<Record<string, string>>({});
+  const [events, setEvents] = useState<AttemptEvent[]>([]);
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
-  const [deadline, setDeadline] = useState<number | null>(null);
+  const [deadline, setDeadline] = useState(30);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now);
   const [busy, setBusy] = useState(false);
@@ -52,38 +64,33 @@ export function CardDesk() {
   }, []);
 
   useEffect(() => {
-    void openCardAttempt(user.id, assignmentId).then(({ assignment, attempt }) => {
+    void openCardAttempt(user.id, assignmentId).then(async ({ assignment: next, attempt }) => {
       setAttemptId(attempt.id);
+      setAssignment(next);
       setStatus(attempt.card_status || 'received');
-      setTitle(assignment.title);
-      setInstructions(assignment.instructions ?? '');
-      setMessage(attempt.card?.description ?? '');
-      setDeadline(assignment.card_deadline_seconds);
-      setStartedAt(attempt.started_at ? new Date(attempt.started_at).valueOf() : Date.now());
+      setCard(attempt.card ?? {});
+      setDeadline(next.card_deadline_seconds ?? 30);
+      setStartedAt(attempt.started_at ? new Date(attempt.started_at).valueOf() : null);
+      setEvents(await attemptEvents(attempt.id));
     }).catch((cause: Error) => setError(cause.message));
   }, [assignmentId, user.id]);
 
   const elapsed = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
-  const left = deadline === null ? null : deadline - elapsed;
-  const needsComment = (next: string) => next === 'rejected' || next === 'refused';
-
-  async function saveText() {
-    if (!attemptId || busy) return;
-    setBusy(true); setError('');
-    try { await saveAttemptCard(attemptId, { description: message }); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось сохранить текст.'); }
-    finally { setBusy(false); }
-  }
+  const left = deadline - elapsed;
+  const waiting = status === 'added' || status === 'received';
+  const service = card.services || assignment?.service || '';
+  const needsComment = (next: string) => next === 'rejected' || next === 'refused' || next === 'completed';
+  const shown = (key: string, fallback?: string | null) => text(card[key] || fallback);
 
   async function move(next: string) {
     if (!attemptId || busy) return;
-    if (needsComment(next) && !comment.trim()) { setError('Для отказа нужен комментарий.'); return; }
+    if (needsComment(next) && !comment.trim()) { setError('К статусу нужен комментарий.'); return; }
     setBusy(true); setError('');
     try {
-      if (message.trim()) await saveAttemptCard(attemptId, { description: message });
-      const attempt = await postCardStatus(attemptId, next, comment);
+      const attempt = await postCardStatus(attemptId, next, comment.trim());
       setStatus(attempt.card_status);
       setComment('');
+      setEvents(await attemptEvents(attemptId));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Не удалось сменить статус.');
     } finally { setBusy(false); }
@@ -101,19 +108,34 @@ export function CardDesk() {
     }
   }
 
+  const history = events.filter((event) => event.type === 'card.status' && event.payload?.status);
+
   return <div className={styles.workspace}>
-    <WorkspaceHeader leading={<div className={styles.searchPanel}>
-      <div className={styles.staffTitle}>Отработка карточки</div>
+    <WorkspaceHeader person={service ? `Диспетчер ДДС, ${service}` : 'Диспетчер ДДС'} leading={<div className={styles.searchPanel}>
+      <div className={styles.staffTitle}>{assignment?.title || 'Карточка'}</div>
       <div className={styles.searchRule} />
-      <div className={styles.searchFooter}>{title || 'Карточка'}</div>
+      <div className={styles.searchFooter}>{service || 'Служба не указана'}</div>
     </div>} />
     <div className={`${styles.operatorContent} ${panel.root}`}>
-      <div>Статус: {labels[status] ?? status}. {left === null ? '' : left >= 0 ? `До норматива принятия: ${left} с.` : `Норматив принятия превышен на ${-left} с.`}</div>
-      {instructions && <div>{instructions}</div>}
-      <Field label="Текст реагирования"><textarea rows={4} maxLength={4000} value={message} onChange={(event) => setMessage(event.target.value)} /></Field>
-      <Field label="Комментарий к отказу"><textarea rows={3} maxLength={4000} value={comment} onChange={(event) => setComment(event.target.value)} /></Field>
+      <div>Статус службы: {labels[status] ?? status}. {waiting ? left >= 0 ? `До норматива принятия: ${left} с.` : 'Карточка: Не оповещено.' : ''}</div>
+      <div className={desk.sheet}>
+        <label>Заявитель<span>{shown('caller_name', assignment?.facts?.caller_name)}</span></label>
+        <label>Телефон<span>{shown('phone', assignment?.facts?.phone)}</span></label>
+        <label className={desk.wide}>Адрес<span>{shown('address', assignment?.facts?.address)}</span></label>
+        <label className={desk.wide}>Описание<span>{shown('description', assignment?.facts?.incident)}</span></label>
+        <label>Пострадавшие<span>{shown('victims', assignment?.facts?.victims)}</span></label>
+        <label>Источник<span>{shown('origin', assignment?.origin)}</span></label>
+        <label className={desk.wide}>Служба<span>{text(service)}</span></label>
+      </div>
+      <div className={desk.history}>Статусы
+        {history.length === 0 && <div>Статусов нет</div>}
+        {history.map((event, index) => <div key={`${event.created_at}-${index}`}>
+          <span>{labels[event.payload.status ?? ''] ?? event.payload.status} · {timeFormatter.format(new Date(event.created_at))}</span>
+          {event.payload.comment ? <span>{event.payload.comment}</span> : null}
+        </div>)}
+      </div>
+      <Field label="Комментарий к статусу"><textarea rows={3} maxLength={4000} value={comment} onChange={(event) => setComment(event.target.value)} /></Field>
       <ActionRow>
-        <ActionButton disabled={busy} onClick={() => void saveText()}>Сохранить текст</ActionButton>
         {(transitions[status] ?? []).map((next) => <ActionButton key={next} disabled={busy} onClick={() => void move(next)}>{labels[next]}</ActionButton>)}
         <ActionButton disabled={busy || !attemptId} onClick={() => void finish()}>Завершить отработку</ActionButton>
         <ActionButton onClick={() => navigate('/')}>К списку</ActionButton>

@@ -1,83 +1,102 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { ModalForm } from '../components/ModalForm';
+import { FormCard, formCheck, formGrid } from './FormCard';
+import { Field } from '../components/ui/Field';
 import type { Group, Learner } from './types';
-import { PanelList, PanelListItem, PanelSubtitle, PanelTitle } from './Panel';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+
+const columns = 'minmax(180px, 1fr) minmax(140px, 1fr) 120px 120px';
 
 export function Groups() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [learners, setLearners] = useState<Learner[]>([]);
   const [members, setMembers] = useState<Learner[]>([]);
-  const [group, setGroup] = useState('');
-  const [selected, setSelected] = useState<string[]>([]);
-  const [loadedGroup, setLoadedGroup] = useState('');
+  const [group, setGroup] = useState<Group | null>(null);
+  const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+
   async function refresh() {
-    const [g, u] = await Promise.all([api<Group[]>('training/groups'), api<Learner[]>('training/learners')]);
-    setGroups(g); setLearners(u);
+    const [nextGroups, nextLearners] = await Promise.all([api<Group[]>('training/groups'), api<Learner[]>('training/learners')]);
+    setGroups(nextGroups);
+    setLearners(nextLearners);
+    setGroup((current) => nextGroups.find((item) => item.id === current?.id) ?? null);
   }
-  useEffect(() => { void refresh().catch((e: Error) => setError(e.message)); }, []);
+  useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
   useEffect(() => {
+    if (!group) { setMembers([]); return; }
     let cancelled = false;
-    setSelected([]); setMembers([]); setLoadedGroup('');
-    if (group) void api<Learner[]>(`training/groups/${group}/members`).then((rows) => {
-      if (!cancelled) { setMembers(rows); setLoadedGroup(group); }
-    }).catch((e: Error) => { if (!cancelled) setError(e.message); });
+    void api<Learner[]>(`training/groups/${group.id}/members`).then((rows) => { if (!cancelled) setMembers(rows); })
+      .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     return () => { cancelled = true; };
-  }, [group]);
-  async function act(work: () => Promise<void>) {
-    if (busy) return;
-    setBusy(true); setError(''); setMessage('');
-    try { await work(); await refresh(); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить группу.'); }
-    finally { setBusy(false); }
+  }, [group?.id]);
+
+  const people = [...learners];
+  for (const member of members) {
+    if (!people.some((learner) => learner.id === member.id)) people.push(member);
   }
-  function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    void act(async () => {
-      const created = await api<Group>('training/groups', Object.fromEntries(data));
-      setGroup(created.id); form.reset(); setMessage('Группа создана. Добавьте участников ниже.');
-    });
+
+  async function toggle(learnerId: string, on: boolean) {
+    if (!group || busy) return;
+    const previous = members;
+    const person = people.find((learner) => learner.id === learnerId);
+    setMembers(on
+      ? person && !previous.some((learner) => learner.id === learnerId) ? [...previous, person] : previous
+      : previous.filter((learner) => learner.id !== learnerId));
+    setBusy(true);
+    setError('');
+    try {
+      await api(on ? `training/groups/${group.id}/members` : `training/groups/${group.id}/members/remove`, { learner_id: learnerId });
+      setMembers(await api<Learner[]>(`training/groups/${group.id}/members`));
+      await refresh();
+    } catch (cause) {
+      setMembers(previous);
+      setError(cause instanceof Error ? cause.message : 'Не удалось изменить состав.');
+    } finally {
+      setBusy(false);
+    }
   }
-  return <div>
-    <PanelTitle>Учебные группы</PanelTitle>
-    <div>Группа — список обучающихся, которым вы назначаете одно занятие. Для индивидуального занятия создайте группу с одним участником.</div>
-    <form onSubmit={create}><fieldset disabled={busy}><legend>Создать группу</legend>
-      <div><label>Название группы <input name="name" required maxLength={200} placeholder="Диспетчеры — сентябрь" /></label></div>
-      <div><label>Служба или организация <input name="service_code" required maxLength={64} placeholder="Гормост, жилищная служба, ДДС" /></label></div>
-      <button>Создать группу</button>
-    </fieldset></form>
-    <div><label>Состав группы <select disabled={busy} value={group} onChange={(e) => setGroup(e.target.value)}>
-      <option value="">Выберите группу</option>
-      {groups.map((g) => <option key={g.id} value={g.id}>{g.name} — {g.service_code} ({g.member_count})</option>)}
-    </select></label></div>
-    {!groups.length && <div>Групп пока нет.</div>}
-    {group && loadedGroup === group && <>
-      <PanelSubtitle>Участники ({members.length})</PanelSubtitle>
-      <div>Изменения состава применяются к следующим запускам занятий. Уже выданные задания сохраняются.</div>
-      {!members.length && <div>В группе пока никого нет. Выберите обучающихся ниже.</div>}
-      <PanelList>{members.map((m) => <PanelListItem key={m.id}>{m.login}{m.blocked && ' — доступ заблокирован'}{' '}
-        <button disabled={busy} onClick={() => void act(async () => {
-          await api(`training/groups/${group}/members/remove`, { learner_id: m.id });
-          setMembers(await api<Learner[]>(`training/groups/${group}/members`));
-          setMessage('Участник исключён из группы.');
-        })}>Исключить {m.login}</button>
-      </PanelListItem>)}</PanelList>
-      <fieldset disabled={busy}><legend>Добавить обучающихся</legend>
-        {!learners.length && <div>Нет доступных учётных записей обучающихся. Их создаёт администратор в разделе «Пользователи системы».</div>}
-        {learners.filter((u) => !members.some((m) => m.id === u.id)).map((u) => <div key={u.id}><label>
-          <input type="checkbox" checked={selected.includes(u.id)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.id] : ids.filter((id) => id !== u.id))} /> {u.login}
-        </label></div>)}
-        <button disabled={!selected.length} onClick={() => void act(async () => {
-          for (const learner_id of selected) await api(`training/groups/${group}/members`, { learner_id });
-          setMembers(await api<Learner[]>(`training/groups/${group}/members`));
-          setSelected([]); setMessage('Участники добавлены. Теперь можно назначить занятие.');
-        })}>Добавить выбранных ({selected.length})</button>
-      </fieldset>
-    </>}
-    {error && <div role="alert">{error}</div>}{message && <div role="status">{message}</div>}
-  </div>;
+  return <Desk title="Группы" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
+    {groups.length === 0 ? <DeskEmpty>Групп нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Служба</span><span>Участники</span><span /></>}>
+      {groups.map((item) => <DeskRow key={item.id} columns={columns}>
+        <span>{item.name}</span>
+        <span>{item.service_code}</span>
+        <span>{item.member_count}</span>
+        <span className={deskActions}><button type="button" onClick={() => { setError(''); setGroup(item); }}>Состав</button></span>
+      </DeskRow>)}
+    </DeskTable>}
+    {error && !group && <div className={deskError} role="alert">{error}</div>}
+    {creating && <GroupCreate busy={busy} onClose={() => setCreating(false)} onSubmit={(name, service) => {
+      setBusy(true); setError('');
+      void api<Group>('training/groups', { name, service_code: service })
+        .then(async (created) => { await refresh(); setGroup(created); setCreating(false); })
+        .catch((cause: Error) => setError(cause.message))
+        .finally(() => setBusy(false));
+    }} />}
+    {group && <ModalForm label={group.name}>
+      <FormCard title={group.name} error={error} onClose={() => setGroup(null)}>
+        {people.length === 0 ? <div>Пользователей нет</div> : <div className={formGrid}>
+          {people.map((learner) => <label className={formCheck} key={learner.id}>
+            <input type="checkbox" checked={members.some((member) => member.id === learner.id)} disabled={busy} onChange={(event) => void toggle(learner.id, event.target.checked)} />
+            <span>{learner.login}{learner.blocked ? ' · доступ закрыт' : ''}</span>
+          </label>)}
+        </div>}
+      </FormCard>
+    </ModalForm>}
+  </Desk>;
 }
+
+function GroupCreate({ busy, onClose, onSubmit }: { busy: boolean; onClose: () => void; onSubmit: (name: string, service: string) => void }) {
+  const [name, setName] = useState('');
+  const [service, setService] = useState('');
+  return <ModalForm label="Новая группа">
+<FormCard title="Новая группа" submitLabel="Создать" busy={busy} onClose={onClose} onSubmit={() => onSubmit(name, service)}>
+    <div className={formGrid}>
+      <Field label="Название"><input value={name} maxLength={200} onChange={(event) => setName(event.target.value)} /></Field>
+      <Field label="Служба"><input value={service} maxLength={64} onChange={(event) => setService(event.target.value)} /></Field>
+    </div>
+  </FormCard>
+</ModalForm>;
+}
+

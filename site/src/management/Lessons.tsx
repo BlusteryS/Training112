@@ -1,96 +1,111 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { ModalForm } from '../components/ModalForm';
+import { FormCard, formGrid } from './FormCard';
+import { Field } from '../components/ui/Field';
 import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario } from './types';
-import { PanelCard, PanelItemTitle, PanelList, PanelListItem, PanelSubtitle, PanelTitle } from './Panel';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+
+const columns = 'minmax(180px, 1.4fr) minmax(140px, 1fr) 120px 160px 220px';
 
 export function Lessons() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [group, setGroup] = useState('');
-  const [scenario, setScenario] = useState('');
-  const [mode, setMode] = useState('call');
+  const [creating, setCreating] = useState(false);
+  const [confirm, setConfirm] = useState<{ id: string; action: 'start' | 'finish' } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+
   async function refresh() {
-    const [l, a] = await Promise.all([
-      api<Lesson[]>('training/lessons'), api<Assignment[]>('training/assignments'),
-    ]);
-    setLessons(l); setAssignments(a);
+    const [nextLessons, nextAssignments] = await Promise.all([api<Lesson[]>('training/lessons'), api<Assignment[]>('training/assignments')]);
+    setLessons(nextLessons);
+    setAssignments(nextAssignments);
   }
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
     void Promise.all([api<Group[]>('training/groups'), api<Scenario[]>('training/scenarios')])
-      .then(([g, s]) => { if (!cancelled) { setGroups(g); setScenarios(s); } })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); });
+      .then(([nextGroups, nextScenarios]) => { if (!cancelled) { setGroups(nextGroups); setScenarios(nextScenarios); } })
+      .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     async function poll() {
-      try {
-        const [l, a] = await Promise.all([
-          api<Lesson[]>('training/lessons'), api<Assignment[]>('training/assignments'),
-        ]);
-        if (!cancelled) { setLessons(l); setAssignments(a); }
-      } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : 'Не удалось загрузить занятия.'); }
+      try { if (!cancelled) await refresh(); }
+      catch (cause) { if (!cancelled) setError(cause instanceof Error ? cause.message : 'Не удалось загрузить занятия.'); }
       if (!cancelled) timer = setTimeout(() => void poll(), 5000);
     }
     void poll();
     return () => { cancelled = true; clearTimeout(timer); };
   }, []);
-  async function act(work: () => Promise<void>) {
-    if (busy) return;
-    setBusy(true); setError(''); setMessage('');
-    try { await work(); await refresh(); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Не удалось изменить занятие.'); }
-    finally { setBusy(false); }
-  }
-  function create(event: FormEvent) {
-    event.preventDefault();
-    void act(async () => {
-      await api<Lesson>('training/lessons', { group_id: group, scenario_id: scenario, mode });
-      setMessage(mode === 'card'
-        ? 'Занятие создано. После запуска обучающиеся откроют карточку и проставят статусы реагирования.'
-        : 'Занятие создано. Когда участники будут готовы, нажмите «Открыть приём звонков» в списке ниже.');
-    });
-  }
-  return <div><PanelTitle>Занятия</PanelTitle>
-    <div>Выберите группу и утверждённый сценарий. После запуска на доступных рабочих местах участников появятся входящие учебные звонки.</div>
-    <form onSubmit={create}><fieldset disabled={busy}><legend>Назначить занятие</legend>
-      <div><label>Кому <select required value={group} onChange={(e) => setGroup(e.target.value)}>
-        <option value="">Выберите группу</option>{groups.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.member_count} участников)</option>)}
-      </select></label></div>
-      {!groups.length && <div>Сначала создайте группу и добавьте обучающихся в разделе «Группы».</div>}
-      {group && !groups.find((g) => g.id === group)?.member_count && <div>В группе нет участников. Добавьте их в разделе «Группы».</div>}
-      <div><label>Режим <select value={mode} onChange={(e) => setMode(e.target.value)}>
+
+  const approved = scenarios.filter((item) => item.status === 'approved');
+  return <Desk title="Занятия" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Назначить</button>}>
+    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Сценарий</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
+      {lessons.map((lesson) => <DeskRow key={lesson.id} columns={columns}>
+        <span>{lesson.title}</span>
+        <span>{lesson.group_name}</span>
+        <span>{lesson.mode === 'card' ? 'Карточка' : 'Звонок'}</span>
+        <span>{lessonNames[lesson.status] ?? lesson.status}</span>
+        <span className={deskActions}>
+          {lesson.status === 'planned' && <button type="button" onClick={() => setConfirm({ id: lesson.id, action: 'start' })}>Запустить</button>}
+          {lesson.status === 'active' && <button type="button" onClick={() => setConfirm({ id: lesson.id, action: 'finish' })}>Завершить</button>}
+        </span>
+      </DeskRow>)}
+    </DeskTable>}
+    {lessons.some((lesson) => lesson.status === 'active') && assignments.some((item) => lessons.some((lesson) => lesson.status === 'active' && lesson.id === item.lesson_id)) &&
+      <DeskTable columns="minmax(0, 1fr) minmax(0, 1fr) 220px" head={<><span>Участник</span><span>Занятие</span><span>Сейчас</span></>}>
+        {assignments.filter((item) => lessons.some((lesson) => lesson.status === 'active' && lesson.id === item.lesson_id)).map((item) => <DeskRow key={item.id} columns="minmax(0, 1fr) minmax(0, 1fr) 220px">
+          <span>{item.learner_login}</span>
+          <span>{item.title}</span>
+          <span>{item.attempt_status ? attemptNames[item.attempt_status] ?? item.attempt_status : 'Ожидает'}</span>
+        </DeskRow>)}
+      </DeskTable>}
+    {error && <div className={deskError} role="alert">{error}</div>}
+    {creating && <LessonCreate groups={groups} scenarios={approved} busy={busy} onClose={() => setCreating(false)} onSubmit={(groupId, scenarioId, mode) => {
+      setBusy(true); setError('');
+      void api('training/lessons', { group_id: groupId, scenario_id: scenarioId, mode })
+        .then(async () => { await refresh(); setCreating(false); })
+        .catch((cause: Error) => setError(cause.message))
+        .finally(() => setBusy(false));
+    }} />}
+    {confirm && <ModalForm label={confirm.action === 'start' ? 'Запустить занятие' : 'Завершить занятие'}>
+<FormCard title={confirm.action === 'start' ? 'Запустить занятие' : 'Завершить занятие'}
+      submitLabel={confirm.action === 'start' ? 'Запустить' : 'Завершить'} busy={busy} onClose={() => setConfirm(null)} onSubmit={() => {
+        setBusy(true); setError('');
+        void api(`training/lessons/${confirm.id}/${confirm.action === 'start' ? 'start' : 'finish'}`, {})
+          .then(async () => { await refresh(); setConfirm(null); })
+          .catch((cause: Error) => setError(cause.message))
+          .finally(() => setBusy(false));
+      }}></FormCard>
+    </ModalForm>}
+  </Desk>;
+}
+
+function LessonCreate({ groups, scenarios, busy, onClose, onSubmit }: {
+  groups: Group[];
+  scenarios: Scenario[];
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (groupId: string, scenarioId: string, mode: string) => void;
+}) {
+  const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
+  const [scenarioId, setScenarioId] = useState(scenarios[0]?.id ?? '');
+  const [mode, setMode] = useState('call');
+  const ready = Boolean(groupId && scenarioId && groups.find((item) => item.id === groupId)?.member_count);
+  return <ModalForm label="Занятие">
+<FormCard title="Занятие" submitLabel="Назначить" busy={busy || !ready} onClose={onClose} onSubmit={() => onSubmit(groupId, scenarioId, mode)}>
+    <div className={formGrid}>
+      <Field label="Группа"><select value={groupId} onChange={(event) => setGroupId(event.target.value)}>
+        {groups.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select></Field>
+      <Field label="Сценарий"><select value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
+        {scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+      </select></Field>
+      <Field label="Режим"><select value={mode} onChange={(event) => setMode(event.target.value)}>
         <option value="call">Звонок оператора 112</option>
-        <option value="card">Отработка карточки ДДС</option>
-      </select></label></div>
-      <div><label>Сценарий <select required value={scenario} onChange={(e) => setScenario(e.target.value)}>
-        <option value="">Выберите сценарий</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-      </select></label></div>
-      {scenario && scenarios.find((s) => s.id === scenario)?.status !== 'approved' && <div>Сценарий ещё не утверждён. Откройте раздел «Сценарии», дождитесь окончания проверки и утвердите его.</div>}
-      <button disabled={scenarios.find((s) => s.id === scenario)?.status !== 'approved' || !groups.find((g) => g.id === group)?.member_count}>Создать занятие</button>
-    </fieldset></form>
-    {error && <div role="alert">{error}</div>}{message && <div role="status">{message}</div>}
-    <PanelSubtitle>Назначенные занятия</PanelSubtitle>
-    {!lessons.length && <div>Занятий пока нет.</div>}
-    {lessons.map((lesson) => <PanelCard key={lesson.id}>
-      <PanelItemTitle>{lesson.title} — {lesson.group_name} — {lesson.mode === 'card' ? 'карточка' : 'звонок'}</PanelItemTitle>
-      <div>{lessonNames[lesson.status] ?? lesson.status}.</div>
-      {lesson.status === 'planned' && <button disabled={busy} onClick={() => void act(async () => {
-        await api(`training/lessons/${lesson.id}/start`, {});
-        setMessage('Занятие запущено. На доступных рабочих местах участников появятся входящие звонки с кнопкой «Принять».');
-      })}>Открыть приём звонков</button>}
-      {lesson.status === 'active' && <>
-        <div>Статус участников обновляется каждые 5 секунд. Завершение занятия остановит текущие звонки всех участников.</div>
-        <button disabled={busy} onClick={() => void act(async () => {
-          await api(`training/lessons/${lesson.id}/finish`, {}); setMessage('Занятие завершено.');
-        })}>Завершить занятие для всех</button>
-      </>}
-      <PanelList>{assignments.filter((a) => a.lesson_id === lesson.id).map((a) => <PanelListItem key={a.id}>
-        {a.learner_login} — {a.attempt_status ? attemptNames[a.attempt_status] ?? a.attempt_status : lesson.status === 'completed' ? 'Не приступил' : 'Ожидает приёма звонка'}
-      </PanelListItem>)}</PanelList>
-    </PanelCard>)}
-  </div>;
+        <option value="card">Отработка карточки</option>
+      </select></Field>
+    </div>
+  </FormCard>
+</ModalForm>;
 }

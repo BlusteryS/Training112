@@ -173,6 +173,7 @@ export function SpeechPage() {
 
   return <CallWorkspace user={user} phone={phone}
     elapsed={startedAt === null ? 0 : Math.max(0, Math.floor((now - startedAt) / 1_000))}
+    registeredAt={startedAt}
     message={message || (phase === 'active' ? 'Идёт разговор' : 'Разговор завершён')}
     connected={phase === 'active'} initialCard={card} incidentNumber={incidentNumber(attemptId)}
     deadlineSeconds={deadlineSeconds}

@@ -17,15 +17,18 @@ function displayDate(value: Date) {
   return formatted.charAt(0).toLocaleUpperCase('ru') + formatted.slice(1);
 }
 
-function operatorLabel(login: string) {
+function personLabel(role: string, login: string) {
+  if (role === 'admin') return 'Администратор';
+  if (role === 'teacher') return 'Преподаватель';
   const number = login.match(/\d+/)?.[0];
-  return number ? `оп. ${number}, ${login}` : `оп. ${login}`;
+  return number ? `оп. ${number}, ${login}` : 'Оператор';
 }
 
-export function WorkspaceHeader({ leading, footer, menu }: {
+export function WorkspaceHeader({ leading, footer, menu, person }: {
   leading: ReactNode;
   footer?: ReactNode;
   menu?: ReactNode;
+  person?: string;
 }) {
   const { user, logout } = useAuth();
   const notify = useNotification();
@@ -44,7 +47,7 @@ export function WorkspaceHeader({ leading, footer, menu }: {
         <div className={styles.operatorInfo}>
           <div>{displayDate(currentTime)}</div>
           <div className={styles.operatorMeta}>
-            <span>{operatorLabel(user.login)}</span>
+            <span>{person ?? personLabel(user.role, user.login)}</span>
             <span><img src={workstationIcon} alt="" /> АРМ {workstation}</span>
             <div className={styles.helpMenu}>
               <button className={styles.helpButton} onClick={() => setMenuOpen((value) => !value)} title="Меню">

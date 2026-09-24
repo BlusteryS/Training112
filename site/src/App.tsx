@@ -13,7 +13,7 @@ import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';
 import { LoginPage } from './pages/LoginPage';
 import { CardDesk } from './pages/CardDesk';
-import { MaterialsDrawer } from './management/Materials';
+import { MaterialsMenu } from './management/Materials';
 import { SpeechPage } from './pages/SpeechPage';
 import { readCooldown, readManualAvailability, writeManualAvailability } from './operatorAvailability';
 import chevronDarkIcon from './assets/workspace/chevron-dark.svg';
@@ -117,7 +117,7 @@ function OperatorWorkspace() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [materialsOpen, setMaterialsOpen] = useState(false);
+
   const [draft, setDraft] = useState(blankAdvanced);
   const [applied, setApplied] = useState(blankAdvanced);
   const [query, setQuery] = useState('');
@@ -220,7 +220,7 @@ function OperatorWorkspace() {
 
   return <div className={styles.workspace}>
     <WorkspaceHeader
-      menu={<button onClick={() => { setMaterialsOpen(true); }}>Учебные материалы</button>}
+      menu={<MaterialsMenu />}
       leading={<div className={styles.searchPanel}>
         <label className={styles.searchField}>
           <span className={styles.visuallyHidden}>Поиск происшествий</span>
@@ -303,7 +303,7 @@ function OperatorWorkspace() {
       <IncidentList assignments={assignments} autoRefresh={autoRefresh} filter={query}
         loading={loading} onAutoRefresh={setAutoRefresh} search={search} />
     </div>
-    {materialsOpen && <MaterialsDrawer onClose={() => setMaterialsOpen(false)} />}
+
     {incomingCall && <IncomingCall assignment={incomingCall} onClose={closeIncomingCall}
       onAccept={() => navigate(`/session?assignment_id=${encodeURIComponent(incomingCall.id)}`)} />}
   </div>;

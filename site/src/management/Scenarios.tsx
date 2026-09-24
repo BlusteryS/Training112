@@ -1,148 +1,156 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import { ScenarioEditor, exportScenario } from './ScenarioEditor';
+import { ModalForm } from '../components/ModalForm';
+import { FormCard, formGrid } from './FormCard';
+import { Field } from '../components/ui/Field';
 import { incidentSources } from '../incidentSources';
 import { incidentTypes } from '../pages/callIncidentTypes';
+import { ScenarioEditor, exportScenario } from './ScenarioEditor';
 import { difficultyNames, scenarioNames, type Scenario, type ScenarioDocument } from './types';
-import { PanelCard, PanelSubtitle, PanelTitle } from './Panel';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
 type SavedScenario = Scenario & { document: ScenarioDocument };
 type Editor = { document: ScenarioDocument; scenarioId?: string };
+const columns = 'minmax(200px, 1.6fr) 180px minmax(280px, auto)';
 
 export function Scenarios() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [scenario, setScenario] = useState('');
-  const [detail, setDetail] = useState<SavedScenario | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [reference, setReference] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void api<Scenario[]>('training/scenarios').then((rows) => { if (!cancelled) setScenarios(rows); })
+      .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
+    return () => { cancelled = true; };
+  }, [reload]);
+  useEffect(() => {
+    if (!scenarios.some((item) => item.status === 'preparing')) return undefined;
+    const timer = setTimeout(() => setReload((value) => value + 1), 3000);
+    return () => clearTimeout(timer);
+  }, [scenarios]);
+
+  async function act(work: () => Promise<void>) {
+    if (busy) return;
+    setBusy(true); setError('');
+    try { await work(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось выполнить действие.'); }
+    finally { setBusy(false); }
+  }
+
+  return <Desk title="Сценарии" actions={<>
+    <button type="button" disabled={busy} onClick={() => void act(async () => {
+      const document = await api<ScenarioDocument>('training/example');
+      setEditor({ document: { ...document, title: '', difficulty: 'basic', instructions: 'Примите учебный вызов. Уточните место происшествия, обстоятельства и сведения о пострадавших.' } });
+    })}>Создать</button>
+    <button type="button" disabled={busy} onClick={() => setReference(true)}>Эталон</button>
+    <button type="button" disabled={busy} onClick={() => setImporting(true)}>Импорт</button>
+  </>}>
+    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Статус</span><span /></>}>
+      {scenarios.map((item) => <DeskRow key={item.id} columns={columns}>
+        <span>{item.title}</span>
+        <span>{scenarioNames[item.status] ?? item.status}</span>
+        <span className={deskActions}>
+          {item.status === 'prepared' && <button type="button" disabled={busy} onClick={() => void act(async () => {
+            await api(`training/scenarios/${item.id}/approve`, {});
+            setReload((value) => value + 1);
+          })}>Утвердить</button>}
+          <button type="button" disabled={busy} onClick={() => void act(async () => {
+            const saved = await api<SavedScenario>(`training/scenarios/${item.id}`);
+            setEditor({ document: saved.document, scenarioId: item.id });
+          })}>Изменить</button>
+          <button type="button" disabled={busy} onClick={() => void act(async () => exportScenario((await api<SavedScenario>(`training/scenarios/${item.id}`)).document))}>JSON</button>
+          <button type="button" disabled={busy} onClick={() => void act(async () => {
+            await api(`training/scenarios/${item.id}/archive`, {});
+            setReload((value) => value + 1);
+          })}>Скрыть</button>
+          <button type="button" disabled={busy} onClick={() => void act(async () => {
+            await api(`training/scenarios/${item.id}/delete`, {});
+            setReload((value) => value + 1);
+          })}>Удалить</button>
+        </span>
+      </DeskRow>)}
+    </DeskTable>}
+    {error && <div className={deskError} role="alert">{error}</div>}
+    {editor && <ScenarioEditor initial={editor.document} editing={!!editor.scenarioId} busy={busy} onCancel={() => setEditor(null)}
+      onSave={async (document) => {
+        setBusy(true); setError('');
+        try {
+          await api(editor.scenarioId ? `training/scenarios/${editor.scenarioId}` : 'training/scenarios', document);
+          setEditor(null);
+          setReload((value) => value + 1);
+        } finally { setBusy(false); }
+      }} />}
+    {reference && <ReferenceDialog busy={busy} error={error} onClose={() => setReference(false)} onSubmit={(body) => {
+      void act(async () => {
+        await api('training/scenarios/reference', body);
+        setReference(false);
+        setReload((value) => value + 1);
+      });
+    }} />}
+    {importing && <ImportDialog busy={busy} error={error} onClose={() => setImporting(false)} onSubmit={(document) => {
+      void act(async () => {
+        await api('training/scenarios', document);
+        setImporting(false);
+        setReload((value) => value + 1);
+      });
+    }} />}
+  </Desk>;
+}
+
+function ReferenceDialog({ busy, error, onClose, onSubmit }: {
+  busy: boolean;
+  error: string;
+  onClose: () => void;
+  onSubmit: (body: Record<string, string | number>) => void;
+}) {
   const [incident, setIncident] = useState(incidentTypes[0]?.name ?? '');
   const [location, setLocation] = useState('Москва, учебная улица, дом 10');
   const [difficulty, setDifficulty] = useState('basic');
   const [seconds, setSeconds] = useState('30');
   const [origin, setOrigin] = useState('Служба 112');
   const [caller, setCaller] = useState('Алексей');
-  useEffect(() => {
-    let cancelled = false;
-    void api<Scenario[]>('training/scenarios').then((rows) => { if (!cancelled) setScenarios(rows); })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); });
-    return () => { cancelled = true; };
-  }, [reload]);
-  useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    setDetail(null);
-    async function read() {
-      try {
-        const row = await api<SavedScenario>(`training/scenarios/${scenario}`);
-        if (cancelled) return;
-        setDetail(row);
-        if (row.status === 'preparing') timer = setTimeout(() => void read(), 3000);
-      } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : 'Не удалось загрузить сценарий.'); }
-    }
-    if (scenario) void read();
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [scenario, reload]);
-  async function act(work: () => Promise<void>) {
-    if (busy) return;
-    setBusy(true); setError(''); setMessage('');
-    try { await work(); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Не удалось выполнить действие.'); }
-    finally { setBusy(false); }
-  }
-  return <div>
-    <PanelTitle>Сценарии звонков</PanelTitle>
-    <div>Сценарий задаёт происшествие и то, что знает виртуальный заявитель. Создайте его, проверьте сведения и утвердите перед назначением занятия.</div>
-    {!editor && <>
-      <div><button disabled={busy} onClick={() => void act(async () => {
-        const document = await api<ScenarioDocument>('training/example');
-        setEditor({ document: { ...document, title: '', difficulty: 'basic', instructions: 'Примите учебный вызов. Уточните место происшествия, обстоятельства и сведения о пострадавших.' } });
-      })}>Создать сценарий</button></div>
-      <form onSubmit={(event) => { event.preventDefault(); void act(async () => {
-        const created = await api<{ scenario_id: string }>('training/scenarios/reference', {
-          incident, location, difficulty, seconds: Number(seconds), origin, caller_name: caller,
-        });
-        setScenario(created.scenario_id); setReload((n) => n + 1);
-        setMessage('Эталон сформирован. Идёт проверка диалога и запись голоса. После статуса «Готов к утверждению» подтвердите сценарий.');
-      }); }}>
-        <fieldset disabled={busy}><legend>Сформировать эталон по параметрам занятия</legend>
-          <div><label>Тип происшествия <select value={incident} onChange={(event) => setIncident(event.target.value)}>
-            {incidentTypes.map((type) => <option key={type.name} value={type.name}>{type.name}</option>)}
-          </select></label></div>
-          <div><label>Место <input required maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} /></label></div>
-          <div><label>Сложность <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
-            {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select></label></div>
-          <div><label>Норматив принятия карточки, секунд <input required inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} /></label></div>
-          <div><label>Источник <select value={origin} onChange={(event) => setOrigin(event.target.value)}>
-            {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
-          </select></label></div>
-          <div><label>Имя заявителя <input required maxLength={200} value={caller} onChange={(event) => setCaller(event.target.value)} /></label></div>
-          <button>Сформировать эталон</button>
-        </fieldset>
-      </form>
-    </>}
-    {editor ? <ScenarioEditor initial={editor.document} editing={!!editor.scenarioId} busy={busy}
-      onCancel={() => setEditor(null)} onSave={async (document) => {
-        setBusy(true); setError('');
-        try {
-          const created = await api<{ scenario_id: string }>(editor.scenarioId
-            ? `training/scenarios/${editor.scenarioId}` : 'training/scenarios', document);
-          setScenario(created.scenario_id); setEditor(null); setReload((n) => n + 1);
-          setMessage('Сценарий сохранён. Проверка диалога и запись голоса выполняются автоматически.');
-        } finally { setBusy(false); }
-      }} /> : <>
-      <details><summary>Перенос сценариев: импорт и экспорт JSON</summary>
-        <div>Скачайте сценарий, чтобы сохранить копию или перенести её в другой учебный комплекс. Импорт создаёт отдельный сценарий и заново проверяет его.</div>
-        <label>Загрузить сценарий из файла <input disabled={busy} type="file" accept="application/json,.json" onChange={(e) => {
-          const file = e.target.files?.[0]; e.target.value = '';
-          if (!file) return;
-          void act(async () => {
-            if (file.size > 262144) throw new Error('Размер сценария превышает 256 КиБ.');
-            let document: unknown;
-            try { document = JSON.parse(await file.text()); } catch { throw new Error('Файл не содержит корректный JSON. Выберите ранее экспортированный сценарий.'); }
-            const created = await api<{ scenario_id: string }>('training/scenarios', document);
-            setScenario(created.scenario_id); setReload((n) => n + 1);
-            setMessage('Сценарий импортирован. Проверка и запись голоса начались автоматически.');
-          });
-        }} /></label>
-      </details>
-      {!scenarios.length && <div>Сценариев пока нет. Нажмите «Создать сценарий»: откроется форма с примером, который можно изменить.</div>}
-      <div><label>Сценарий <select disabled={busy} value={scenario} onChange={(e) => setScenario(e.target.value)}>
-        <option value="">Выберите сценарий</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-      </select></label>{' '}{scenario && <button disabled={busy} onClick={() => setReload((n) => n + 1)}>Обновить состояние</button>}</div>
-      {detail && <PanelCard>
-        <PanelSubtitle>{detail.document.title}</PanelSubtitle>
-        <div role="status">{scenarioNames[detail.status] ?? detail.status}</div>
-        {detail.status === 'preparing' && <div>Сервер проверяет, понимает ли заявитель вопросы, и записывает его реплики. Дождитесь статуса «Готов к утверждению»; состояние обновляется автоматически.</div>}
-        {detail.status === 'failed' && <div role="alert">Проверка диалога или запись голоса не удалась. Проверьте сведения и сохраните сценарий повторно. Если ошибка повторяется, администратору нужно проверить речевые модели и журнал обработчика сценариев.</div>}
-        <div>{Object.entries(detail.document.facts).map(([key, value]) => <div key={key}>
-          <div>{{ caller_name: 'Заявитель', address: 'Место', incident: 'Происшествие', victims: 'Пострадавшие' }[key] ?? key}</div><div>{value}</div>
-        </div>)}</div>
-        <div><button disabled={busy} onClick={() => setEditor({ document: detail.document, scenarioId: scenario })}>Редактировать сценарий</button>{' '}
-          <button disabled={busy} onClick={() => exportScenario(detail.document)}>Скачать сценарий (JSON)</button></div>
-        {detail.status === 'prepared' && <div><button disabled={busy} onClick={() => void act(async () => {
-          await api(`training/scenarios/${detail.id}/approve`, {});
-          setDetail({ ...detail, status: 'approved' });
-          setMessage('Сценарий утверждён. Откройте «Занятия», выберите участников и назначьте звонок.');
-        })}>Утвердить для занятий</button></div>}
-        {detail.status === 'approved' && <div>Сценарий можно назначить для занятия.</div>}
-        <details><summary>Убрать неактуальный сценарий</summary>
-          <div>Он исчезнет из списка для новых занятий. Уже назначенные занятия и история сохранятся.</div>
-          <button disabled={busy} onClick={() => void act(async () => {
-            await api(`training/scenarios/${scenario}/archive`, {});
-            setScenario(''); setReload((n) => n + 1); setMessage('Сценарий убран из списка.');
-          })}>Убрать из списка сценариев</button>
-          <div>Удаление возможно, пока сценарий не назначен ни на одно занятие.</div>
-          <button disabled={busy} onClick={() => void act(async () => {
-            await api(`training/scenarios/${scenario}/delete`, {});
-            setScenario(''); setReload((n) => n + 1); setMessage('Сценарий удалён.');
-          })}>Удалить сценарий</button>
-        </details>
-      </PanelCard>}
-    </>}
-    {error && <div role="alert">{error}</div>}{message && <div role="status">{message}</div>}
-  </div>;
+  return <ModalForm label="Эталон">
+<FormCard title="Эталон" submitLabel="Сформировать" busy={busy} error={error} onClose={onClose} onSubmit={() => onSubmit({
+    incident, location, difficulty, seconds: Number(seconds), origin, caller_name: caller,
+  })}>
+    <div className={formGrid}>
+      <Field label="Тип происшествия"><select value={incident} onChange={(event) => setIncident(event.target.value)}>
+        {incidentTypes.map((type) => <option key={type.name} value={type.name}>{type.name}</option>)}
+      </select></Field>
+      <Field label="Место"><input maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} /></Field>
+      <Field label="Сложность"><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
+        {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+      </select></Field>
+      <Field label="Принятие карточки, секунд"><input inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} /></Field>
+      <Field label="Источник"><select value={origin} onChange={(event) => setOrigin(event.target.value)}>
+        {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
+      </select></Field>
+      <Field label="Заявитель"><input maxLength={200} value={caller} onChange={(event) => setCaller(event.target.value)} /></Field>
+    </div>
+  </FormCard>
+</ModalForm>;
+}
+
+function ImportDialog({ busy, error: externalError, onClose, onSubmit }: {
+  busy: boolean; error: string; onClose: () => void; onSubmit: (document: unknown) => void;
+}) {
+  const [error, setError] = useState('');
+  return <ModalForm label="Импорт сценария">
+<FormCard title="Импорт сценария" error={error || externalError} busy={busy} onClose={onClose}>
+    <Field label="JSON"><input type="file" accept="application/json,.json" onChange={(event) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      void file.text().then((text) => {
+        if (file.size > 262144) throw new Error('Размер сценария превышает 256 КиБ.');
+        onSubmit(JSON.parse(text));
+      }).catch(() => setError('Файл не содержит корректный JSON.'));
+    }} /></Field>
+  </FormCard>
+</ModalForm>;
 }

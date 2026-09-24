@@ -65,11 +65,12 @@ function elapsedParts(seconds: number) {
   };
 }
 
-export function CallWorkspace({ user, phone, elapsed, message, connected, initialCard, incidentNumber,
+export function CallWorkspace({ user, phone, elapsed, registeredAt, message, connected, initialCard, incidentNumber,
   deadlineSeconds, saving, onEndCall, onCancel, onSave }: {
   user: User;
   phone: string;
   elapsed: number;
+  registeredAt: number | null;
   message: string;
   connected: boolean;
   initialCard?: Record<string, string> | null;
@@ -123,23 +124,17 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
     change('services', next.join(', '));
   }
 
+  const arm = (user.workstation ?? '000').padStart(3, '0');
+  const registered = registeredAt === null ? '' : new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).format(registeredAt).replace(',', ' в');
+  const operatorNumber = user.login.match(/\d+/)?.[0];
   return <div className={styles.page}>
     <div className={styles.top}>
       <div className={styles.callControl}>
         <button type="button" onClick={onEndCall} disabled={!connected} title="Завершить звонок">
           <img src={hangupIcon} alt="" />
         </button>
-      </div>
-      <div className={styles.telephony}>
-        <div className={styles.connection}>{connected ? 'Подключен' : 'Разговор завершён'}</div>
-        <label className={styles.channel}>
-          <select value={draft.communication_channel}
-            onChange={(event) => change('communication_channel', event.target.value)}>
-            <option>Мобильный телефон</option>
-            <option>Стационарный телефон</option>
-            <option>Устройство без SIM-карты</option>
-          </select>
-        </label>
       </div>
       <div className={styles.phoneGrid}>
         <PhoneCard label="АОН" value={phone} foreign={draft.foreign_phone === 'true'}
@@ -157,7 +152,10 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
         </div>
         <div className={styles.metaText}>
           <span className={styles.incidentName}>Происшествие {incidentNumber}</span>
-          <span>Опер. {user.login}, АРМ {(user.workstation ?? '000').padStart(3, '0')}</span>
+          <span className={styles.metaLines}>
+            {registered && <span>Зарег {registered}</span>}
+            <span>Опер.{operatorNumber ? ` ${operatorNumber}` : ''}, АРМ {arm}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -165,15 +163,22 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
     <form id="incident-card-form" className={styles.form} onSubmit={submit}>
       <div className={styles.callerRow}>
         <input required value={draft.caller_name} onChange={(event) => change('caller_name', event.target.value)}
-          placeholder="Фамилия и имя заявителя" />
+          placeholder="Заявитель" />
         <select required value={draft.caller_status} onChange={(event) => change('caller_status', event.target.value)}>
-          <option value="">Выберите статус</option>
+          <option value="">Статус заявителя</option>
           <option>Очевидец</option><option>Пострадавший</option><option>Родственник</option>
           <option>Знакомый</option><option>Ребёнок</option><option>Участник</option>
         </select>
-        <button className={draft.foreign_language === 'true' ? styles.iconSelected : styles.iconButton}
-          type="button" onClick={() => change('foreign_language', String(draft.foreign_language !== 'true'))}
-          title="Вызов на иностранном языке"><img src={languageIcon} alt="" /></button>
+        <select value={draft.communication_channel}
+          onChange={(event) => change('communication_channel', event.target.value)}>
+          <option>Мобильный телефон</option>
+          <option>Стационарный телефон</option>
+          <option>Устройство без SIM-карты</option>
+        </select>
+        <button className={draft.foreign_language === 'true' ? styles.languageOn : styles.language}
+          type="button" onClick={() => change('foreign_language', String(draft.foreign_language !== 'true'))}>
+          <img src={languageIcon} alt="" /> Язык
+        </button>
       </div>
       <div className={styles.victimsRow}>
         <span>Есть пострадавшие?</span>
@@ -192,7 +197,7 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
       <div className={styles.addressPanel}>
         <div className={styles.panelTitle}>Адрес <img src={locationIcon} alt="" /></div>
         <input required value={draft.address} onChange={(event) => change('address', event.target.value)}
-          placeholder="Введите адрес с номером дома" />
+          placeholder="Адрес с номером дома" />
         <div className={styles.addressGrid}>
           <label>Страна<input value={draft.country} onChange={(event) => change('country', event.target.value)} /></label>
           <label>Город<input value={draft.city} onChange={(event) => change('city', event.target.value)} /></label>

@@ -12,6 +12,9 @@ export type Assignment = {
   incident_source: string | null;
   vis_operator: string | null;
   caller_phone: string | null;
+  service: string | null;
+  origin: string | null;
+  facts: Record<string, string> | null;
   card_deadline_seconds: number | null;
   card: Record<string, string> | null;
 };

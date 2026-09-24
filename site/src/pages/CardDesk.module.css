@@ -1,0 +1,38 @@
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.sheet label,
+.history {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: rgba(0, 0, 0, .5);
+  font-size: 13px;
+  gap: 3px;
+}
+
+.sheet span,
+.history div {
+  color: #000;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.history {
+  gap: 8px;
+}
+
+.history div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 0.5px solid rgba(0, 0, 0, .2);
+}

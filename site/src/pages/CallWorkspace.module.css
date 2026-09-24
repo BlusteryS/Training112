@@ -24,9 +24,9 @@
 
 .top {
   display: grid;
-  grid-template-columns: 78px 200px minmax(600px, 1fr) 248px;
+  grid-template-columns: 97px minmax(0, 1fr) 248px;
   min-height: 220px;
-  padding: 6px 6px 0;
+  padding: 8px 8px 0;
   gap: 4px;
 }
 
@@ -149,8 +149,12 @@
   font-weight: 500;
 }
 
-.metaText span {
+.metaLines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 14px;
+  font-weight: 400;
 }
 
 .form {
@@ -176,9 +180,10 @@
 .callerRow {
   grid-area: caller;
   display: grid;
-  grid-template-columns: 1fr 1fr 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(180px, 1fr) auto;
   align-items: center;
-  padding: 10px 16px;
+  height: 56px;
+  padding: 0 16px;
   gap: 12px;
 }
 
@@ -206,30 +211,28 @@
   opacity: 1;
 }
 
-.iconButton,
-.iconSelected {
+.language,
+.languageOn {
   display: flex;
-  width: 34px;
   height: 34px;
   align-items: center;
   justify-content: center;
-  padding: 7px;
-  border: 0;
+  padding: 8px;
+  border: 1px solid #d7d9da;
   border-radius: 8px;
-  background: #ebecec;
+  background: #fff;
+  color: #000;
+  gap: 8px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.iconSelected {
-  background: #2f353a;
+.languageOn {
+  background: #ebecec;
 }
 
-.iconSelected img {
-  filter: invert(1);
-}
-
-.iconButton img,
-.iconSelected img {
+.language img,
+.languageOn img {
   width: 18px;
   height: 18px;
 }
@@ -260,12 +263,14 @@
 }
 
 .quickActions button {
+  width: 124px;
   height: 34px;
-  padding: 7px 12px;
-  border: 1px solid #ec653b;
+  padding: 8px;
+  border: 1px solid #d7d9da;
   border-radius: 8px;
   background: #fff;
-  color: #ec653b;
+  color: #000;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -325,9 +330,12 @@
 
 .description textarea,
 .details textarea {
+  width: 100%;
+  max-width: 100%;
   min-height: 92px;
   flex: 1;
-  resize: none;
+  resize: vertical;
+  overflow-x: hidden;
   padding: 8px 0 22px;
   border: 0;
   border-bottom: 1px solid rgba(0, 0, 0, .2);

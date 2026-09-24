@@ -28,8 +28,10 @@ public final class CardCommands {
           "Заблокированы люди", "Есть возгорание", "Без пострадавших", "Травма",
           "Затруднено дыхание", "Боль", "Отравление", "Другое", "Да", "Нет", "Запах газа",
           "Повреждение оборудования", "Прорыв", "Отключение", "Затопление", "Повреждение");
+  private static final Set<String> COMMENT_REQUIRED = Set.of("rejected", "refused", "completed");
   private static final Map<String, Set<String>> TRANSITIONS =
       Map.of(
+          "added", Set.of("received"),
           "received", Set.of("accepted", "rejected"),
           "rejected", Set.of("accepted"),
           "accepted", Set.of("dispatched", "arrived", "working", "completed", "refused"),
@@ -67,11 +69,9 @@ public final class CardCommands {
     String next = payload.getString("status", "");
     String comment = payload.getString("comment", "");
     if (!TRANSITIONS.get(current).contains(next)) throw invalid("Недопустимый переход статуса.");
-    if (comment.length() > 4000
-        || (Set.of("rejected", "refused").contains(next) && comment.isBlank())) {
-      throw invalid("Для отказа нужен комментарий.");
+    if (comment.length() > 4000 || (COMMENT_REQUIRED.contains(next) && comment.isBlank())) {
+      throw invalid("К статусу нужен комментарий.");
     }
-    if (!comment.isEmpty()) copy.put("comment", comment);
     return new Applied(copy, next);
   }
 

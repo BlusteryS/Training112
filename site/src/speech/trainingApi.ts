@@ -57,7 +57,18 @@ export async function openCardAttempt(learnerId: string, assignmentId: string) {
     return { assignment, attempt };
   }
   const created = await api<CardAttempt>('training/attempts', { id: crypto.randomUUID(), assignment_id: assignment.id });
-  return { assignment, attempt: created };
+  const attempt = await api<CardAttempt>(`training/attempts/${created.id}`);
+  return { assignment, attempt };
+}
+
+export type AttemptEvent = {
+  type: string;
+  created_at: string;
+  payload: { status?: string; comment?: string };
+};
+
+export async function attemptEvents(id: string) {
+  return api<AttemptEvent[]>(`training/attempts/${id}/events?after=0`);
 }
 
 export async function postCardStatus(id: string, status: string, comment: string) {

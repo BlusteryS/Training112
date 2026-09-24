@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ChoiceSelect } from '../components/ChoiceSelect';
 import { WorkspaceSwitch } from '../components/WorkspaceSwitch';
 import type { Assignment } from '../management/types';
 import boltIcon from '../assets/workspace/bolt.svg';
@@ -213,15 +214,12 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
       <div className={styles.title}>Список происшествий</div>
       <div className={styles.controls}>
         <WorkspaceSwitch checked={autoRefresh} onChange={onAutoRefresh}>Автообновление</WorkspaceSwitch>
-        <label className={styles.selectControl}>
-          <span className={styles.visuallyHidden}>Что показать</span>
-          <select value={status} onChange={(event) => setStatus(event.target.value)}>
-            <option value="">Выберите, что показать</option>
-            <option value="В работе">В работе</option>
-            <option value="Отработана">Отработанные</option>
-            <option value="Ошибка">С ошибкой</option>
-          </select>
-        </label>
+        <ChoiceSelect label="Что показать" value={status} onChange={setStatus}>
+          <option value="">Выберите, что показать</option>
+          <option value="В работе">В работе</option>
+          <option value="Отработана">Отработанные</option>
+          <option value="Ошибка">С ошибкой</option>
+        </ChoiceSelect>
       </div>
     </div>
 

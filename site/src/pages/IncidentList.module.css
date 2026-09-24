@@ -32,7 +32,7 @@
 .footer select,
 .pagination select {
   height: 41px;
-  padding: 0 36px 0 12px;
+  padding: 0 28px 0 0;
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 6px;
   outline: 0;

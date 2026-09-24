@@ -1,9 +1,19 @@
-.field {
+.field,
+.search {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 12px;
   color: #000;
+}
+
+.field {
+  gap: 3px;
+  color: rgba(0, 0, 0, .5);
+  font-size: 13px;
+}
+
+.search {
+  gap: 12px;
 }
 
 .wide {
@@ -11,24 +21,37 @@
 }
 
 .field span,
-.tabs {
+.search span {
   color: #000;
-  font-size: 14px;
   line-height: normal;
 }
 
 .field span {
+  color: rgba(0, 0, 0, .5);
+  font-size: 13px;
+}
+
+.search span {
+  font-size: 14px;
   opacity: .6;
+}
+
+.tabs {
+  font-size: 16px;
+  line-height: normal;
 }
 
 .field input,
 .field select,
-.field textarea {
+.field textarea,
+.search input,
+.search select,
+.search textarea {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 34px;
-  padding: 7px 0;
+  max-width: 100%;
   border: 0;
-  border-bottom: 0.5px solid rgba(0, 0, 0, .2);
+  border-bottom: 1px solid rgba(0, 0, 0, .2);
   outline: 0;
   background: transparent;
   color: #000;
@@ -36,8 +59,51 @@
   font-size: 16px;
 }
 
+.field input:not([type='checkbox']):not([type='file']),
+.field select,
+.search input,
+.search select {
+  height: 34px;
+  padding: 0;
+  line-height: 34px;
+}
+
+.search input,
+.search select,
+.search textarea {
+  min-height: 34px;
+  padding: 7px 0;
+  border-bottom-width: 0.5px;
+  line-height: normal;
+}
+
+.field select,
+.search select {
+  appearance: none;
+  padding: 0 16px 0 0;
+  text-indent: 0;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(0, 0, 0, .75) 50%),
+    linear-gradient(135deg, rgba(0, 0, 0, .75) 50%, transparent 50%);
+  background-position: calc(100% - 10px) calc(50% - 1px), calc(100% - 5px) calc(50% - 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.field textarea,
+.search textarea {
+  height: auto;
+  min-height: 68px;
+  padding: 4px 0;
+  line-height: 20px;
+  resize: vertical;
+  overflow-x: hidden;
+}
+
 .field input::placeholder,
-.field textarea::placeholder {
+.field textarea::placeholder,
+.search input::placeholder,
+.search textarea::placeholder {
   color: #000;
   opacity: .4;
 }
@@ -89,11 +155,12 @@
 }
 
 .tabs button {
-  padding: 8px 12px;
-  border: 1px solid rgba(0, 0, 0, .2);
+  height: 41px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .24);
   border-radius: 6px;
   background: transparent;
-  color: #000;
+  color: #fff;
   cursor: pointer;
 }
 
