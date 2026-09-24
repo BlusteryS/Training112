@@ -1,0 +1,498 @@
+.page {
+  position: absolute;
+  inset: 0;
+  min-width: 1180px;
+  min-height: 760px;
+  overflow: auto;
+  background: #ebecec;
+  color: #000;
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 16px;
+}
+
+.page,
+.page * {
+  box-sizing: border-box;
+}
+
+.page button,
+.page input,
+.page select,
+.page textarea {
+  font: inherit;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: 78px 200px minmax(600px, 1fr) 248px;
+  min-height: 220px;
+  padding: 6px 6px 0;
+  gap: 4px;
+}
+
+.callControl,
+.telephony,
+.incidentMeta {
+  background: #fff;
+}
+
+.callControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.callControl button {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.callControl button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.callControl img {
+  width: 32px;
+  height: 32px;
+}
+
+.telephony {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.connection {
+  min-height: 40px;
+}
+
+.channel select {
+  width: 100%;
+  height: 34px;
+  border: 0;
+  background: #fff;
+}
+
+.channel select {
+  padding: 0 24px 0 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  outline: 0;
+}
+
+.phoneGrid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 4px;
+}
+
+.phoneGrid > div:first-child {
+  grid-column: 1 / -1;
+}
+
+.incidentMeta {
+  display: grid;
+  grid-template-rows: 92px 1fr;
+  gap: 4px;
+  background: transparent;
+}
+
+.timer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 20px;
+  background: #2f353a;
+  color: #fff;
+  gap: 8px;
+}
+
+.timer > span {
+  margin-right: auto;
+  color: rgba(255, 255, 255, .4);
+  line-height: 20px;
+}
+
+.timer strong {
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 42px;
+}
+
+.timer small {
+  color: rgba(255, 255, 255, .6);
+  font-size: 16px;
+}
+
+.metaText {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+  background: #fff;
+  gap: 12px;
+}
+
+.metaText span {
+  font-size: 14px;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "caller caller"
+    "victims actions"
+    "address incident";
+  grid-template-rows: 56px 56px minmax(380px, 1fr);
+  padding: 4px 6px 70px;
+  gap: 4px;
+}
+
+.callerRow,
+.victimsRow,
+.quickActions,
+.addressPanel,
+.incidentPanel {
+  background: #fff;
+}
+
+.callerRow {
+  grid-area: caller;
+  display: grid;
+  grid-template-columns: 1fr 1fr 34px;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 12px;
+}
+
+.callerRow input,
+.callerRow select,
+.addressPanel > input,
+.incidentPanel > input,
+.addressGrid input {
+  min-width: 0;
+  height: 34px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, .2);
+  outline: 0;
+  background: transparent;
+}
+
+.callerRow input::placeholder,
+.addressPanel input::placeholder,
+.incidentPanel input::placeholder,
+.page textarea::placeholder {
+  color: rgba(0, 0, 0, .4);
+  opacity: 1;
+}
+
+.iconButton,
+.iconSelected {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: #ebecec;
+  cursor: pointer;
+}
+
+.iconSelected {
+  background: #2f353a;
+}
+
+.iconSelected img {
+  filter: invert(1);
+}
+
+.iconButton img,
+.iconSelected img {
+  width: 18px;
+  height: 18px;
+}
+
+.victimsRow {
+  grid-area: victims;
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 12px;
+}
+
+.count {
+  width: 70px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid rgba(0, 0, 0, .14);
+  border-radius: 8px;
+}
+
+.quickActions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 16px;
+  gap: 8px;
+}
+
+.quickActions button {
+  height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #ec653b;
+  border-radius: 8px;
+  background: #fff;
+  color: #ec653b;
+  cursor: pointer;
+}
+
+.addressPanel,
+.incidentPanel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding: 16px;
+  overflow: auto;
+  gap: 12px;
+}
+
+.addressPanel {
+  grid-area: address;
+}
+
+.incidentPanel {
+  grid-area: incident;
+}
+
+.panelTitle {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  color: rgba(0, 0, 0, .56);
+  gap: 6px;
+}
+
+.panelTitle img {
+  width: 18px;
+  height: 18px;
+}
+
+.addressGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.addressGrid label,
+.description,
+.details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: rgba(0, 0, 0, .5);
+  font-size: 13px;
+  gap: 3px;
+}
+
+.description,
+.details {
+  position: relative;
+  flex: 1;
+}
+
+.description textarea,
+.details textarea {
+  min-height: 92px;
+  flex: 1;
+  resize: none;
+  padding: 8px 0 22px;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, .2);
+  outline: 0;
+  color: #000;
+}
+
+.description > span {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  color: rgba(0, 0, 0, .45);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chips button,
+.services span {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #ebecec;
+  color: #000;
+  cursor: pointer;
+}
+
+.callState {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f4f5f5;
+  color: rgba(0, 0, 0, .65);
+  gap: 8px;
+}
+
+.callState img {
+  width: 18px;
+  height: 18px;
+}
+
+.serviceBar {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  min-width: 1180px;
+  height: 58px;
+  align-items: center;
+  padding: 6px;
+  background: #ef6338;
+  color: #fff;
+  gap: 8px;
+}
+
+.addService,
+.barIcon {
+  display: flex;
+  width: 46px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .75);
+  background: transparent;
+  cursor: pointer;
+}
+
+.addService img,
+.barIcon img {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1);
+}
+
+.services {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+
+.services span {
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+  cursor: default;
+}
+
+.save {
+  height: 46px;
+  padding: 0 18px;
+  border: 1px solid #fff;
+  background: transparent;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: .5;
+}
+
+.overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .6);
+}
+
+.modal {
+  display: flex;
+  width: min(600px, 100%);
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 16px;
+  background: #fff;
+  gap: 20px;
+}
+
+.modalTitle {
+  font-size: 24px;
+}
+
+.serviceChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.serviceChoices button,
+.modalActions button,
+.primary {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.serviceChoices button.serviceSelected,
+.primary {
+  border-color: #2f353a;
+  background: #2f353a;
+  color: #fff;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modalError {
+  color: #c43b24;
+}
+
+@media (max-height: 820px) {
+  .top {
+    min-height: 190px;
+  }
+
+  .form {
+    grid-template-rows: 56px 56px minmax(330px, 1fr);
+  }
+}
