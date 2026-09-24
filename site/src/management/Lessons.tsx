@@ -52,7 +52,7 @@ export function Lessons() {
     });
   }
   return <div><PanelTitle>Занятия</PanelTitle>
-    <p>Выберите группу и утверждённый сценарий. После запуска каждый участник увидит задание у себя и сможет принять учебный звонок от виртуального заявителя.</p>
+    <p>Выберите группу и утверждённый сценарий. После запуска на доступных рабочих местах участников появятся входящие учебные звонки.</p>
     <form onSubmit={create}><fieldset disabled={busy}><legend>Назначить занятие</legend>
       <p><label>Кому <select required value={group} onChange={(e) => setGroup(e.target.value)}>
         <option value="">Выберите группу</option>{groups.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.member_count} участников)</option>)}
@@ -73,7 +73,7 @@ export function Lessons() {
       <p>{lessonNames[lesson.status] ?? lesson.status}.</p>
       {lesson.status === 'planned' && <button disabled={busy} onClick={() => void act(async () => {
         await api(`training/lessons/${lesson.id}/start`, {});
-        setMessage('Занятие запущено. Обучающиеся должны войти под своими учётными записями и нажать «Принять учебный звонок» в назначенном задании.');
+        setMessage('Занятие запущено. На доступных рабочих местах участников появятся входящие звонки с кнопкой «Принять».');
       })}>Открыть приём звонков</button>}
       {lesson.status === 'active' && <>
         <p>Статус участников обновляется каждые 5 секунд. Завершение занятия остановит текущие звонки всех участников.</p>

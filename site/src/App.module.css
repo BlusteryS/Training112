@@ -286,6 +286,15 @@
   filter: sepia(1) saturate(6) hue-rotate(315deg) brightness(1.2);
 }
 
+.disconnected {
+  color: rgba(255, 255, 255, .6);
+}
+
+.disconnected img {
+  filter: grayscale(1);
+  opacity: .6;
+}
+
 .sessionMenu {
   position: absolute;
   z-index: 5;

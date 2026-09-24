@@ -6,16 +6,14 @@ import { VoiceCall } from '../speech/VoiceCall';
 import { startCooldown } from '../operatorAvailability';
 
 export type CallPhase = 'waiting' | 'active' | 'error' | 'finished';
-export type CallLine = { speaker: 'operator' | 'caller'; text: string; turn?: number };
 
 function duration(seconds: number) {
   return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-export function SpeechScreen({ phase, phoneNumber, lines, elapsed, message, finishing, onCancel, onRetry, onEnd }: {
+export function SpeechScreen({ phase, phoneNumber, elapsed, message, finishing, onCancel, onRetry, onEnd }: {
   phase: CallPhase;
   phoneNumber: string;
-  lines: CallLine[];
   elapsed: number;
   message: string;
   finishing: boolean;
@@ -28,16 +26,11 @@ export function SpeechScreen({ phase, phoneNumber, lines, elapsed, message, fini
     <div>{phase === 'finished' ? 'Разговор завершён' : 'Звонок прерван'}</div>
     <p role={phase === 'error' ? 'alert' : 'status'}>{message}</p>
     {phase === 'error' && <button disabled={finishing} onClick={onRetry}>Повторить подключение</button>}
-    <button onClick={onCancel}>К моим заданиям</button>
+    <button onClick={onCancel}>К списку происшествий</button>
   </div>;
   return <div>
-    <div>{phoneNumber}</div>
+    <div>{phoneNumber ? `Звонок с номера ${phoneNumber}` : 'Номер телефона не определён'}</div>
     <p role="timer" aria-label="Длительность звонка">{duration(elapsed)}</p>
-    <div role="log" aria-live="polite" aria-relevant="additions text">
-      {lines.map((line, index) => <p key={index}>
-        <span>{line.speaker === 'caller' ? 'Заявитель' : 'Оператор'}:</span> {line.text}
-      </p>)}
-    </div>
     <p role="status">{message}</p>
     <button onClick={onEnd}>Завершить звонок</button>
   </div>;
@@ -50,7 +43,6 @@ export function SpeechPage() {
   const assignmentId = search.get('assignment_id') ?? '';
   const [phase, setPhase] = useState<CallPhase>('waiting');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [lines, setLines] = useState<CallLine[]>([]);
   const [message, setMessage] = useState('');
   const [finishing, setFinishing] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -85,20 +77,10 @@ export function SpeechPage() {
       ready: () => {
         if (call.current !== current) return;
         admitted = true;
-        setPhoneNumber('Учебный звонок');
         setStartedAt((previous) => previous ?? Date.now());
         setPhase('active');
       },
-      text: (speaker: 'operator' | 'caller', text: string, turn?: number) => {
-        if (call.current !== current) return;
-        setLines((previous) => {
-          const last = previous.at(-1);
-          if (speaker === 'caller' && last?.speaker === 'caller' && last.turn === turn) {
-            return [...previous.slice(0, -1), { ...last, text: `${last.text} ${text}` }];
-          }
-          return [...previous, { speaker, text, turn }];
-        });
-      },
+      text: () => undefined,
       closed: (failed: boolean) => {
         if (call.current !== current) return;
         call.current = null;
@@ -109,14 +91,15 @@ export function SpeechPage() {
     };
     setPhase('waiting');
     setFinishing(false);
-    setLines([]);
+    setPhoneNumber('');
     setStartedAt(null);
     const waitingAt = Date.now();
     setNow(waitingAt);
     // Let StrictMode's setup/cleanup cycle finish before requesting the microphone.
     const start = setTimeout(() => {
-      void startAssignedAttempt(user.id, assignmentId).then(async (id) => {
+      void startAssignedAttempt(user.id, assignmentId).then(async ({ id, phone }) => {
         attemptId = id;
+        setPhoneNumber(phone);
         if (disposed) { await finish(true); return; }
         current = new VoiceCall(callbacks, id);
         call.current = current;
@@ -140,7 +123,6 @@ export function SpeechPage() {
   return <SpeechScreen
     phoneNumber={phoneNumber}
     elapsed={startedAt === null ? 0 : Math.max(0, Math.floor((now - startedAt) / 1_000))}
-    lines={lines}
     message={message}
     finishing={finishing}
     onCancel={() => navigate('/')}

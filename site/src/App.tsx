@@ -52,6 +52,7 @@ function OperatorWorkspace() {
   const notify = useNotification();
   const lastLoadError = useRef('');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [connectionError, setConnectionError] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,12 +76,14 @@ function OperatorWorkspace() {
         const rows = await api<Assignment[]>('training/assignments');
         if (!cancelled) {
           setAssignments(rows);
+          setConnectionError(false);
           lastLoadError.current = '';
         }
       } catch (cause) {
         const message = cause instanceof Error ? cause.message : 'Не удалось загрузить список происшествий.';
         if (!cancelled && lastLoadError.current !== message) {
           lastLoadError.current = message;
+          setConnectionError(true);
           notify(message, 'error');
         }
       } finally {
@@ -101,12 +104,16 @@ function OperatorWorkspace() {
   const workstation = (user.workstation ?? '000').padStart(3, '0');
   const hasOpenCard = assignments.some((item) => ['created', 'active', 'suspended'].includes(item.attempt_status ?? ''));
   const coolingDown = now < readCooldown(user.id);
-  const available = manuallyAvailable && !hasOpenCard && !coolingDown;
+  const telephonySupported = window.isSecureContext && Boolean(navigator.mediaDevices?.getUserMedia);
+  const available = telephonySupported && !connectionError && manuallyAvailable && !hasOpenCard && !coolingDown;
+  const availabilityLabel = connectionError ? 'Ошибка'
+    : !telephonySupported ? 'Не подключен'
+      : available ? 'Доступен' : 'Недоступен';
   const incomingCall = available ? assignments.find((item) => item.mode === 'call' && item.status === 'active'
     && (!item.attempt_status || item.attempt_status === 'failed')) : undefined;
 
   const toggleAvailability = () => {
-    if (hasOpenCard || coolingDown) return;
+    if (!telephonySupported || connectionError || hasOpenCard || coolingDown) return;
     setManuallyAvailable((current) => {
       writeManualAvailability(user.id, !current);
       return !current;
@@ -164,10 +171,12 @@ function OperatorWorkspace() {
           </div>
           <div className={styles.clock}>{timeFormatter.format(currentTime)}<span>:{currentTime.getSeconds().toString().padStart(2, '0')}</span></div>
         </div>
-        <button className={`${styles.availability} ${available ? '' : styles.unavailable}`}
-          onClick={toggleAvailability} disabled={hasOpenCard || coolingDown}>
+        <button className={[styles.availability, available ? '' : styles.unavailable,
+          !telephonySupported ? styles.disconnected : ''].filter(Boolean).join(' ')}
+          onClick={toggleAvailability}
+          disabled={!telephonySupported || connectionError || hasOpenCard || coolingDown}>
           <img src={headsetIcon} alt="" />
-          <span>{available ? 'Доступен' : 'Недоступен'}</span>
+          <span>{availabilityLabel}</span>
         </button>
       </div>
     </div>
