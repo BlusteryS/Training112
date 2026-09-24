@@ -106,6 +106,25 @@ public final class TrainingRoutes {
         .post("/api/training/scenarios")
         .handler(c -> json(c, repository.createScenario(actor(c), body(c))));
     router
+        .post("/api/training/scenarios/reference")
+        .handler(c -> {
+          JsonObject body = body(c);
+          Object seconds = body.getValue("seconds");
+          if (!(seconds instanceof Number number) || number.intValue() < 1 || number.intValue() > 86_400
+              || number.doubleValue() != number.intValue()) throw invalid();
+          JsonObject demo;
+          try (var input = TrainingRoutes.class.getResourceAsStream("/contracts/demo-scenario.json")) {
+            if (input == null) throw new IllegalStateException("Missing demo scenario");
+            demo = new JsonObject(new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+          } catch (java.io.IOException error) {
+            c.fail(error);
+            return;
+          }
+          JsonObject document = ScenarioReference.build(demo, text(c, "incident", 200), text(c, "location", 1000),
+              text(c, "difficulty", 32), number.intValue(), text(c, "origin", 80), text(c, "caller_name", 200));
+          json(c, repository.createScenario(actor(c), document));
+        });
+    router
         .post("/api/training/scenarios/:id")
         .handler(c -> json(c, repository.updateScenario(actor(c), id(c), body(c))));
     router
@@ -114,6 +133,28 @@ public final class TrainingRoutes {
     router
         .post("/api/training/scenarios/:id/approve")
         .handler(c -> empty(c, repository.approve(actor(c), id(c))));
+    router.post("/api/training/scenarios/:id/delete")
+        .handler(c -> empty(c, repository.deleteScenario(actor(c), id(c))));
+    router.get("/api/training/materials").handler(c -> json(c, repository.materials(actor(c))));
+    router.post("/api/training/materials").handler(c -> {
+      JsonObject body = body(c);
+      byte[] content;
+      try {
+        content = java.util.Base64.getDecoder().decode(text(c, "content_base64", 140_000));
+      } catch (IllegalArgumentException error) {
+        throw invalid();
+      }
+      json(c, repository.addMaterial(actor(c), text(c, "title", 200), text(c, "filename", 200),
+          text(c, "media_type", 80), content));
+    });
+    router.get("/api/training/materials/:id").handler(c -> json(c, repository.material(actor(c), id(c))));
+    router.post("/api/training/materials/:id/delete")
+        .handler(c -> empty(c, repository.deleteMaterial(actor(c), id(c))));
+    router.get("/api/training/lessons/:id/report").handler(c -> json(c, repository.lessonReport(actor(c), id(c))));
+    router.get("/api/training/insights").handler(c -> json(c, repository.insights(actor(c))));
+    router.get("/api/training/progress").handler(c -> json(c, repository.progress(actor(c))));
+    router.post("/api/training/grammar").handler(c ->
+        c.response().end(GrammarNotes.inspect(text(c, "field", 64), text(c, "text", 4000)).encode()));
     router.get("/api/training/jobs").handler(c -> json(c, repository.jobs(actor(c))));
     router
         .post("/api/training/lessons")

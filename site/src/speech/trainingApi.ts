@@ -44,3 +44,29 @@ export async function saveAttemptCard(id: string, card: Record<string, string>) 
 export function finishAttempt(id: string, failed = false) {
   return api<void>(`training/attempts/${id}/finish`, { failed });
 }
+
+type CardAttempt = AttemptState & { card_status: string; started_at: string | null };
+
+export async function openCardAttempt(learnerId: string, assignmentId: string) {
+  const assignments = await api<Assignment[]>('training/assignments');
+  const assignment = assignments.find((item) => item.id === assignmentId && item.learner_id === learnerId
+    && item.mode === 'card' && item.status === 'active');
+  if (!assignment) throw new Error('Карточка недоступна. Возможно, преподаватель уже завершил занятие.');
+  if (assignment.attempt_id && assignment.attempt_status && ['created', 'active', 'suspended'].includes(assignment.attempt_status)) {
+    const attempt = await api<CardAttempt>(`training/attempts/${assignment.attempt_id}`);
+    return { assignment, attempt };
+  }
+  const created = await api<CardAttempt>('training/attempts', { id: crypto.randomUUID(), assignment_id: assignment.id });
+  return { assignment, attempt: created };
+}
+
+export async function postCardStatus(id: string, status: string, comment: string) {
+  const attempt = await api<CardAttempt>(`training/attempts/${id}`);
+  await api(`training/attempts/${id}/commands`, {
+    event_id: crypto.randomUUID(),
+    expected_sequence: attempt.event_sequence,
+    type: 'card.status',
+    payload: { status, comment },
+  });
+  return api<CardAttempt>(`training/attempts/${id}`);
+}

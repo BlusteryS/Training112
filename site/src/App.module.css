@@ -423,6 +423,22 @@
   background: rgba(255, 255, 255, .08);
 }
 
+.staffTitle {
+  color: #000;
+  font-size: 24px;
+  line-height: 28px;
+}
+
+.cardOffer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #ebecec;
+  color: #000;
+  gap: 16px;
+}
+
 .operatorContent {
   min-height: calc(100vh - 138px);
   padding: 20px;

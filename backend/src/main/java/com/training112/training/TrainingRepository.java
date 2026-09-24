@@ -3,12 +3,14 @@ package com.training112.training;
 import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository.Account;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.Tuple;
+import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
@@ -792,5 +794,187 @@ public final class TrainingRepository {
                             "evaluation.reviewed",
                             id,
                             new JsonObject().put("reason", reason))));
+  }
+
+  public Future<Void> deleteScenario(Account actor, UUID scenario) {
+    teacher(actor);
+    return pool.withTransaction(db ->
+        one(db, """
+            SELECT
+              EXISTS (SELECT 1 FROM lesson l WHERE l.scenario_id=s.id) AS used,
+              EXISTS (SELECT 1 FROM background_job j WHERE j.scenario_id=s.id AND j.state IN ('queued','running')) AS busy
+            FROM scenario s WHERE s.id=$1 AND s.author_id=$2 FOR UPDATE OF s
+            """, Tuple.of(scenario, actor.id()))
+            .compose(row -> {
+              if (row.getBoolean("used")) {
+                return Future.failedFuture(conflict("Сценарий уже назначен на занятие. Уберите его из списка, история сохранится."));
+              }
+              if (row.getBoolean("busy")) {
+                return Future.failedFuture(conflict("Дождитесь окончания подготовки сценария."));
+              }
+              return db.preparedQuery("DELETE FROM background_job WHERE scenario_id=$1").execute(Tuple.of(scenario))
+                  .compose(ignored -> db.preparedQuery("DELETE FROM scenario WHERE id=$1").execute(Tuple.of(scenario)));
+            })
+            .compose(ignored -> audit(db, actor.id(), "scenario.deleted", scenario, new JsonObject())));
+  }
+
+  public Future<JsonArray> materials(Account actor) {
+    String scope = "teacher".equals(actor.role())
+        ? "m.teacher_id=$1"
+        : """
+          EXISTS (SELECT 1 FROM training_group g JOIN training_group_member gm ON gm.group_id=g.id
+            WHERE g.teacher_id=m.teacher_id AND gm.user_id=$1)
+          """;
+    if (!Set.of("teacher", "user").contains(actor.role())) throw forbidden();
+    return list(pool, """
+        SELECT jsonb_build_object('id',m.id,'title',m.title,'filename',m.filename,
+          'media_type',m.media_type,'byte_size',m.byte_size,'created_at',m.created_at) AS value
+        FROM teaching_material m WHERE
+        """ + scope + " ORDER BY m.created_at DESC LIMIT 200", Tuple.of(actor.id()));
+  }
+
+  public Future<JsonObject> material(Account actor, UUID id) {
+    if (!Set.of("teacher", "user").contains(actor.role())) throw forbidden();
+    String scope = "teacher".equals(actor.role())
+        ? "teacher_id=$2"
+        : """
+          EXISTS (SELECT 1 FROM training_group g JOIN training_group_member gm ON gm.group_id=g.id
+            WHERE g.teacher_id=teaching_material.teacher_id AND gm.user_id=$2)
+          """;
+    return one(pool, "SELECT title,filename,media_type,content FROM teaching_material WHERE id=$1 AND " + scope,
+            Tuple.of(id, actor.id()))
+        .map(row -> new JsonObject()
+            .put("title", row.getString("title"))
+            .put("filename", row.getString("filename"))
+            .put("media_type", row.getString("media_type"))
+            .put("content_base64", Base64.getEncoder().encodeToString(row.getBuffer("content").getBytes())));
+  }
+
+  public Future<JsonObject> addMaterial(Account actor, String title, String filename, String media, byte[] content) {
+    teacher(actor);
+    if (title.isBlank() || title.length() > 200 || filename.isBlank() || filename.length() > 200
+        || !Set.of("application/pdf", "text/plain", "audio/wav", "audio/mpeg", "application/json").contains(media)
+        || content.length < 1 || content.length > 98_304) {
+      throw new ApiException(400, "invalid_material", "Материал должен быть PDF, текстом, JSON или аудио до 96 КиБ.");
+    }
+    UUID id = UUID.randomUUID();
+    return pool.withTransaction(db -> db.preparedQuery(
+            "INSERT INTO teaching_material(id,teacher_id,title,filename,media_type,content,byte_size)"
+                + " VALUES ($1,$2,$3,$4,$5,$6,$7)")
+        .execute(Tuple.of(id, actor.id(), title, filename, media, Buffer.buffer(content), content.length))
+        .compose(ignored -> audit(db, actor.id(), "material.created", id, new JsonObject().put("title", title)))
+        .map(new JsonObject().put("id", id.toString()).put("title", title)));
+  }
+
+  public Future<Void> deleteMaterial(Account actor, UUID id) {
+    teacher(actor);
+    return pool.withTransaction(db ->
+        one(db, "SELECT id FROM teaching_material WHERE id=$1 AND teacher_id=$2 FOR UPDATE", Tuple.of(id, actor.id()))
+            .compose(ignored -> db.preparedQuery("DELETE FROM teaching_material WHERE id=$1").execute(Tuple.of(id)))
+            .compose(ignored -> audit(db, actor.id(), "material.deleted", id, new JsonObject())));
+  }
+
+  public Future<JsonArray> lessonReport(Account actor, UUID lesson) {
+    teacher(actor);
+    return list(pool, """
+        SELECT jsonb_build_object(
+          'learner_login', u.login,
+          'assignment_id', la.id,
+          'attempt_id', a.id,
+          'attempt_status', a.status,
+          'started_at', a.started_at,
+          'finished_at', a.finished_at,
+          'paused_ms', a.paused_ms,
+          'elapsed_ms', CASE WHEN a.started_at IS NULL OR a.finished_at IS NULL THEN NULL ELSE
+            GREATEST(0, (EXTRACT(EPOCH FROM (a.finished_at - a.started_at)) * 1000)::bigint - a.paused_ms) END,
+          'card', a.card,
+          'evaluation', e.result,
+          'deadline_seconds', deadline.seconds,
+          'reviews', COALESCE((SELECT jsonb_agg(jsonb_build_object('reason', r.reason, 'result', r.result, 'created_at', r.created_at) ORDER BY r.created_at)
+            FROM evaluation_review r WHERE r.attempt_id = a.id), '[]'::jsonb),
+          'events', COALESCE((SELECT jsonb_agg(jsonb_build_object('type', ev.type, 'count', ev.n))
+            FROM (SELECT type, count(*) AS n FROM attempt_event WHERE attempt_id = a.id GROUP BY type) ev), '[]'::jsonb)
+        ) AS value
+        FROM lesson l
+        JOIN training_group g ON g.id = l.group_id
+        JOIN scenario s ON s.id = l.scenario_id
+        JOIN lesson_assignment la ON la.lesson_id = l.id
+        JOIN app_user u ON u.id = la.learner_id
+        LEFT JOIN LATERAL (
+          SELECT * FROM training_attempt ta WHERE ta.assignment_id = la.id ORDER BY ta.created_at DESC LIMIT 1
+        ) a ON true
+        LEFT JOIN attempt_evaluation e ON e.attempt_id = a.id
+        LEFT JOIN LATERAL (
+          SELECT min((criterion->>'seconds')::integer) AS seconds
+          FROM jsonb_array_elements(s.document->'rubric') criterion
+          WHERE criterion->>'kind' = 'deadline' AND criterion->>'action' = 'accepted'
+        ) deadline ON true
+        WHERE l.id = $1 AND g.teacher_id = $2
+        ORDER BY u.login
+        """, Tuple.of(lesson, actor.id()))
+        .map(rows -> {
+          for (int i = 0; i < rows.size(); i++) {
+            JsonObject row = rows.getJsonObject(i);
+            JsonObject card = row.getJsonObject("card");
+            JsonArray grammar = new JsonArray();
+            if (card != null) {
+              for (String field : new String[] {"description", "address", "caller_name", "comment"}) {
+                if (card.containsKey(field)) grammar.addAll(GrammarNotes.inspect(field, card.getString(field)));
+              }
+            }
+            row.put("grammar", grammar);
+            Long elapsed = row.getLong("elapsed_ms");
+            Integer deadline = row.getInteger("deadline_seconds");
+            if (elapsed != null && deadline != null) {
+              row.put("delta_ms", elapsed - deadline * 1000L);
+            }
+          }
+          return rows;
+        });
+  }
+
+  public Future<JsonArray> insights(Account actor) {
+    teacher(actor);
+    return list(pool, """
+        SELECT jsonb_build_object('description', c.description, 'failed', c.failed, 'total', c.total) AS value
+        FROM (
+          SELECT check_row.description,
+            count(*) FILTER (WHERE check_row.status = 'failed') AS failed,
+            count(*) AS total
+          FROM attempt_evaluation e
+          JOIN training_attempt a ON a.id = e.attempt_id
+          JOIN lesson_assignment la ON la.id = a.assignment_id
+          JOIN lesson l ON l.id = la.lesson_id
+          JOIN training_group g ON g.id = l.group_id
+          CROSS JOIN LATERAL jsonb_to_recordset(e.result->'checks') AS check_row(description text, status text)
+          WHERE g.teacher_id = $1
+          GROUP BY check_row.description
+        ) c
+        WHERE c.failed > 0
+        ORDER BY c.failed DESC, c.description
+        LIMIT 10
+        """, Tuple.of(actor.id()));
+  }
+
+  public Future<JsonArray> progress(Account actor) {
+    teacher(actor);
+    return list(pool, """
+        SELECT jsonb_build_object(
+          'login', u.login,
+          'attempts', count(a.id),
+          'completed', count(a.id) FILTER (WHERE a.status = 'completed'),
+          'failed', count(a.id) FILTER (WHERE a.status = 'failed'),
+          'average_score', round(avg((e.result->>'score')::numeric), 2)
+        ) AS value
+        FROM lesson_assignment la
+        JOIN lesson l ON l.id = la.lesson_id
+        JOIN training_group g ON g.id = l.group_id
+        JOIN app_user u ON u.id = la.learner_id
+        LEFT JOIN training_attempt a ON a.assignment_id = la.id
+        LEFT JOIN attempt_evaluation e ON e.attempt_id = a.id
+        WHERE g.teacher_id = $1
+        GROUP BY u.id, u.login
+        ORDER BY u.login
+        """, Tuple.of(actor.id()));
   }
 }

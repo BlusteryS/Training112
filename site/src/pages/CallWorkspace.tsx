@@ -151,11 +151,12 @@ export function CallWorkspace({ user, phone, elapsed, message, connected, initia
       </div>
       <div className={styles.incidentMeta}>
         <div className={styles.timer}>
-          <span>Время<br />решения</span>
-          <strong>{time.minutes}</strong><small>:{time.seconds}</small>
+          <span className={styles.timerCaption}><span>Время</span><span>решения</span></span>
+          <span className={styles.timerValue}>{time.minutes}</span>
+          <span className={styles.timerSeconds}>:{time.seconds}</span>
         </div>
         <div className={styles.metaText}>
-          <strong>Происшествие {incidentNumber}</strong>
+          <span className={styles.incidentName}>Происшествие {incidentNumber}</span>
           <span>Опер. {user.login}, АРМ {(user.workstation ?? '000').padStart(3, '0')}</span>
         </div>
       </div>

@@ -52,11 +52,14 @@ function IncidentRow({ assignment }: { assignment: Assignment }) {
   const created = dateParts(assignment.created_at);
   const status = assignmentStatus(assignment);
   const description = assignment.instructions?.trim() || incidentType(assignment);
-  const canOpen = ['created', 'active', 'suspended'].includes(assignment.attempt_status ?? '');
+  const canOpen = assignment.mode === 'card'
+    ? assignment.status === 'active' && !['completed', 'failed'].includes(assignment.attempt_status ?? '')
+    : ['created', 'active', 'suspended'].includes(assignment.attempt_status ?? '');
+  const openPath = assignment.mode === 'card' ? '/card' : '/session';
   return <div className={styles.row}>
     <div className={styles.rowMain}>
       {canOpen ? <Link className={styles.cellButton} title="Открыть текущую карточку"
-          to={`/session?assignment_id=${encodeURIComponent(assignment.id)}`}>
+          to={`${openPath}?assignment_id=${encodeURIComponent(assignment.id)}`}>
           <img src={expandIcon} alt="" />
         </Link>
         : <div className={styles.iconCell}><img src={expandIcon} alt="" /></div>}
@@ -171,7 +174,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
     const searchable = [assignment.title, assignment.group_name, assignment.learner_login,
       card?.incident_code, card?.address, card?.description, assignment.instructions]
       .filter(Boolean).join(' ').toLocaleLowerCase('ru');
-    return assignment.mode === 'call' && Boolean(assignment.attempt_status)
+    return Boolean(assignment.attempt_status) || (assignment.mode === 'card' && assignment.status === 'active')
       && (!needle || searchable.includes(needle))
       && (search.from === null || (!Number.isNaN(search.from) && !Number.isNaN(created) && created >= search.from))
       && (search.to === null || (!Number.isNaN(search.to) && !Number.isNaN(created) && created <= search.to))

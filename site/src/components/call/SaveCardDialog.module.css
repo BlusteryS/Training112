@@ -56,9 +56,10 @@
   color: #b73320;
 }
 
-.warning ul {
-  margin: 8px 0 0;
-  padding-left: 20px;
+.warningList {
+  display: grid;
+  margin-top: 8px;
+  gap: 4px;
 }
 
 .actions {

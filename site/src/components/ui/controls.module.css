@@ -1,0 +1,103 @@
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  color: #000;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+.field span,
+.tabs {
+  color: #000;
+  font-size: 14px;
+  line-height: normal;
+}
+
+.field span {
+  opacity: .6;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 0.5px solid rgba(0, 0, 0, .2);
+  outline: 0;
+  background: transparent;
+  color: #000;
+  font: inherit;
+  font-size: 16px;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #000;
+  opacity: .4;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid #ec653b;
+  border-radius: 6px;
+  background: transparent;
+  color: #ec653b;
+  font: inherit;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.action:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.action img {
+  width: 20px;
+  height: 20px;
+}
+
+.notice {
+  margin: 12px 0;
+  line-height: 1.45;
+}
+
+.error {
+  color: #9c2f1a;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.tabs button {
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, .2);
+  border-radius: 6px;
+  background: transparent;
+  color: #000;
+  cursor: pointer;
+}
+
+.tabs button[aria-current='page'] {
+  border-color: #ec653b;
+  color: #ec653b;
+}

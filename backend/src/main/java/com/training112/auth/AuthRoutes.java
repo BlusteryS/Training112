@@ -68,23 +68,27 @@ public final class AuthRoutes {
         }
         String token = SessionToken.create();
         String tokenHash = SessionToken.hash(token);
-        OffsetDateTime expiresAt = OffsetDateTime.now(ZoneOffset.UTC).plus(config.sessionTtl());
         String previousTokenHash = AuthSession.tokenHash(context);
-        repository.checkRateLimit(credentials.login())
-                .compose(ignored -> repository.findByLogin(credentials.login()))
-                .compose(account -> passwords.verify(credentials.password(),
-                        account == null ? dummyPasswordHash : account.passwordHash()).compose(valid -> {
-                    if (!valid || account == null) {
-                        return Future.failedFuture(new ApiException(401, "invalid_credentials", "Неверный логин или пароль."));
-                    }
-                    return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash,
-                            credentials.workstation()).map(new AuthRepository.Account(account.id(), account.login(),
-                            account.passwordHash(), account.role(), credentials.workstation()));
-                }))
-                .onSuccess(account -> {
-                    context.response().addCookie(cookie(token, config.sessionTtl().toSeconds()));
-                    context.response().end(new JsonObject().put("user", account.toJson()).encode());
-                }).onFailure(context::fail);
+        PlatformSettings.sessionHours(repository.pool())
+                .compose(hours -> {
+                    OffsetDateTime expiresAt = OffsetDateTime.now(ZoneOffset.UTC).plusHours(hours);
+                    return repository.checkRateLimit(credentials.login())
+                            .compose(ignored -> repository.findByLogin(credentials.login()))
+                            .compose(account -> passwords.verify(credentials.password(),
+                                    account == null ? dummyPasswordHash : account.passwordHash()).compose(valid -> {
+                                if (!valid || account == null) {
+                                    return Future.failedFuture(new ApiException(401, "invalid_credentials", "Неверный логин или пароль."));
+                                }
+                                return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash,
+                                        credentials.workstation()).map(new AuthRepository.Account(account.id(), account.login(),
+                                        account.passwordHash(), account.role(), credentials.workstation()));
+                            }))
+                            .onSuccess(account -> {
+                                context.response().addCookie(cookie(token, hours * 3600L));
+                                context.response().end(new JsonObject().put("user", account.toJson()).encode());
+                            });
+                })
+                .onFailure(context::fail);
     }
 
     private void currentUser(RoutingContext context) {

@@ -1,6 +1,7 @@
 package com.training112.auth;
 
 import com.training112.AppConfig;
+import com.training112.speech.SpeechConfig;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
@@ -12,6 +13,11 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.Tuple;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,7 +31,8 @@ public final class AdminRoutes {
       Pool pool,
       AuthRepository auth,
       PasswordHasher passwords,
-      AppConfig config) {
+      AppConfig config,
+      SpeechConfig speech) {
     router
         .route("/api/admin/*")
         .handler(BodyHandler.create().setBodyLimit(8192).setHandleFileUploads(false));
@@ -35,6 +42,13 @@ public final class AdminRoutes {
     router.post("/api/admin/users").handler(context -> createUser(context, pool, passwords));
     router.post("/api/admin/users/:id/role").handler(context -> changeRole(context, pool));
     router.post("/api/admin/users/:id/access").handler(context -> changeAccess(context, pool));
+    router.get("/api/admin/status").handler(context -> status(context, pool, speech));
+    router.get("/api/admin/audit").handler(context -> auditLog(context, pool));
+    router.get("/api/admin/statistics").handler(context -> statistics(context, pool));
+    router.get("/api/admin/settings").handler(context -> settings(context, pool));
+    router.post("/api/admin/settings").handler(context -> saveSettings(context, pool));
+    router.get("/api/admin/backups").handler(context -> backups(context, pool));
+    router.post("/api/admin/backups").handler(context -> exportBackup(context, pool));
   }
 
   private static void authorize(
@@ -88,47 +102,34 @@ public final class AdminRoutes {
   private static void createUser(
       RoutingContext context, Pool pool, PasswordHasher passwords) {
     JsonObject body = body(context);
-    Credentials credentials = Credentials.parse(body);
-    Credentials.forCreation(credentials.login(), credentials.password());
     String role = role(body);
+    if (!(body.getValue("login") instanceof String login) || !(body.getValue("password") instanceof String password)) {
+      throw new ApiException(400, "invalid_request", "Укажите логин и пароль.");
+    }
     AuthRepository.Account actor = context.get("actor");
     UUID id = UUID.randomUUID();
-    passwords
-        .hash(credentials.password())
-        .compose(
-            hash ->
-                pool.withTransaction(
-                    database ->
-                        database
-                            .preparedQuery(
-                                "INSERT INTO app_user(id,login,password_hash,role) VALUES"
-                                    + " ($1,$2,$3,$4) ON CONFLICT(login) DO NOTHING RETURNING id")
-                            .execute(Tuple.of(id, credentials.login(), hash, role))
-                            .compose(
-                                rows -> {
-                                  if (rows.size() == 0)
-                                    return Future.failedFuture(
-                                        new ApiException(
-                                            409, "login_taken", "Логин уже занят."));
-                                  return audit(
-                                      database,
-                                      actor.id(),
-                                      "user.created",
-                                      id,
-                                      new JsonObject().put("role", role));
-                                })))
-        .onSuccess(
-            ignored ->
-                context
-                    .response()
-                    .setStatusCode(201)
-                    .end(
-                        new JsonObject()
-                            .put("id", id.toString())
-                            .put("login", credentials.login())
-                            .put("role", role)
-                            .put("blocked", false)
-                            .encode()))
+    PlatformSettings.passwordMinLength(pool)
+        .compose(min -> {
+          Credentials credentials = Credentials.forCreation(login, password, min);
+          return passwords.hash(credentials.password()).map(hash -> new String[] {credentials.login(), hash});
+        })
+        .compose(loginAndHash -> {
+          String normalized = loginAndHash[0];
+          String hash = loginAndHash[1];
+          return pool.withTransaction(database -> database.preparedQuery(
+                  "INSERT INTO app_user(id,login,password_hash,role) VALUES"
+                      + " ($1,$2,$3,$4) ON CONFLICT(login) DO NOTHING RETURNING id")
+              .execute(Tuple.of(id, normalized, hash, role))
+              .compose(rows -> {
+                if (rows.size() == 0) {
+                  return Future.failedFuture(new ApiException(409, "login_taken", "Логин уже занят."));
+                }
+                return audit(database, actor.id(), "user.created", id, new JsonObject().put("role", role))
+                    .map(normalized);
+              }));
+        })
+        .onSuccess(normalized -> context.response().setStatusCode(201).end(new JsonObject()
+            .put("id", id.toString()).put("login", normalized).put("role", role).put("blocked", false).encode()))
         .onFailure(context::fail);
   }
 
@@ -229,6 +230,169 @@ public final class AdminRoutes {
                                             new JsonObject()))))
         .onSuccess(ignored -> context.response().setStatusCode(204).end())
         .onFailure(context::fail);
+  }
+
+  private static void status(RoutingContext context, Pool pool, SpeechConfig speech) {
+    context.vertx().executeBlocking(() -> speechReachable(speech), false)
+        .compose(speechUp -> pool.query("""
+            SELECT
+              (SELECT count(*) FROM app_user) AS users,
+              (SELECT count(*) FROM training_attempt WHERE status IN ('created','active','suspended')) AS open_attempts,
+              (SELECT count(*) FROM lesson WHERE status = 'active') AS active_lessons,
+              (SELECT count(*) FROM background_job WHERE state IN ('queued','running')) AS worker_queue,
+              (SELECT count(*) FROM background_job WHERE state = 'failed') AS failed_jobs,
+              (SELECT max(finished_at) FROM background_job) AS worker_seen
+            """).execute().map(rows -> {
+              Row row = rows.iterator().next();
+              Runtime runtime = Runtime.getRuntime();
+              return new JsonObject()
+                  .put("database", "up")
+                  .put("speech", speechUp ? "up" : "down")
+                  .put("speech_endpoint", speech.endpoint())
+                  .put("worker_queue", row.getLong("worker_queue"))
+                  .put("worker_seen", row.getOffsetDateTime("worker_seen") == null ? null
+                      : row.getOffsetDateTime("worker_seen").toString())
+                  .put("failed_jobs", row.getLong("failed_jobs"))
+                  .put("open_attempts", row.getLong("open_attempts"))
+                  .put("active_lessons", row.getLong("active_lessons"))
+                  .put("users", row.getLong("users"))
+                  .put("memory_used", runtime.totalMemory() - runtime.freeMemory())
+                  .put("memory_max", runtime.maxMemory());
+            }))
+        .onSuccess(value -> context.response().end(value.encode()))
+        .onFailure(context::fail);
+  }
+
+  private static boolean speechReachable(SpeechConfig speech) {
+    URI uri = URI.create(speech.endpoint());
+    try (Socket socket = new Socket()) {
+      socket.connect(new InetSocketAddress(uri.getHost(), uri.getPort()), 500);
+      return true;
+    } catch (Exception error) {
+      return false;
+    }
+  }
+
+  private static void auditLog(RoutingContext context, Pool pool) {
+    pool.query("""
+        SELECT jsonb_build_object('id', e.id, 'action', e.action, 'entity_id', e.entity_id,
+          'detail', e.detail, 'created_at', e.created_at, 'login', u.login) AS value
+        FROM audit_event e LEFT JOIN app_user u ON u.id = e.actor_id
+        ORDER BY e.created_at DESC LIMIT 200
+        """).execute()
+        .onSuccess(rows -> {
+          JsonArray result = new JsonArray();
+          rows.forEach(row -> result.add(row.getJsonObject("value")));
+          context.response().end(result.encode());
+        })
+        .onFailure(context::fail);
+  }
+
+  private static void statistics(RoutingContext context, Pool pool) {
+    pool.query("""
+        SELECT jsonb_build_object(
+          'users', (SELECT count(*) FROM app_user),
+          'admins', (SELECT count(*) FROM app_user WHERE role = 'admin'),
+          'teachers', (SELECT count(*) FROM app_user WHERE role = 'teacher'),
+          'learners', (SELECT count(*) FROM app_user WHERE role = 'user'),
+          'blocked', (SELECT count(*) FROM app_user WHERE blocked),
+          'scenarios', (SELECT count(*) FROM scenario WHERE NOT archived),
+          'lessons', (SELECT count(*) FROM lesson),
+          'active_lessons', (SELECT count(*) FROM lesson WHERE status = 'active'),
+          'attempts', (SELECT count(*) FROM training_attempt),
+          'completed_attempts', (SELECT count(*) FROM training_attempt WHERE status = 'completed'),
+          'failed_jobs', (SELECT count(*) FROM background_job WHERE state = 'failed')
+        ) AS value
+        """).execute()
+        .onSuccess(rows -> context.response().end(rows.iterator().next().getJsonObject("value").encode()))
+        .onFailure(context::fail);
+  }
+
+  private static void settings(RoutingContext context, Pool pool) {
+    pool.query("SELECT key, value FROM platform_setting ORDER BY key").execute()
+        .onSuccess(rows -> {
+          JsonObject result = new JsonObject();
+          rows.forEach(row -> result.put(row.getString("key"), Integer.parseInt(row.getString("value"))));
+          context.response().end(result.encode());
+        })
+        .onFailure(context::fail);
+  }
+
+  private static void saveSettings(RoutingContext context, Pool pool) {
+    AuthRepository.Account actor = context.get("actor");
+    JsonObject body = body(context);
+    int passwordMin = requiredInt(body, "password_min_length", 8, 64);
+    int sessionHours = requiredInt(body, "session_hours", 1, 24 * 30);
+    pool.withTransaction(database -> database.preparedQuery(
+            "UPDATE platform_setting SET value=$2, updated_at=now(), updated_by=$3 WHERE key=$1")
+        .execute(Tuple.of("password_min_length", Integer.toString(passwordMin), actor.id()))
+        .compose(ignored -> database.preparedQuery(
+            "UPDATE platform_setting SET value=$2, updated_at=now(), updated_by=$3 WHERE key=$1")
+            .execute(Tuple.of("session_hours", Integer.toString(sessionHours), actor.id())))
+        .compose(ignored -> audit(database, actor.id(), "settings.updated", actor.id(),
+            new JsonObject().put("password_min_length", passwordMin).put("session_hours", sessionHours))))
+        .onSuccess(ignored -> context.response().setStatusCode(204).end())
+        .onFailure(context::fail);
+  }
+
+  private static void backups(RoutingContext context, Pool pool) {
+    pool.query("""
+        SELECT jsonb_build_object('id', b.id, 'created_at', b.created_at, 'sha256', b.sha256,
+          'byte_size', b.byte_size, 'login', u.login) AS value
+        FROM backup_export b JOIN app_user u ON u.id = b.actor_id
+        ORDER BY b.created_at DESC LIMIT 50
+        """).execute()
+        .onSuccess(rows -> {
+          JsonArray result = new JsonArray();
+          rows.forEach(row -> result.add(row.getJsonObject("value")));
+          context.response().end(result.encode());
+        })
+        .onFailure(context::fail);
+  }
+
+  private static void exportBackup(RoutingContext context, Pool pool) {
+    AuthRepository.Account actor = context.get("actor");
+    pool.query("""
+        SELECT jsonb_build_object(
+          'users', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+              'id', id, 'login', login, 'role', role, 'blocked', blocked) ORDER BY login) FROM app_user), '[]'::jsonb),
+          'groups', COALESCE((SELECT jsonb_agg(to_jsonb(g)) FROM training_group g), '[]'::jsonb),
+          'members', COALESCE((SELECT jsonb_agg(to_jsonb(m)) FROM training_group_member m), '[]'::jsonb),
+          'scenarios', COALESCE((SELECT jsonb_agg(to_jsonb(s) - 'artifact' - 'artifact_sha256') FROM scenario s), '[]'::jsonb),
+          'lessons', COALESCE((SELECT jsonb_agg(to_jsonb(l)) FROM lesson l), '[]'::jsonb),
+          'assignments', COALESCE((SELECT jsonb_agg(to_jsonb(a)) FROM lesson_assignment a), '[]'::jsonb),
+          'attempts', COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM training_attempt t), '[]'::jsonb),
+          'evaluations', COALESCE((SELECT jsonb_agg(to_jsonb(e)) FROM attempt_evaluation e), '[]'::jsonb),
+          'reviews', COALESCE((SELECT jsonb_agg(to_jsonb(r)) FROM evaluation_review r), '[]'::jsonb)
+        ) AS value
+        """).execute()
+        .compose(rows -> {
+          JsonObject payload = rows.iterator().next().getJsonObject("value");
+          byte[] encoded = payload.encode().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+          String sha;
+          try {
+            sha = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(encoded));
+          } catch (java.security.NoSuchAlgorithmException error) {
+            return Future.failedFuture(error);
+          }
+          UUID id = UUID.randomUUID();
+          return pool.preparedQuery("INSERT INTO backup_export(id,actor_id,sha256,byte_size) VALUES ($1,$2,$3,$4)")
+              .execute(Tuple.of(id, actor.id(), sha, encoded.length))
+              .compose(ignored -> audit(pool, actor.id(), "backup.exported", id,
+                  new JsonObject().put("sha256", sha).put("byte_size", encoded.length)))
+              .map(ignored -> payload.put("backup_id", id.toString()).put("sha256", sha).put("byte_size", encoded.length));
+        })
+        .onSuccess(value -> context.response().end(value.encode()))
+        .onFailure(context::fail);
+  }
+
+  private static int requiredInt(JsonObject body, String key, int min, int max) {
+    Object value = body.getValue(key);
+    if (!(value instanceof Number number) || number.doubleValue() != number.intValue()
+        || number.intValue() < min || number.intValue() > max) {
+      throw new ApiException(400, "invalid_request", "Некорректное значение «" + key + "».");
+    }
+    return number.intValue();
   }
 
   private static Future<Row> findUser(SqlClient database, UUID id) {

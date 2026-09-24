@@ -32,9 +32,14 @@ public record Credentials(String login, String password, String workstation) {
     }
 
     public static Credentials forCreation(String login, String password) {
+        return forCreation(login, password, 8);
+    }
+
+    public static Credentials forCreation(String login, String password, int minLength) {
         Credentials credentials = new Credentials(login, password, "0");
-        if (password.codePointCount(0, password.length()) < 8) {
-            throw new ApiException(400, "invalid_password", "Пароль должен содержать от 8 до 128 символов.");
+        if (password.codePointCount(0, password.length()) < minLength) {
+            throw new ApiException(400, "invalid_password",
+                    "Пароль должен содержать от " + minLength + " до 128 символов.");
         }
         return credentials;
     }

@@ -52,7 +52,7 @@ public final class ApiVerticle extends VerticleBase {
                     .onSuccess(ignored -> context.response().end("{\"status\":\"up\"}"))
                     .onFailure(error -> context.fail(new ApiException(503, "database_unavailable", "База данных недоступна."))));
             new AuthRoutes(repository, passwords, config, dummyHash).mount(router);
-            com.training112.auth.AdminRoutes.mount(router, pool, repository, passwords, config);
+            com.training112.auth.AdminRoutes.mount(router, pool, repository, passwords, config, speechConfig);
             TrainingRepository training = new TrainingRepository(pool);
             new TrainingRoutes(vertx, training, repository, config).mount(router);
             speech = new SpeechRoutes(vertx, repository, config, speechConfig, training);

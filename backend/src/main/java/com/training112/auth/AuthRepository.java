@@ -25,6 +25,8 @@ public final class AuthRepository {
 
     public AuthRepository(Pool pool) { this.pool = pool; }
 
+    public Pool pool() { return pool; }
+
     public Future<Account> findByLogin(String login) {
         return pool.preparedQuery("SELECT id, login, password_hash, role FROM app_user WHERE login = $1 AND NOT blocked")
                 .execute(Tuple.of(login)).map(rows -> rows.size() == 0 ? null : account(rows.iterator().next()));

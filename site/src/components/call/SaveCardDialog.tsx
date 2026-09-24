@@ -22,7 +22,7 @@ export function SaveCardDialog({ services, warnings, error, saving, specialReaso
         : <div className={styles.empty}>Службы не выбраны.</div>}
       {warnings.length > 0 && <div className={styles.warning} role="alert">
         <div>Заполните обязательные поля:</div>
-        <ul>{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+        <div className={styles.warningList}>{warnings.map((warning) => <div key={warning}>{warning}</div>)}</div>
       </div>}
       {error && <div className={styles.error} role="alert">Не удалось сохранить карточку: {error}</div>}
       <div className={styles.actions}>

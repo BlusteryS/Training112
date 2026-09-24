@@ -6,19 +6,22 @@ import { AuthContext, useAuth } from './auth/AuthContext';
 import { Management } from './management/Management';
 import type { Assignment } from './management/types';
 import { NotificationProvider, useNotification } from './components/Notifications';
+import { WorkspaceHeader } from './components/shell/WorkspaceHeader';
+import { TextField } from './components/ui/Field';
+import { ActionButton, ActionRow } from './components/ui/ActionButton';
 import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';
 import { LoginPage } from './pages/LoginPage';
+import { CardDesk } from './pages/CardDesk';
+import { MaterialsDrawer } from './management/Materials';
 import { SpeechPage } from './pages/SpeechPage';
 import { readCooldown, readManualAvailability, writeManualAvailability } from './operatorAvailability';
 import chevronDarkIcon from './assets/workspace/chevron-dark.svg';
 import headsetIcon from './assets/workspace/headset.svg';
-import helpIcon from './assets/workspace/help.svg';
 import resetIcon from './assets/workspace/reset.svg';
 import searchClockIcon from './assets/workspace/search-clock.svg';
 import searchIcon from './assets/workspace/search.svg';
 import searchPlusIcon from './assets/workspace/search-plus.svg';
-import workstationIcon from './assets/workspace/workstation.svg';
 import styles from './App.module.css';
 
 type Session =
@@ -26,27 +29,6 @@ type Session =
   | { status: 'anonymous' }
   | { status: 'authenticated'; user: User }
   | { status: 'error'; message: string };
-
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
-  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-});
-const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
-  hour: '2-digit', minute: '2-digit', hour12: false,
-});
-
-function displayDate(value: Date) {
-  const formatted = dateFormatter.format(value).replace(/\sг\.$/, '');
-  return formatted.charAt(0).toLocaleUpperCase('ru') + formatted.slice(1);
-}
-
-function operatorNumber(login: string) {
-  return login.match(/\d+/)?.[0] ?? login;
-}
-
-function operatorLabel(login: string) {
-  const number = login.match(/\d+/)?.[0];
-  return number ? `оп. ${number}, ${login}` : `оп. ${login}`;
-}
 
 type DateParts = { hh: string; mm: string; dd: string; mo: string; yyyy: string };
 
@@ -125,21 +107,8 @@ function DateBound({ label, value, onChange }: {
   </div>;
 }
 
-function AdvancedField({ label, placeholder, value, onChange, wide }: {
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (value: string) => void;
-  wide?: boolean;
-}) {
-  return <label className={wide ? `${styles.advancedField} ${styles.advancedFieldWide}` : styles.advancedField}>
-    <span>{label}</span>
-    <input value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
-  </label>;
-}
-
 function OperatorWorkspace() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const notify = useNotification();
   const lastLoadError = useRef('');
@@ -147,8 +116,8 @@ function OperatorWorkspace() {
   const [connectionError, setConnectionError] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [materialsOpen, setMaterialsOpen] = useState(false);
   const [draft, setDraft] = useState(blankAdvanced);
   const [applied, setApplied] = useState(blankAdvanced);
   const [query, setQuery] = useState('');
@@ -192,8 +161,6 @@ function OperatorWorkspace() {
     };
   }, [autoRefresh, notify]);
 
-  const currentTime = new Date(now);
-  const workstation = (user.workstation ?? '000').padStart(3, '0');
   const hasOpenCard = assignments.some((item) => ['created', 'active', 'suspended'].includes(item.attempt_status ?? ''));
   const coolingDown = now < readCooldown(user.id);
   const telephonySupported = window.isSecureContext && Boolean(navigator.mediaDevices?.getUserMedia);
@@ -203,6 +170,8 @@ function OperatorWorkspace() {
       : available ? 'Доступен' : 'Недоступен';
   const incomingCall = available ? assignments.find((item) => item.mode === 'call' && item.status === 'active'
     && (!item.attempt_status || item.attempt_status === 'failed')) : undefined;
+  const cardTask = assignments.find((item) => item.mode === 'card' && item.status === 'active'
+    && !['completed', 'failed'].includes(item.attempt_status ?? ''));
 
   const toggleAvailability = () => {
     if (!telephonySupported || connectionError || hasOpenCard || coolingDown) return;
@@ -250,8 +219,9 @@ function OperatorWorkspace() {
   }), [applied]);
 
   return <div className={styles.workspace}>
-    <div className={styles.operatorHeader}>
-      <div className={styles.searchPanel}>
+    <WorkspaceHeader
+      menu={<button onClick={() => { setMaterialsOpen(true); }}>Учебные материалы</button>}
+      leading={<div className={styles.searchPanel}>
         <label className={styles.searchField}>
           <span className={styles.visuallyHidden}>Поиск происшествий</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск происшествий" />
@@ -266,38 +236,15 @@ function OperatorWorkspace() {
             <img src={resetIcon} alt="" /> Сбросить
           </button>
         </div>
-      </div>
-
-      <div className={styles.statusPanel}>
-        <div className={styles.statusTop}>
-          <div className={styles.operatorInfo}>
-            <div>{displayDate(currentTime)}</div>
-            <div className={styles.operatorMeta}>
-              <span>{operatorLabel(user.login)}</span>
-              <span><img src={workstationIcon} alt="" /> АРМ {workstation}</span>
-              <div className={styles.helpMenu}>
-                <button className={styles.helpButton} onClick={() => setMenuOpen((value) => !value)} title="Справка и выход">
-                  <img src={helpIcon} alt="" />
-                </button>
-                {menuOpen && <div className={styles.sessionMenu}>
-                  <button onClick={() => { void logout().catch((cause: unknown) => {
-                    notify(cause instanceof Error ? cause.message : 'Не удалось выйти из системы.', 'error');
-                  }); }}>Выйти из системы</button>
-                </div>}
-              </div>
-            </div>
-          </div>
-          <div className={styles.clock}>{timeFormatter.format(currentTime)}<span>:{currentTime.getSeconds().toString().padStart(2, '0')}</span></div>
-        </div>
-        <button className={[styles.availability, available ? '' : styles.unavailable,
-          !telephonySupported ? styles.disconnected : ''].filter(Boolean).join(' ')}
-          onClick={toggleAvailability}
-          disabled={!telephonySupported || connectionError || hasOpenCard || coolingDown}>
-          <img src={headsetIcon} alt="" />
-          <span>{availabilityLabel}</span>
-        </button>
-      </div>
-    </div>
+      </div>}
+      footer={<button className={[styles.availability, available ? '' : styles.unavailable,
+        !telephonySupported ? styles.disconnected : ''].filter(Boolean).join(' ')}
+        onClick={toggleAvailability}
+        disabled={!telephonySupported || connectionError || hasOpenCard || coolingDown}>
+        <img src={headsetIcon} alt="" />
+        <span>{availabilityLabel}</span>
+      </button>}
+    />
     {advancedOpen && <form className={styles.advancedSearch} onSubmit={(event) => { event.preventDefault(); applySearch(); }}>
       <div className={styles.dateRow}>
         <div>Искать по времени и дате:</div>
@@ -308,77 +255,76 @@ function OperatorWorkspace() {
         </div>
       </div>
       <div className={styles.advancedGrid}>
-        <AdvancedField label="Тип происшествия" placeholder="Тип происшествия" value={draft.incident}
+        <TextField label="Тип происшествия" placeholder="Тип происшествия" value={draft.incident}
           onChange={(incident) => patchDraft({ incident })} />
-        <AdvancedField label="Признаки происшествия:" value={draft.signs}
+        <TextField label="Признаки происшествия:" value={draft.signs}
           onChange={(signs) => patchDraft({ signs })} />
-        <AdvancedField label="По адресу:" value={draft.address}
+        <TextField label="По адресу:" value={draft.address}
           onChange={(address) => patchDraft({ address })} />
-        <AdvancedField label="По округу:" value={draft.okrug}
+        <TextField label="По округу:" value={draft.okrug}
           onChange={(okrug) => patchDraft({ okrug })} />
-        <AdvancedField label="По району:" value={draft.district}
+        <TextField label="По району:" value={draft.district}
           onChange={(district) => patchDraft({ district })} />
-        <AdvancedField label="По субъекту:" placeholder="По субъекту" value={draft.region}
+        <TextField label="По субъекту:" placeholder="По субъекту" value={draft.region}
           onChange={(region) => patchDraft({ region })} />
-        <AdvancedField label="По заявителю (ФИО/АОН):" value={draft.caller}
+        <TextField label="По заявителю (ФИО/АОН):" value={draft.caller}
           onChange={(caller) => patchDraft({ caller })} />
-        <AdvancedField label="По оператору:" value={draft.operator}
+        <TextField label="По оператору:" value={draft.operator}
           onChange={(operator) => patchDraft({ operator })} />
-        <AdvancedField label="По АРМу:" placeholder="По АРМу" value={draft.arm}
+        <TextField label="По АРМу:" placeholder="По АРМу" value={draft.arm}
           onChange={(arm) => patchDraft({ arm })} />
-        <AdvancedField label="По описательному адресу:" value={draft.descriptiveAddress}
+        <TextField label="По описательному адресу:" value={draft.descriptiveAddress}
           onChange={(descriptiveAddress) => patchDraft({ descriptiveAddress })} />
-        <AdvancedField label="По службе:" placeholder="По службе" value={draft.service}
+        <TextField label="По службе:" placeholder="По службе" value={draft.service}
           onChange={(service) => patchDraft({ service })} />
-        <AdvancedField label="По описанию:" value={draft.description}
+        <TextField label="По описанию:" value={draft.description}
           onChange={(description) => patchDraft({ description })} />
-        <AdvancedField label="Канал связи:" placeholder="Канал связи" value={draft.channel}
+        <TextField label="Канал связи:" placeholder="Канал связи" value={draft.channel}
           onChange={(channel) => patchDraft({ channel })} />
-        <AdvancedField label="Источник происшествия:" placeholder="Источник происшествия" value={draft.source}
+        <TextField label="Источник происшествия:" placeholder="Источник происшествия" value={draft.source}
           onChange={(source) => patchDraft({ source })} />
-        <AdvancedField label="Статус:" placeholder="Статус" value={draft.status}
+        <TextField label="Статус:" placeholder="Статус" value={draft.status}
           onChange={(status) => patchDraft({ status })} />
-        <AdvancedField label="По номеру карточки:" value={draft.cardNumber}
+        <TextField label="По номеру карточки:" value={draft.cardNumber}
           onChange={(cardNumber) => patchDraft({ cardNumber })} />
-        <AdvancedField wide label="По оператору, работавшему с КП из ВИС:" value={draft.visOperator}
+        <TextField wide label="По оператору, работавшему с КП из ВИС:" value={draft.visOperator}
           onChange={(visOperator) => patchDraft({ visOperator })} />
       </div>
-      <div className={styles.advancedActions}>
-        <button type="submit"><img src={searchPlusIcon} alt="" /> Искать по параметрам</button>
-        <button type="button" onClick={resetAdvanced}><img src={searchPlusIcon} alt="" /> Сбросить</button>
-      </div>
+      <ActionRow>
+        <ActionButton type="submit"><img src={searchPlusIcon} alt="" /> Искать по параметрам</ActionButton>
+        <ActionButton onClick={resetAdvanced}><img src={searchPlusIcon} alt="" /> Сбросить</ActionButton>
+      </ActionRow>
     </form>}
+    {cardTask && <div className={styles.cardOffer}>
+      <span>Назначена отработка карточки: {cardTask.title}</span>
+      <ActionButton onClick={() => navigate(`/card?assignment_id=${encodeURIComponent(cardTask.id)}`)}>Открыть карточку</ActionButton>
+    </div>}
     <div className={styles.operatorContent}>
       <IncidentList assignments={assignments} autoRefresh={autoRefresh} filter={query}
         loading={loading} onAutoRefresh={setAutoRefresh} search={search} />
     </div>
+    {materialsOpen && <MaterialsDrawer onClose={() => setMaterialsOpen(false)} />}
     {incomingCall && <IncomingCall assignment={incomingCall} onClose={closeIncomingCall}
       onAccept={() => navigate(`/session?assignment_id=${encodeURIComponent(incomingCall.id)}`)} />}
   </div>;
 }
 
-function ManagementWorkspace() {
-  const { user, logout } = useAuth();
-  const notify = useNotification();
-  const [filter, setFilter] = useState('');
-  return <div className={styles.managementPage}>
-    <div className={styles.managementHeader}>
-      <div>{user.role === 'admin' ? 'Администрирование' : 'Кабинет преподавателя'}</div>
-      <label>
-        <span className={styles.visuallyHidden}>Поиск</span>
-        <input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Поиск" />
-      </label>
-      <div>{user.login}</div>
-      <button onClick={() => { void logout().catch((cause: unknown) => {
-        notify(cause instanceof Error ? cause.message : 'Не удалось выйти из системы.', 'error');
-      }); }}>Выйти</button>
+function StaffWorkspace() {
+  const { user } = useAuth();
+  return <div className={styles.workspace}>
+    <WorkspaceHeader leading={<div className={styles.searchPanel}>
+      <div className={styles.staffTitle}>{user.role === 'admin' ? 'Администрирование' : 'Кабинет преподавателя'}</div>
+      <div className={styles.searchRule} />
+      <div className={styles.searchFooter}>Учебный комплекс</div>
+    </div>} />
+    <div className={styles.operatorContent}>
+      <Management />
     </div>
-    <Management filter={filter} />
   </div>;
 }
 
 function Home() {
-  return useAuth().user.role === 'user' ? <OperatorWorkspace /> : <ManagementWorkspace />;
+  return useAuth().user.role === 'user' ? <OperatorWorkspace /> : <StaffWorkspace />;
 }
 
 function Application() {
@@ -425,6 +371,7 @@ function Application() {
         : <AuthContext.Provider value={{ user: session.user, logout }}>
           <Routes>
             <Route element={session.user.role === 'user' ? <SpeechPage /> : <Navigate replace to="/" />} path="/session" />
+            <Route element={session.user.role === 'user' ? <CardDesk /> : <Navigate replace to="/" />} path="/card" />
             <Route element={<Home />} path="/" />
             <Route element={<Navigate replace to="/" />} path="*" />
           </Routes>

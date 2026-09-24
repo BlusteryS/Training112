@@ -1,0 +1,67 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { useAuth } from '../../auth/AuthContext';
+import { useNotification } from '../Notifications';
+import helpIcon from '../../assets/workspace/help.svg';
+import workstationIcon from '../../assets/workspace/workstation.svg';
+import styles from '../../App.module.css';
+
+const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+});
+const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
+  hour: '2-digit', minute: '2-digit', hour12: false,
+});
+
+function displayDate(value: Date) {
+  const formatted = dateFormatter.format(value).replace(/\sг\.$/, '');
+  return formatted.charAt(0).toLocaleUpperCase('ru') + formatted.slice(1);
+}
+
+function operatorLabel(login: string) {
+  const number = login.match(/\d+/)?.[0];
+  return number ? `оп. ${number}, ${login}` : `оп. ${login}`;
+}
+
+export function WorkspaceHeader({ leading, footer, menu }: {
+  leading: ReactNode;
+  footer?: ReactNode;
+  menu?: ReactNode;
+}) {
+  const { user, logout } = useAuth();
+  const notify = useNotification();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const currentTime = new Date(now);
+  const workstation = (user.workstation ?? '000').padStart(3, '0');
+  return <div className={styles.operatorHeader}>
+    {leading}
+    <div className={styles.statusPanel}>
+      <div className={styles.statusTop}>
+        <div className={styles.operatorInfo}>
+          <div>{displayDate(currentTime)}</div>
+          <div className={styles.operatorMeta}>
+            <span>{operatorLabel(user.login)}</span>
+            <span><img src={workstationIcon} alt="" /> АРМ {workstation}</span>
+            <div className={styles.helpMenu}>
+              <button className={styles.helpButton} onClick={() => setMenuOpen((value) => !value)} title="Меню">
+                <img src={helpIcon} alt="" />
+              </button>
+              {menuOpen && <div className={styles.sessionMenu}>
+                {menu}
+                <button onClick={() => { void logout().catch((cause: unknown) => {
+                  notify(cause instanceof Error ? cause.message : 'Не удалось выйти из системы.', 'error');
+                }); }}>Выйти из системы</button>
+              </div>}
+            </div>
+          </div>
+        </div>
+        <div className={styles.clock}>{timeFormatter.format(currentTime)}<span>:{currentTime.getSeconds().toString().padStart(2, '0')}</span></div>
+      </div>
+      {footer}
+    </div>
+  </div>;
+}

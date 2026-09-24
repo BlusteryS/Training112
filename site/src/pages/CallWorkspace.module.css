@@ -116,19 +116,21 @@
   gap: 8px;
 }
 
-.timer > span {
+.timerCaption {
+  display: flex;
   margin-right: auto;
+  flex-direction: column;
   color: rgba(255, 255, 255, .4);
   line-height: 20px;
 }
 
-.timer strong {
+.timerValue {
   font-size: 36px;
   font-weight: 500;
   line-height: 42px;
 }
 
-.timer small {
+.timerSeconds {
   color: rgba(255, 255, 255, .6);
   font-size: 16px;
 }
@@ -140,6 +142,11 @@
   padding: 16px;
   background: #fff;
   gap: 12px;
+}
+
+.metaText .incidentName {
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .metaText span {

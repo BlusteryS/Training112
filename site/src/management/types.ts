@@ -1,7 +1,7 @@
 export type Learner = { id: string; login: string; blocked?: boolean };
 export type Group = { id: string; name: string; service_code: string; member_count: number };
 export type Scenario = { id: string; title: string; status: string };
-export type Lesson = { id: string; group_name: string; title: string; status: string };
+export type Lesson = { id: string; group_name: string; title: string; status: string; mode: string };
 export type Assignment = {
   id: string; lesson_id: string; learner_id: string; learner_login: string;
   title: string; group_name: string; mode: string; status: string;

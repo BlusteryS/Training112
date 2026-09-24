@@ -36,36 +36,36 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
   }
   return <form onSubmit={(event) => void submit(event)}>
     <PanelSubtitle>{editing ? 'Редактировать сценарий' : 'Новый сценарий'}</PanelSubtitle>
-    <p>Опишите происшествие и ответы заявителя. Эти сведения видны только преподавателю: обучающийся узнает их в разговоре.</p>
+    <div>Опишите происшествие и ответы заявителя. Эти сведения видны только преподавателю: обучающийся узнает их в разговоре.</div>
     <fieldset disabled={busy}><legend>Условия задания</legend>
-      <p><label>Название <input required maxLength={200} value={document.title} onChange={(e) => setDocument({ ...document, title: e.target.value })} /></label></p>
-      <p><label>Источник происшествия <select required value={document.origin ?? ''} onChange={(e) => setDocument({ ...document, origin: e.target.value })}>
+      <div><label>Название <input required maxLength={200} value={document.title} onChange={(e) => setDocument({ ...document, title: e.target.value })} /></label></div>
+      <div><label>Источник происшествия <select required value={document.origin ?? ''} onChange={(e) => setDocument({ ...document, origin: e.target.value })}>
         <option value=""></option>
         {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
-      </select></label></p>
-      <p>Источник записывается в карточку в момент начала попытки. Если это внешняя система, номер оператора, открывшего карточку, сохраняется как оператор, работавший с КП из ВИС.</p>
-      <p><label>Уровень сложности <select value={document.difficulty ?? 'basic'} onChange={(e) => setDocument({ ...document, difficulty: e.target.value })}>
+      </select></label></div>
+      <div>Источник записывается в карточку в момент начала попытки. Если это внешняя система, номер оператора, открывшего карточку, сохраняется как оператор, работавший с КП из ВИС.</div>
+      <div><label>Уровень сложности <select value={document.difficulty ?? 'basic'} onChange={(e) => setDocument({ ...document, difficulty: e.target.value })}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-      </select></label></p>
-      <p>Уровень помогает выбирать задания. Сложность разговора задаётся обстоятельствами и ответами заявителя ниже.</p>
-      <p><label>Инструкция обучающемуся (без ответов на задание)<br /><textarea rows={3} maxLength={2000} value={document.instructions ?? ''} onChange={(e) => setDocument({ ...document, instructions: e.target.value })} /></label></p>
-      {Object.entries(document.facts).map(([key, value]) => <p key={key}><label>{factNames[key] ?? key}<br />
+      </select></label></div>
+      <div>Уровень помогает выбирать задания. Сложность разговора задаётся обстоятельствами и ответами заявителя ниже.</div>
+      <div><label>Инструкция обучающемуся (без ответов на задание)<textarea rows={3} maxLength={2000} value={document.instructions ?? ''} onChange={(e) => setDocument({ ...document, instructions: e.target.value })} /></label></div>
+      {Object.entries(document.facts).map(([key, value]) => <div key={key}><label>{factNames[key] ?? key}
         <textarea rows={2} required maxLength={1000} value={value} onChange={(e) => fact(key, e.target.value)} />
-      </label></p>)}
+      </label></div>)}
     </fieldset>
     <details><summary>Критерии выполнения задания и время</summary>
-      <p>Проверьте эталонные ответы при изменении происшествия. Временной норматив по умолчанию — 30 секунд; он не ограничивает длительность всего звонка.</p>
+      <div>Проверьте эталонные ответы при изменении происшествия. Временной норматив по умолчанию — 30 секунд; он не ограничивает длительность всего звонка.</div>
       <fieldset disabled={busy}><legend>Критерии сценария</legend>
         {document.rubric.map((rule, index) => <fieldset key={rule.id}><legend>{rule.description}</legend>
-          {rule.expected !== undefined && <p><label>Эталонный ответ<br /><textarea required rows={2} maxLength={2000} value={rule.expected} onChange={(e) => setDocument({ ...document, rubric: document.rubric.map((r, i) => i === index ? { ...r, expected: e.target.value } : r) })} /></label></p>}
-          {rule.kind === 'deadline' && <p><label>Время выполнения, секунд <input required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(e) => setDocument({ ...document, rubric: document.rubric.map((r, i) => i === index ? { ...r, seconds: Number(e.target.value) } : r) })} /></label></p>}
+          {rule.expected !== undefined && <div><label>Эталонный ответ<textarea required rows={2} maxLength={2000} value={rule.expected} onChange={(e) => setDocument({ ...document, rubric: document.rubric.map((r, i) => i === index ? { ...r, expected: e.target.value } : r) })} /></label></div>}
+          {rule.kind === 'deadline' && <div><label>Время выполнения, секунд <input required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(e) => setDocument({ ...document, rubric: document.rubric.map((r, i) => i === index ? { ...r, seconds: Number(e.target.value) } : r) })} /></label></div>}
         </fieldset>)}
       </fieldset>
     </details>
-    <p>После сохранения сервер проверит диалог и запишет голос заявителя. Затем просмотрите сценарий и утвердите его для занятий. Активный сценарий нельзя редактировать до завершения занятия.</p>
-    {error && <p role="alert">{error}</p>}
-    <p><button disabled={busy}>{editing ? 'Сохранить изменения' : 'Сохранить сценарий'}</button>{' '}
+    <div>После сохранения сервер проверит диалог и запишет голос заявителя. Затем просмотрите сценарий и утвердите его для занятий. Активный сценарий нельзя редактировать до завершения занятия.</div>
+    {error && <div role="alert">{error}</div>}
+    <div><button disabled={busy}>{editing ? 'Сохранить изменения' : 'Сохранить сценарий'}</button>{' '}
       <button type="button" disabled={busy} onClick={() => exportScenario(document)}>Скачать JSON</button>{' '}
-      <button type="button" disabled={busy} onClick={onCancel}>Отменить редактирование</button></p>
+      <button type="button" disabled={busy} onClick={onCancel}>Отменить редактирование</button></div>
   </form>;
 }
