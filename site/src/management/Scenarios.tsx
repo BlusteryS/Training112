@@ -17,7 +17,7 @@ const columns = 'minmax(200px, 1.6fr) 180px minmax(280px, auto)';
 export function Scenarios() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [reference, setReference] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -44,11 +44,7 @@ export function Scenarios() {
   }
 
   return <Desk title="Сценарии" actions={<>
-    <button type="button" disabled={busy} onClick={() => void act(async () => {
-      const document = await api<ScenarioDocument>('training/example');
-      setEditor({ document: { ...document, title: '', difficulty: 'basic', instructions: 'Примите учебный вызов. Уточните место происшествия, обстоятельства и сведения о пострадавших.' } });
-    })}>Создать</button>
-    <button type="button" disabled={busy} onClick={() => setReference(true)}>Эталон</button>
+    <button type="button" disabled={busy} onClick={() => setCreating(true)}>Создать</button>
     <button type="button" disabled={busy} onClick={() => setImporting(true)}>Импорт</button>
   </>}>
     {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Статус</span><span /></>}>
@@ -86,11 +82,11 @@ export function Scenarios() {
           setReload((value) => value + 1);
         } finally { setBusy(false); }
       }} />}
-    {reference && <ReferenceDialog busy={busy} error={error} onClose={() => setReference(false)} onSubmit={(body) => {
+    {creating && <NewScenarioDialog busy={busy} error={error} onClose={() => setCreating(false)} onSubmit={(body) => {
       void act(async () => {
-        await api('training/scenarios/reference', body);
-        setReference(false);
-        setReload((value) => value + 1);
+        const document = await api<ScenarioDocument>('training/scenarios/draft', body);
+        setCreating(false);
+        setEditor({ document });
       });
     }} />}
     {importing && <ImportDialog busy={busy} error={error} onClose={() => setImporting(false)} onSubmit={(document) => {
@@ -103,7 +99,7 @@ export function Scenarios() {
   </Desk>;
 }
 
-function ReferenceDialog({ busy, error, onClose, onSubmit }: {
+function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   busy: boolean;
   error: string;
   onClose: () => void;
@@ -115,8 +111,8 @@ function ReferenceDialog({ busy, error, onClose, onSubmit }: {
   const [seconds, setSeconds] = useState('30');
   const [origin, setOrigin] = useState('Служба 112');
   const [caller, setCaller] = useState('Алексей');
-  return <ModalForm label="Эталон">
-<FormCard title="Эталон" submitLabel="Сформировать" busy={busy} error={error} onClose={onClose} onSubmit={() => onSubmit({
+  return <ModalForm label="Создать сценарий">
+<FormCard title="Сведения для сценария" submitLabel="Продолжить" busy={busy} error={error} onClose={onClose} onSubmit={() => onSubmit({
     incident, location, difficulty, seconds: Number(seconds), origin, caller_name: caller,
   })}>
     <div className={formGrid}>

@@ -6,8 +6,8 @@ import io.vertx.core.json.JsonObject;
 import java.util.Map;
 import java.util.Set;
 
-/** Builds a reference call scenario from the lesson parameters. */
-public final class ScenarioReference {
+/** Builds an editable call scenario draft from the lesson parameters. */
+public final class ScenarioDraft {
   private static final Set<String> DIFFICULTIES = Set.of("basic", "intermediate", "advanced");
   private static final Map<String, String> INCIDENTS =
       Map.of(
@@ -28,7 +28,7 @@ public final class ScenarioReference {
   private static final Set<String> ONE_VICTIM = Set.of(
       "Дорожно-транспортное происшествие", "Требуется медицинская помощь");
 
-  private ScenarioReference() {}
+  private ScenarioDraft() {}
 
   public static JsonObject build(
       JsonObject demo, String incident, String location, String difficulty, int seconds,

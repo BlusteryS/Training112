@@ -71,12 +71,6 @@ public final class TrainingRoutes {
                       })
                   .onFailure(ctx::fail);
             });
-    router.get("/api/training/example").handler(c -> {
-      TrainingRepository.teacher(actor(c));
-      try (var input = TrainingRoutes.class.getResourceAsStream("/contracts/demo-scenario.json")) {
-        c.response().end(new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
-      } catch (java.io.IOException error) { c.fail(error); }
-    });
     router.get("/api/training/lessons").handler(c -> json(c, repository.lessons(actor(c))));
     router.get("/api/training/learners").handler(c -> json(c, repository.learners(actor(c))));
     router.get("/api/training/groups").handler(c -> json(c, repository.groups(actor(c))));
@@ -106,8 +100,9 @@ public final class TrainingRoutes {
         .post("/api/training/scenarios")
         .handler(c -> json(c, repository.createScenario(actor(c), body(c))));
     router
-        .post("/api/training/scenarios/reference")
+        .post("/api/training/scenarios/draft")
         .handler(c -> {
+          TrainingRepository.teacher(actor(c));
           JsonObject body = body(c);
           Object seconds = body.getValue("seconds");
           if (!(seconds instanceof Number number) || number.intValue() < 1 || number.intValue() > 86_400
@@ -120,9 +115,9 @@ public final class TrainingRoutes {
             c.fail(error);
             return;
           }
-          JsonObject document = ScenarioReference.build(demo, text(c, "incident", 200), text(c, "location", 1000),
+          JsonObject document = ScenarioDraft.build(demo, text(c, "incident", 200), text(c, "location", 1000),
               text(c, "difficulty", 32), number.intValue(), text(c, "origin", 80), text(c, "caller_name", 200));
-          json(c, repository.createScenario(actor(c), document));
+          json(c, Future.succeededFuture(document));
         });
     router
         .post("/api/training/scenarios/:id")
