@@ -332,21 +332,20 @@
 .details textarea {
   width: 100%;
   max-width: 100%;
-  min-height: 92px;
-  flex: 1;
-  resize: vertical;
-  overflow-x: hidden;
-  padding: 8px 0 22px;
+  height: 34px;
+  min-height: 34px;
+  resize: none;
+  overflow: hidden;
+  padding: 7px 0;
   border: 0;
   border-bottom: 1px solid rgba(0, 0, 0, .2);
   outline: 0;
   color: #000;
+  line-height: 20px;
 }
 
 .description > span {
-  position: absolute;
-  right: 0;
-  bottom: 4px;
+  align-self: flex-end;
   color: rgba(0, 0, 0, .45);
 }
 

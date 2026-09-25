@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
-import { Field } from '../components/ui/Field';
+import { InputField } from '../components/ui/InputField';
+import { SelectField } from '../components/ui/SelectField';
+import { TextareaField } from '../components/ui/TextareaField';
 import { incidentSources } from '../incidentSources';
 import { difficultyNames, type ScenarioDocument } from './types';
 
@@ -35,31 +37,29 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
 <FormCard title={editing ? 'Сценарий' : 'Новый сценарий'} submitLabel="Сохранить" busy={busy} error={error} onClose={onCancel}
     onSubmit={() => { setError(''); void onSave(document).catch((cause: Error) => setError(cause.message)); }}>
     <div className={formGrid}>
-      <Field label="Название"><input required maxLength={200} value={document.title} onChange={(event) => setDocument({ ...document, title: event.target.value })} /></Field>
-      <Field label="Источник"><select required value={document.origin ?? ''} onChange={(event) => setDocument({ ...document, origin: event.target.value })}>
+      <InputField label="Название" required maxLength={200} value={document.title} onChange={(event) => setDocument({ ...document, title: event.target.value })} />
+      <SelectField label="Источник" required value={document.origin ?? ''} onChange={(event) => setDocument({ ...document, origin: event.target.value })}>
         <option value=""></option>
         {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
-      </select></Field>
-      <Field label="Сложность"><select value={document.difficulty ?? 'basic'} onChange={(event) => setDocument({ ...document, difficulty: event.target.value })}>
+      </SelectField>
+      <SelectField label="Сложность" value={document.difficulty ?? 'basic'} onChange={(event) => setDocument({ ...document, difficulty: event.target.value })}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-      </select></Field>
-      <Field label="Инструкция"><textarea rows={3} maxLength={2000} value={document.instructions ?? ''} onChange={(event) => setDocument({ ...document, instructions: event.target.value })} /></Field>
-      {Object.entries(document.facts).map(([key, value]) => <Field key={key} label={factNames[key] ?? key}>
-        <textarea rows={2} required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />
-      </Field>)}
-      {document.rubric.map((rule, index) => <Field key={rule.id} label={rule.kind === 'deadline' ? 'Сохранение карточки, секунд' : rule.description}>
-        {rule.expected !== undefined && <textarea required rows={2} maxLength={2000} value={rule.expected} onChange={(event) => setDocument({
+      </SelectField>
+      <TextareaField label="Инструкция" maxLength={2000} value={document.instructions ?? ''} onChange={(event) => setDocument({ ...document, instructions: event.target.value })} />
+      {Object.entries(document.facts).map(([key, value]) => <TextareaField key={key} label={factNames[key] ?? key}
+        required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />)}
+      {document.rubric.map((rule, index) => rule.expected !== undefined
+        ? <TextareaField key={rule.id} label={rule.description} required maxLength={2000} value={rule.expected} onChange={(event) => setDocument({
           ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? { ...item, expected: event.target.value } : item),
-        })} />}
-        {rule.kind === 'deadline' && <input required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(event) => {
+        })} />
+        : rule.kind === 'deadline' ? <InputField key={rule.id} label="Сохранение карточки, секунд" required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(event) => {
           const seconds = Number(event.target.value);
           setDocument({
             ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? {
               ...item, seconds, description: `Карточка сохранена в течение ${seconds} секунд.`,
             } : item),
           });
-        }} />}
-      </Field>)}
+        }} /> : null)}
     </div>
   </FormCard>
 </ModalForm>;

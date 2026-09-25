@@ -1,0 +1,18 @@
+.input {
+  composes: control from './FieldControl.module.css';
+  height: 34px;
+  padding: 0;
+  line-height: 34px;
+}
+
+.search {
+  composes: input;
+  padding: 7px 0;
+  border-bottom-width: .5px;
+  line-height: normal;
+}
+
+.file {
+  composes: control from './FieldControl.module.css';
+  padding: 7px 0;
+}

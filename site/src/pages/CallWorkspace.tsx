@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { ToggleGroup } from '../components/call/ToggleGroup';
+import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
 import { moscowOkrugs } from '../incidentSources';
 import hangupIcon from '../assets/call/hangup.svg';
 import languageIcon from '../assets/call/language.svg';
@@ -212,12 +213,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           <label>Этаж<input value={draft.floor} onChange={(event) => change('floor', event.target.value)} /></label>
         </div>
         <label className={styles.description}>Описательный адрес
-          <textarea maxLength={1999} value={draft.address_description}
+          <AutosizeTextarea maxLength={1999} value={draft.address_description}
             onChange={(event) => change('address_description', event.target.value)}
             placeholder="Опишите место, если точного адреса нет" />
         </label>
         <label className={styles.description}>Описание со слов заявителя
-          <textarea required maxLength={1999} value={draft.description}
+          <AutosizeTextarea required maxLength={1999} value={draft.description}
             onChange={(event) => change('description', event.target.value)} placeholder="Введите описание происшествия" />
           <span>{draft.description.length} / 1999</span>
         </label>
@@ -239,7 +240,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
             </select>
           </label>)}
         <label className={styles.details}>Подробности происшествия
-          <textarea required value={draft.incident_details}
+          <AutosizeTextarea required value={draft.incident_details}
             onChange={(event) => change('incident_details', event.target.value)}
             placeholder="Уточните обстоятельства, угрозы и необходимую помощь" />
         </label>

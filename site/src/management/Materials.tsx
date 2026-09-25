@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formChoice, formGrid } from './FormCard';
-import { Field } from '../components/ui/Field';
+import { InputField } from '../components/ui/InputField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
 type Material = { id: string; title: string; filename: string; media_type: string; byte_size: number };
@@ -105,8 +105,8 @@ function UploadDialog({ busy, onClose, onSubmit }: { busy: boolean; onClose: () 
     void onSubmit(title.trim(), file).catch((cause: Error) => setError(cause.message));
   }}>
     <div className={formGrid}>
-      <Field label="Название"><input value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} /></Field>
-      <Field label="Файл"><input type="file" accept="application/pdf,text/plain,application/json,audio/wav,audio/mpeg" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></Field>
+      <InputField label="Название" value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} />
+      <InputField label="Файл" type="file" accept="application/pdf,text/plain,application/json,audio/wav,audio/mpeg" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
     </div>
   </FormCard>
 </ModalForm>;

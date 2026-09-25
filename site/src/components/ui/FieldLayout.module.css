@@ -1,0 +1,31 @@
+.field,
+.search {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: #000;
+}
+
+.field {
+  gap: 3px;
+  color: rgba(0, 0, 0, .5);
+  font-size: 13px;
+}
+
+.search {
+  gap: 12px;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+.field span,
+.search span {
+  line-height: normal;
+}
+
+.search span {
+  font-size: 14px;
+  opacity: .6;
+}

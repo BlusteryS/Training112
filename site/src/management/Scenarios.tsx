@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
-import { Field } from '../components/ui/Field';
+import { InputField } from '../components/ui/InputField';
+import { SelectField } from '../components/ui/SelectField';
 import { incidentSources } from '../incidentSources';
 import { incidentTypes } from '../pages/callIncidentTypes';
 import { ScenarioEditor, exportScenario } from './ScenarioEditor';
@@ -119,18 +120,18 @@ function ReferenceDialog({ busy, error, onClose, onSubmit }: {
     incident, location, difficulty, seconds: Number(seconds), origin, caller_name: caller,
   })}>
     <div className={formGrid}>
-      <Field label="Тип происшествия"><select value={incident} onChange={(event) => setIncident(event.target.value)}>
+      <SelectField label="Тип происшествия" value={incident} onChange={(event) => setIncident(event.target.value)}>
         {incidentTypes.map((type) => <option key={type.name} value={type.name}>{type.name}</option>)}
-      </select></Field>
-      <Field label="Место"><input maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} /></Field>
-      <Field label="Сложность"><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
+      </SelectField>
+      <InputField label="Место" maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} />
+      <SelectField label="Сложность" value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-      </select></Field>
-      <Field label="Сохранение карточки, секунд"><input inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} /></Field>
-      <Field label="Источник"><select value={origin} onChange={(event) => setOrigin(event.target.value)}>
+      </SelectField>
+      <InputField label="Сохранение карточки, секунд" inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} />
+      <SelectField label="Источник" value={origin} onChange={(event) => setOrigin(event.target.value)}>
         {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
-      </select></Field>
-      <Field label="Заявитель"><input maxLength={200} value={caller} onChange={(event) => setCaller(event.target.value)} /></Field>
+      </SelectField>
+      <InputField label="Заявитель" maxLength={200} value={caller} onChange={(event) => setCaller(event.target.value)} />
     </div>
   </FormCard>
 </ModalForm>;
@@ -142,7 +143,7 @@ function ImportDialog({ busy, error: externalError, onClose, onSubmit }: {
   const [error, setError] = useState('');
   return <ModalForm label="Импорт сценария">
 <FormCard title="Импорт сценария" error={error || externalError} busy={busy} onClose={onClose}>
-    <Field label="JSON"><input type="file" accept="application/json,.json" onChange={(event) => {
+    <InputField label="JSON" type="file" accept="application/json,.json" onChange={(event) => {
       const file = event.target.files?.[0];
       event.target.value = '';
       if (!file) return;
@@ -150,7 +151,7 @@ function ImportDialog({ busy, error: externalError, onClose, onSubmit }: {
         if (file.size > 262144) throw new Error('Размер сценария превышает 256 КиБ.');
         onSubmit(JSON.parse(text));
       }).catch(() => setError('Файл не содержит корректный JSON.'));
-    }} /></Field>
+    }} />
   </FormCard>
 </ModalForm>;
 }

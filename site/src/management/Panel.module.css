@@ -54,8 +54,7 @@
 
 .root button,
 .root input,
-.root select,
-.root textarea {
+.root select {
   font: inherit;
 }
 
@@ -79,17 +78,8 @@
   cursor: default;
 }
 
-.root textarea {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  resize: vertical;
-  overflow-x: hidden;
-}
-
 .root input,
-.root select,
-.root textarea {
+.root select {
   padding: 7px 0;
   border: 0;
   border-bottom: 0.5px solid rgba(0, 0, 0, .2);

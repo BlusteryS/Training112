@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { WorkspaceHeader } from '../components/shell/WorkspaceHeader';
 import { ActionButton, ActionRow } from '../components/ui/ActionButton';
-import { Field } from '../components/ui/Field';
+import { TextareaField } from '../components/ui/TextareaField';
 import { Notice } from '../components/ui/Notice';
 import { attemptEvents, finishAttempt, openCardAttempt, postCardStatus, type AttemptEvent } from '../speech/trainingApi';
 import type { Assignment } from '../management/types';
@@ -134,7 +134,7 @@ export function CardDesk() {
           {event.payload.comment ? <span>{event.payload.comment}</span> : null}
         </div>)}
       </div>
-      <Field label="Комментарий к статусу"><textarea rows={3} maxLength={4000} value={comment} onChange={(event) => setComment(event.target.value)} /></Field>
+      <TextareaField label="Комментарий к статусу" maxLength={4000} value={comment} onChange={(event) => setComment(event.target.value)} />
       <ActionRow>
         {(transitions[status] ?? []).map((next) => <ActionButton key={next} disabled={busy} onClick={() => void move(next)}>{labels[next]}</ActionButton>)}
         <ActionButton disabled={busy || !attemptId} onClick={() => void finish()}>Завершить отработку</ActionButton>

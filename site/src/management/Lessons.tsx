@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
-import { Field } from '../components/ui/Field';
+import { SelectField } from '../components/ui/SelectField';
 import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
@@ -95,16 +95,16 @@ function LessonCreate({ groups, scenarios, busy, onClose, onSubmit }: {
   return <ModalForm label="Занятие">
 <FormCard title="Занятие" submitLabel="Назначить" busy={busy || !ready} onClose={onClose} onSubmit={() => onSubmit(groupId, scenarioId, mode)}>
     <div className={formGrid}>
-      <Field label="Группа"><select value={groupId} onChange={(event) => setGroupId(event.target.value)}>
+      <SelectField label="Группа" value={groupId} onChange={(event) => setGroupId(event.target.value)}>
         {groups.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-      </select></Field>
-      <Field label="Сценарий"><select value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
+      </SelectField>
+      <SelectField label="Сценарий" value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
         {scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-      </select></Field>
-      <Field label="Режим"><select value={mode} onChange={(event) => setMode(event.target.value)}>
+      </SelectField>
+      <SelectField label="Режим" value={mode} onChange={(event) => setMode(event.target.value)}>
         <option value="call">Звонок оператора 112</option>
         <option value="card">Отработка карточки</option>
-      </select></Field>
+      </SelectField>
     </div>
   </FormCard>
 </ModalForm>;

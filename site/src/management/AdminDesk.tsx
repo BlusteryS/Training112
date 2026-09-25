@@ -5,7 +5,8 @@ import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
 import { SectionTabs } from '../components/ui/SectionTabs';
-import { Field } from '../components/ui/Field';
+import { InputField } from '../components/ui/InputField';
+import { SelectField } from '../components/ui/SelectField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
 const sections = {
@@ -100,16 +101,16 @@ function UserCreate({ onClose, onDone }: { onClose: () => void; onDone: () => vo
       .catch((cause: Error) => { setError(cause.message); setBusy(false); });
   }}>
     <div className={formGrid}>
-      <Field label="Логин"><input value={login} required pattern="[a-z0-9_]{3,32}" autoComplete="off" onChange={(event) => setLogin(event.target.value)} /></Field>
-      <Field label={`Пароль, от ${minLength} символов`}><input value={password} type="password" autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} /></Field>
-      <Field label="Роль"><select value={role} onChange={(event) => {
+      <InputField label="Логин" value={login} required pattern="[a-z0-9_]{3,32}" autoComplete="off" onChange={(event) => setLogin(event.target.value)} />
+      <InputField label={`Пароль, от ${minLength} символов`} value={password} type="password" autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} />
+      <SelectField label="Роль" value={role} onChange={(event) => {
         const value = event.target.value;
         if (value === 'user' || value === 'teacher' || value === 'admin') setRole(value);
       }}>
         <option value="user">Обучающийся</option>
         <option value="teacher">Преподаватель</option>
         <option value="admin">Администратор</option>
-      </select></Field>
+      </SelectField>
     </div>
   </FormCard>
 </ModalForm>;
@@ -129,18 +130,18 @@ function UserEdit({ entry, onClose, onDone }: { entry: User & { blocked: boolean
     })().then(onDone).catch((cause: Error) => { setError(cause.message); setBusy(false); });
   }}>
     <div className={formGrid}>
-      <Field label="Роль"><select value={role} onChange={(event) => {
+      <SelectField label="Роль" value={role} onChange={(event) => {
         const value = event.target.value;
         if (value === 'user' || value === 'teacher' || value === 'admin') setRole(value);
       }}>
         <option value="user">Обучающийся</option>
         <option value="teacher">Преподаватель</option>
         <option value="admin">Администратор</option>
-      </select></Field>
-      <Field label="Доступ"><select value={blocked ? 'closed' : 'open'} onChange={(event) => setBlocked(event.target.value === 'closed')}>
+      </SelectField>
+      <SelectField label="Доступ" value={blocked ? 'closed' : 'open'} onChange={(event) => setBlocked(event.target.value === 'closed')}>
         <option value="open">Открыт</option>
         <option value="closed">Закрыт</option>
-      </select></Field>
+      </SelectField>
     </div>
   </FormCard>
 </ModalForm>;
@@ -253,8 +254,8 @@ function Policy() {
         .catch((cause: Error) => { setError(cause.message); setBusy(false); });
     }}>
       <div className={formGrid}>
-        <Field label="Пароль, символов"><input value={String(passwordMin)} inputMode="numeric" onChange={(event) => setPasswordMin(Number(event.target.value.replace(/\D/g, '').slice(0, 2) || 0))} /></Field>
-        <Field label="Сессия, часов"><input value={String(sessionHours)} inputMode="numeric" onChange={(event) => setSessionHours(Number(event.target.value.replace(/\D/g, '').slice(0, 3) || 0))} /></Field>
+        <InputField label="Пароль, символов" value={String(passwordMin)} inputMode="numeric" onChange={(event) => setPasswordMin(Number(event.target.value.replace(/\D/g, '').slice(0, 2) || 0))} />
+        <InputField label="Сессия, часов" value={String(sessionHours)} inputMode="numeric" onChange={(event) => setSessionHours(Number(event.target.value.replace(/\D/g, '').slice(0, 3) || 0))} />
       </div>
     </FormCard>
 </ModalForm>}

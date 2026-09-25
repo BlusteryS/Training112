@@ -1,0 +1,15 @@
+.textarea {
+  composes: control from './FieldControl.module.css';
+  display: block;
+  height: 34px;
+  min-height: 34px;
+  padding: 7px 0;
+  line-height: 20px;
+  resize: none;
+  overflow: hidden;
+}
+
+.search {
+  composes: textarea;
+  border-bottom-width: .5px;
+}

@@ -7,7 +7,7 @@ import { Management } from './management/Management';
 import type { Assignment } from './management/types';
 import { NotificationProvider, useNotification } from './components/Notifications';
 import { WorkspaceHeader } from './components/shell/WorkspaceHeader';
-import { TextField } from './components/ui/Field';
+import { TextField } from './components/ui/TextField';
 import { ActionButton, ActionRow } from './components/ui/ActionButton';
 import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';

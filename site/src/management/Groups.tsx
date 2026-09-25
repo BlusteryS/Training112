@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formCheck, formGrid } from './FormCard';
-import { Field } from '../components/ui/Field';
+import { InputField } from '../components/ui/InputField';
 import type { Group, Learner } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
@@ -93,10 +93,9 @@ function GroupCreate({ busy, onClose, onSubmit }: { busy: boolean; onClose: () =
   return <ModalForm label="Новая группа">
 <FormCard title="Новая группа" submitLabel="Создать" busy={busy} onClose={onClose} onSubmit={() => onSubmit(name, service)}>
     <div className={formGrid}>
-      <Field label="Название"><input value={name} maxLength={200} onChange={(event) => setName(event.target.value)} /></Field>
-      <Field label="Служба"><input value={service} maxLength={64} onChange={(event) => setService(event.target.value)} /></Field>
+      <InputField label="Название" value={name} maxLength={200} onChange={(event) => setName(event.target.value)} />
+      <InputField label="Служба" value={service} maxLength={64} onChange={(event) => setService(event.target.value)} />
     </div>
   </FormCard>
 </ModalForm>;
 }
-

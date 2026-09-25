@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
-import { Field } from '../components/ui/Field';
+import { InputField } from '../components/ui/InputField';
+import { TextareaField } from '../components/ui/TextareaField';
 import { attemptNames, type Assignment } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
@@ -66,9 +67,9 @@ export function Results() {
         {result.reviews.map((item) => <div key={item.created_at}>{item.result.score ?? ''} · {item.reason}{item.result.recommendation ? ` · ${item.result.recommendation}` : ''}</div>)}
       </div>}
       <div className={formGrid}>
-        <Field label="Комментарий"><textarea value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} /></Field>
-        <Field label="Оценка, 0–100"><input value={score} inputMode="numeric" onChange={(event) => setScore(event.target.value.replace(/\D/g, '').slice(0, 3))} /></Field>
-        <Field label="Рекомендация"><textarea value={recommendation} maxLength={1000} onChange={(event) => setRecommendation(event.target.value)} /></Field>
+        <TextareaField label="Комментарий" value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} />
+        <InputField label="Оценка, 0–100" value={score} inputMode="numeric" onChange={(event) => setScore(event.target.value.replace(/\D/g, '').slice(0, 3))} />
+        <TextareaField label="Рекомендация" value={recommendation} maxLength={1000} onChange={(event) => setRecommendation(event.target.value)} />
       </div>
     </FormCard>
 </ModalForm>}
