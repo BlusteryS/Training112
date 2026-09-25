@@ -10,6 +10,21 @@ import { difficultyNames, type ScenarioDocument } from './types';
 const factNames: Record<string, string> = {
   caller_name: 'Имя заявителя', address: 'Место происшествия', incident: 'Что произошло',
   victims: 'Сведения о пострадавших', phone: 'Телефон заявителя',
+  victim_count: 'Число пострадавших', age: 'Возраст пострадавшего',
+  consciousness: 'Сознание пострадавшего', breathing: 'Дыхание пострадавшего',
+  danger: 'Опасность для заявителя', fire: 'Место горения', weapon: 'Оружие',
+  description_details: 'Приметы и дополнительные подробности', vehicle: 'Транспорт',
+};
+
+const responseNames: Record<string, string> = {
+  incident: 'Что произошло', address: 'Где произошло', name: 'Как зовут заявителя',
+  victims: 'Есть ли пострадавшие', phone: 'Телефон заявителя',
+  victim_count: 'Сколько пострадавших', age: 'Возраст пострадавшего',
+  consciousness: 'В сознании ли пострадавший', breathing: 'Дышит ли пострадавший',
+  danger: 'Есть ли опасность', fire: 'Где видно огонь', weapon: 'Есть ли оружие',
+  description: 'Приметы', vehicle: 'Транспорт', not_sent: 'Помощь ещё не отправлена',
+  reassure: 'Оператор успокаивает', dismissal: 'Оператор отказывает в помощи',
+  hold: 'Оператор просит подождать', help_sent: 'Помощь направлена', goodbye: 'Завершение разговора',
 };
 
 export function exportScenario(document: ScenarioDocument) {
@@ -27,6 +42,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
 }) {
   const [document, setDocument] = useState(() => ({ ...structuredClone(initial), difficulty: initial.difficulty ?? 'basic' }));
   const [error, setError] = useState('');
+  const [showReplies, setShowReplies] = useState(false);
   function fact(key: string, value: string) {
     setDocument((previous) => ({ ...previous, facts: { ...previous.facts, [key]: value },
       rubric: previous.rubric.map((rule) => rule.field === key && rule.expected === previous.facts[key]
@@ -61,6 +77,17 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
           });
         }} /> : null)}
     </div>
+    <button type="button" onClick={() => setShowReplies((value) => !value)}>
+      {showReplies ? 'Скрыть реплики заявителя' : 'Изменить реплики заявителя'}
+    </button>
+    {showReplies && <div className={formGrid}>
+      <div>Каждая строка — отдельный вариант ответа. Слова в фигурных скобках берутся из сведений о происшествии.</div>
+      {document.responses.map((response, index) => <TextareaField key={response.id}
+        label={responseNames[response.intent] ?? response.intent}
+        value={response.variants.join('\n')}
+        onChange={(event) => setDocument({ ...document, responses: document.responses.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, variants: event.target.value.split('\n') } : item) })} />)}
+    </div>}
   </FormCard>
 </ModalForm>;
 }

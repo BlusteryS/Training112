@@ -6,7 +6,17 @@
     "caller_name": "Алексей",
     "address": "Москва, учебная улица, дом 10",
     "incident": "В подъезде пахнет дымом. Источник я не вижу.",
-    "victims": "Пострадавших я не видел."
+    "victims": "Пострадавших я не видел.",
+    "phone": "8 999 000-00-00",
+    "victim_count": "Точное число назвать не могу.",
+    "age": "Возраст не знаю.",
+    "consciousness": "Не могу проверить, в сознании ли человек.",
+    "breathing": "Не могу проверить дыхание.",
+    "danger": "Я нахожусь в стороне от места происшествия.",
+    "fire": "Самого огня я не вижу.",
+    "weapon": "Оружия я не видел.",
+    "description_details": "Других подробностей у меня нет.",
+    "vehicle": "Номер машины я не запомнил."
   },
   "initial_state": "waiting",
   "states": [
@@ -103,6 +113,90 @@
         "Разговор окончен, можете положить трубку.",
         "Спасибо за информацию, до свидания."
       ]
+    },
+    {
+      "id": "phone",
+      "examples": [
+        "Какой у вас номер телефона?"
+      ]
+    },
+    {
+      "id": "victim_count",
+      "examples": [
+        "Сколько пострадавших?"
+      ]
+    },
+    {
+      "id": "age",
+      "examples": [
+        "Сколько лет пострадавшему?"
+      ]
+    },
+    {
+      "id": "consciousness",
+      "examples": [
+        "Пострадавший в сознании?"
+      ]
+    },
+    {
+      "id": "breathing",
+      "examples": [
+        "Пострадавший дышит?"
+      ]
+    },
+    {
+      "id": "danger",
+      "examples": [
+        "Есть опасность для вас?"
+      ]
+    },
+    {
+      "id": "fire",
+      "examples": [
+        "Где видно огонь?"
+      ]
+    },
+    {
+      "id": "weapon",
+      "examples": [
+        "Вы видели оружие?"
+      ]
+    },
+    {
+      "id": "description",
+      "examples": [
+        "Опишите приметы."
+      ]
+    },
+    {
+      "id": "vehicle",
+      "examples": [
+        "Какой номер автомобиля?"
+      ]
+    },
+    {
+      "id": "not_sent",
+      "examples": [
+        "Помощь ещё не отправлена."
+      ]
+    },
+    {
+      "id": "reassure",
+      "examples": [
+        "Я помогу вам, не волнуйтесь."
+      ]
+    },
+    {
+      "id": "dismissal",
+      "examples": [
+        "Меня не интересует ваша проблема."
+      ]
+    },
+    {
+      "id": "hold",
+      "examples": [
+        "Подождите на линии."
+      ]
     }
   ],
   "responses": [
@@ -114,7 +208,9 @@
         "assisted"
       ],
       "variants": [
-        "{incident}"
+        "{incident}",
+        "Произошло вот что: {incident}",
+        "Я звоню из-за происшествия. {incident}"
       ]
     },
     {
@@ -125,7 +221,9 @@
         "assisted"
       ],
       "variants": [
-        "{address}."
+        "{address}.",
+        "Это по адресу {address}.",
+        "Помощь нужна по адресу {address}."
       ]
     },
     {
@@ -136,7 +234,9 @@
         "assisted"
       ],
       "variants": [
-        "Меня зовут {caller_name}."
+        "Меня зовут {caller_name}.",
+        "{caller_name}.",
+        "Моё имя {caller_name}."
       ]
     },
     {
@@ -147,7 +247,9 @@
         "assisted"
       ],
       "variants": [
-        "{victims}"
+        "{victims}",
+        "Насчёт пострадавших: {victims}",
+        "Я могу сказать о пострадавших только это: {victims}"
       ]
     },
     {
@@ -158,7 +260,9 @@
         "assisted"
       ],
       "variants": [
-        "Хорошо, я жду."
+        "Хорошо, я жду.",
+        "Понял вас, буду ждать.",
+        "Спасибо, ожидаю помощь."
       ],
       "next_state": "assisted"
     },
@@ -169,19 +273,195 @@
         "assisted"
       ],
       "variants": [
-        "Спасибо. До свидания."
+        "Спасибо. До свидания.",
+        "Хорошо, до свидания.",
+        "Спасибо вам. До свидания."
       ],
       "end_call": true
+    },
+    {
+      "id": "phone_reply",
+      "intent": "phone",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "Мой номер {phone}.",
+        "Запишите, пожалуйста: {phone}."
+      ]
+    },
+    {
+      "id": "victim_count_reply",
+      "intent": "victim_count",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{victim_count}",
+        "По числу пострадавших: {victim_count}"
+      ]
+    },
+    {
+      "id": "age_reply",
+      "intent": "age",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{age}",
+        "По возрасту: {age}"
+      ]
+    },
+    {
+      "id": "consciousness_reply",
+      "intent": "consciousness",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{consciousness}",
+        "Насчёт сознания: {consciousness}"
+      ]
+    },
+    {
+      "id": "breathing_reply",
+      "intent": "breathing",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{breathing}",
+        "Насчёт дыхания: {breathing}"
+      ]
+    },
+    {
+      "id": "danger_reply",
+      "intent": "danger",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{danger}",
+        "Я отошёл. {danger}"
+      ]
+    },
+    {
+      "id": "fire_reply",
+      "intent": "fire",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{fire}",
+        "Я могу сказать об огне только это: {fire}"
+      ]
+    },
+    {
+      "id": "weapon_reply",
+      "intent": "weapon",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{weapon}",
+        "Насчёт оружия: {weapon}"
+      ]
+    },
+    {
+      "id": "description_reply",
+      "intent": "description",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{description_details}",
+        "По приметам: {description_details}"
+      ]
+    },
+    {
+      "id": "vehicle_reply",
+      "intent": "vehicle",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "{vehicle}",
+        "О транспорте могу сказать только это: {vehicle}"
+      ]
+    },
+    {
+      "id": "not_sent_reply",
+      "intent": "not_sent",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "Пожалуйста, направьте помощь.",
+        "Понял. Пожалуйста, сообщите, когда отправите помощь."
+      ]
+    },
+    {
+      "id": "reassure_reply",
+      "intent": "reassure",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "Спасибо. Я слушаю вас.",
+        "Хорошо, спасибо."
+      ]
+    },
+    {
+      "id": "dismissal_reply",
+      "intent": "dismissal",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "Мне нужна помощь. Пожалуйста, не бросайте трубку.",
+        "Пожалуйста, соедините меня с другим оператором."
+      ]
+    },
+    {
+      "id": "hold_reply",
+      "intent": "hold",
+      "states": [
+        "waiting",
+        "assisted"
+      ],
+      "variants": [
+        "Хорошо, я на линии.",
+        "Понял, остаюсь на связи."
+      ]
     }
   ],
   "greeting": [
-    "Алло, здравствуйте."
+    "Алло, здравствуйте.",
+    "Здравствуйте, я вас слушаю.",
+    "Алло. Скажите, пожалуйста, меня слышно?"
   ],
   "clarification": [
-    "Я не совсем понял. Повторите, пожалуйста."
+    "Я не совсем понял. Повторите, пожалуйста.",
+    "Повторите, пожалуйста, ваш вопрос.",
+    "Не расслышал. Скажите ещё раз, пожалуйста."
   ],
   "check_in": [
-    "Вы меня слышите?"
+    "Вы меня слышите?",
+    "Алло, вы ещё на линии?",
+    "Скажите, пожалуйста, вы меня слышите?"
   ],
   "rubric": [
     {
@@ -191,6 +471,22 @@
       "expected": "Москва, учебная улица, дом 10",
       "weight": 2,
       "description": "Адрес указан по сведениям заявителя."
+    },
+    {
+      "id": "caller_name",
+      "kind": "field_equals",
+      "field": "caller_name",
+      "expected": "Алексей",
+      "weight": 1,
+      "description": "Имя заявителя указано по его ответу."
+    },
+    {
+      "id": "incident_code",
+      "kind": "field_equals",
+      "field": "incident_code",
+      "expected": "Пожар или задымление",
+      "weight": 2,
+      "description": "Тип происшествия выбран верно."
     },
     {
       "id": "accepted",
@@ -249,6 +545,76 @@
       "text": "Не отправляйте бригаду.",
       "state": "waiting",
       "response_id": "clarification"
+    },
+    {
+      "text": "Если связь оборвётся, по какому номеру вас набирать?",
+      "state": "waiting",
+      "response_id": "phone_reply"
+    },
+    {
+      "text": "Уточню: раненых всего сколько?",
+      "state": "waiting",
+      "response_id": "victim_count_reply"
+    },
+    {
+      "text": "Это пожилой человек или молодой?",
+      "state": "waiting",
+      "response_id": "age_reply"
+    },
+    {
+      "text": "На голос пострадавший как-то реагирует?",
+      "state": "waiting",
+      "response_id": "consciousness_reply"
+    },
+    {
+      "text": "Грудная клетка поднимается при вдохе?",
+      "state": "waiting",
+      "response_id": "breathing_reply"
+    },
+    {
+      "text": "Ситуация для вас прямо сейчас опасная?",
+      "state": "waiting",
+      "response_id": "danger_reply"
+    },
+    {
+      "text": "Горение где именно наблюдается?",
+      "state": "waiting",
+      "response_id": "fire_reply"
+    },
+    {
+      "text": "При нём было что-нибудь, похожее на оружие?",
+      "state": "waiting",
+      "response_id": "weapon_reply"
+    },
+    {
+      "text": "По каким приметам можно узнать нарушителя?",
+      "state": "waiting",
+      "response_id": "description_reply"
+    },
+    {
+      "text": "Регистрационные знаки транспорта различили?",
+      "state": "waiting",
+      "response_id": "vehicle_reply"
+    },
+    {
+      "text": "Пока никто из сотрудников к вам не выехал.",
+      "state": "waiting",
+      "response_id": "not_sent_reply"
+    },
+    {
+      "text": "Вижу, что вам тяжело, будем разбираться вместе.",
+      "state": "waiting",
+      "response_id": "reassure_reply"
+    },
+    {
+      "text": "Мне ваши жалобы надоели.",
+      "state": "waiting",
+      "response_id": "dismissal_reply"
+    },
+    {
+      "text": "Ожидайте, не разрывая соединение.",
+      "state": "waiting",
+      "response_id": "hold_reply"
     }
   ]
 }

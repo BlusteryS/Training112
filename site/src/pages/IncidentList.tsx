@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChoiceSelect } from '../components/ChoiceSelect';
+import { EvaluationDetails, type Evaluation } from '../components/EvaluationDetails';
+import { ModalForm } from '../components/ModalForm';
 import { WorkspaceSwitch } from '../components/WorkspaceSwitch';
+import { api } from '../api';
 import type { Assignment } from '../management/types';
 import boltIcon from '../assets/workspace/bolt.svg';
 import bookmarkIcon from '../assets/workspace/bookmark.svg';
@@ -49,7 +52,7 @@ function operatorNumber(login: string) {
   return login.match(/\d+/)?.[0] ?? login;
 }
 
-function IncidentRow({ assignment }: { assignment: Assignment }) {
+function IncidentRow({ assignment, onViewResult }: { assignment: Assignment; onViewResult: (assignment: Assignment) => void }) {
   const created = dateParts(assignment.created_at);
   const status = assignmentStatus(assignment);
   const description = assignment.instructions?.trim() || incidentType(assignment);
@@ -77,7 +80,10 @@ function IncidentRow({ assignment }: { assignment: Assignment }) {
       <div className={styles.cell}>{assignment.card?.victims ?? ''}</div>
       <div className={`${styles.cell} ${styles.statusCell}`}>{status}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{assignment.card?.address ?? ''}</div>
-      <div className={styles.iconCell}><img src={detailsIcon} alt="" /></div>
+      {assignment.mode === 'call' && assignment.attempt_id && ['completed', 'failed'].includes(assignment.attempt_status ?? '')
+        ? <button type="button" className={styles.cellButton} title="Посмотреть результат"
+          onClick={() => onViewResult(assignment)}><img src={detailsIcon} alt="" /></button>
+        : <div className={styles.iconCell}><img src={detailsIcon} alt="" /></div>}
       <div className={styles.checkedCell}>{status === 'Отработана' && <img src={checkedIcon} alt="Проверено" />}</div>
     </div>
     <div className={styles.description}>
@@ -167,6 +173,9 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
   const [group, setGroup] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [resultAssignment, setResultAssignment] = useState<Assignment | null>(null);
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [resultError, setResultError] = useState('');
   const groups = useMemo(() => [...new Set(assignments.map((item) => item.group_name))].sort(), [assignments]);
   const needle = filter.trim().toLocaleLowerCase('ru');
   const filtered = assignments.filter((assignment) => {
@@ -207,6 +216,15 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
 
   useEffect(() => setPage(1), [filter, group, pageSize, search, status]);
 
+  function viewResult(assignment: Assignment) {
+    setResultAssignment(assignment);
+    setEvaluation(null);
+    setResultError('');
+    void api<Evaluation>(`training/attempts/${assignment.attempt_id}/result`)
+      .then(setEvaluation)
+      .catch((cause: Error) => setResultError(cause.message));
+  }
+
   if (loading) return null;
 
   return <div className={styles.board} id="incident-list">
@@ -232,7 +250,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
           <span>Тип происшествия</span><span>Постр.</span><span>Статус</span><span>Адрес</span><span /><span>Проверено</span>
         </div>
         <div className={styles.rows}>
-          {rows.map((assignment) => <IncidentRow assignment={assignment} key={assignment.id} />)}
+          {rows.map((assignment) => <IncidentRow assignment={assignment} onViewResult={viewResult} key={assignment.id} />)}
         </div>
       </div>
     </div>
@@ -271,5 +289,15 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
       </div>
     </div>
     </>}
+    {resultAssignment && <ModalForm label="Результат занятия">
+      <div className={styles.resultPanel}>
+        <div className={styles.resultHeading}>
+          <span>Результат: {resultAssignment.title}</span>
+          <button type="button" onClick={() => setResultAssignment(null)}>Закрыть</button>
+        </div>
+        {evaluation && <EvaluationDetails evaluation={evaluation} />}
+        {resultError && <div role="alert">{resultError}</div>}
+      </div>
+    </ModalForm>}
   </div>;
 }

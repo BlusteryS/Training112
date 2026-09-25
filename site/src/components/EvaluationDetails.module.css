@@ -1,0 +1,22 @@
+.details {
+  display: grid;
+  gap: 10px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.score {
+  font-weight: 600;
+}
+
+.check,
+.review {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid currentColor;
+}
+
+.recommendation {
+  padding: 8px 0;
+}

@@ -25,6 +25,8 @@ public final class ScenarioReference {
           "Нарушение общественного порядка", "Пострадавших не видно.",
           "Запах газа или авария газового оборудования", "Людей в помещении я не вижу.",
           "Авария коммунальных сетей", "Пострадавших нет.");
+  private static final Set<String> ONE_VICTIM = Set.of(
+      "Дорожно-транспортное происшествие", "Требуется медицинская помощь");
 
   private ScenarioReference() {}
 
@@ -50,10 +52,16 @@ public final class ScenarioReference {
     facts.put("address", location);
     facts.put("incident", story);
     facts.put("victims", VICTIMS.get(incident));
+    facts.put("victim_count", ONE_VICTIM.contains(incident)
+        ? "Пострадал один человек." : "Точное число назвать не могу.");
+    facts.put("consciousness", ONE_VICTIM.contains(incident)
+        ? "Да, человек в сознании и отвечает." : "Не могу проверить, в сознании ли человек.");
     JsonArray rubric = document.getJsonArray("rubric");
     for (int i = 0; i < rubric.size(); i++) {
       JsonObject rule = rubric.getJsonObject(i);
       if ("address".equals(rule.getString("field"))) rule.put("expected", location);
+      if ("caller_name".equals(rule.getString("field"))) rule.put("expected", caller);
+      if ("incident_code".equals(rule.getString("field"))) rule.put("expected", incident);
       if ("description".equals(rule.getString("field"))) rule.put("expected", story);
       if ("deadline".equals(rule.getString("kind"))) {
         rule.put("seconds", seconds);

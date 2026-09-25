@@ -4,20 +4,16 @@ import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
 import { InputField } from '../components/ui/InputField';
 import { TextareaField } from '../components/ui/TextareaField';
+import { EvaluationDetails, type Evaluation } from '../components/EvaluationDetails';
 import { attemptNames, type Assignment } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
-type Check = { id: string; description: string; status: string; actual?: string; expected?: string };
-type Review = { reason: string; result: { score?: number; recommendation?: string }; created_at: string };
-type Result = { score: number | null; earned: number; possible: number; checks: Check[]; reviews: Review[] };
 const columns = 'minmax(140px, 1fr) minmax(180px, 1.4fr) 160px 120px';
-
-const statusNames: Record<string, string> = { passed: 'Выполнено', failed: 'Не выполнено', review: 'На проверке' };
 
 export function Results() {
   const [rows, setRows] = useState<Assignment[]>([]);
   const [opened, setOpened] = useState<Assignment | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
+  const [result, setResult] = useState<Evaluation | null>(null);
   const [reason, setReason] = useState('');
   const [score, setScore] = useState('');
   const [recommendation, setRecommendation] = useState('');
@@ -26,13 +22,14 @@ export function Results() {
 
   useEffect(() => {
     void api<Assignment[]>('training/assignments')
-      .then((items) => setRows(items.filter((item) => item.attempt_id && ['completed', 'failed'].includes(item.attempt_status ?? ''))))
+      .then((items) => setRows(items.filter((item) => item.mode === 'call' && item.attempt_id
+        && ['completed', 'failed'].includes(item.attempt_status ?? ''))))
       .catch((cause: Error) => setError(cause.message));
   }, []);
 
   async function open(row: Assignment) {
     setOpened(row); setResult(null); setError(''); setReason(''); setScore(''); setRecommendation('');
-    try { setResult(await api<Result>(`training/attempts/${row.attempt_id}/result`)); }
+    try { setResult(await api<Evaluation>(`training/attempts/${row.attempt_id}/result`)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Оценка ещё не готова.'); }
   }
 
@@ -53,19 +50,11 @@ export function Results() {
         if (!Number.isInteger(expert) || expert < 0 || expert > 100) { setError('Экспертная оценка — целое число от 0 до 100.'); return; }
         setBusy(true); setError('');
         void api(`training/attempts/${opened.attempt_id}/reviews`, { reason, result: { score: expert, recommendation } })
-          .then(() => api<Result>(`training/attempts/${opened.attempt_id}/result`))
+          .then(() => api<Evaluation>(`training/attempts/${opened.attempt_id}/result`))
           .then((next) => { setResult(next); setReason(''); setRecommendation(''); setBusy(false); })
           .catch((cause: Error) => { setError(cause.message); setBusy(false); });
       }}>
-      {result && <div>
-        <div>{result.score === null ? 'На проверке' : `${result.score} / 100`} · {result.earned} / {result.possible}</div>
-        {result.checks.map((check) => <div key={check.id}>
-          {check.description} — {statusNames[check.status] ?? check.status}
-          {check.status === 'review' && check.actual !== undefined && <div>Ответ: {check.actual || 'не заполнено'}</div>}
-          {check.status === 'review' && check.expected !== undefined && <div>Эталон: {check.expected}</div>}
-        </div>)}
-        {result.reviews.map((item) => <div key={item.created_at}>{item.result.score ?? ''} · {item.reason}{item.result.recommendation ? ` · ${item.result.recommendation}` : ''}</div>)}
-      </div>}
+      {result && <EvaluationDetails evaluation={result} />}
       <div className={formGrid}>
         <TextareaField label="Комментарий" value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} />
         <InputField label="Оценка, 0–100" value={score} inputMode="numeric" onChange={(event) => setScore(event.target.value.replace(/\D/g, '').slice(0, 3))} />

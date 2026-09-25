@@ -147,7 +147,7 @@ class JobWorker:
                     """
                     INSERT INTO attempt_evaluation
                     (attempt_id,scenario_id,result,evaluator_version)
-                    SELECT a.id,l.scenario_id,%s,'contextual-semantic-v1' FROM training_attempt a
+                    SELECT a.id,l.scenario_id,%s,'contextual-semantic-v2' FROM training_attempt a
                     JOIN lesson_assignment la ON la.id=a.assignment_id
                     JOIN lesson l ON l.id=la.lesson_id WHERE a.id=%s
                     ON CONFLICT (attempt_id) DO NOTHING
