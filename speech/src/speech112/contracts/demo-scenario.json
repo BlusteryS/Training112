@@ -1,7 +1,6 @@
 {
   "schema_version": 1,
   "title": "Учебный сценарий: запах дыма",
-  "voice_id": "demo",
   "origin": "Служба 112",
   "facts": {
     "caller_name": "Алексей",
@@ -196,11 +195,10 @@
     {
       "id": "accepted",
       "kind": "deadline",
-      "action": "accepted",
+      "action": "saved",
       "seconds": 30,
       "weight": 1,
-      "description": "Карточка принята в течение 30 секунд.",
-      "source": "Памятка АРМ-112, стр. 21"
+      "description": "Карточка сохранена в течение 30 секунд."
     },
     {
       "id": "description",

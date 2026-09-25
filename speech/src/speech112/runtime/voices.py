@@ -111,7 +111,7 @@ class CachedVoice:
                 used = sum(p.stat().st_size for p in self.root.glob("*/*.wav") if len(p.stem) == 64)
                 replacing = path.stat().st_size if path.exists() else 0
                 if used - replacing + os.path.getsize(temporary) > self.max_bytes:
-                    raise ValueError("Audio cache quota exceeded; archive unused scenario voices")
+                    raise ValueError("Audio cache quota exceeded; remove unused prepared audio")
                 os.replace(temporary, path)
         finally:
             if os.path.exists(temporary):

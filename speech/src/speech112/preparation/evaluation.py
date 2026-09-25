@@ -1,4 +1,4 @@
-"""Evidence-based scoring. Unsupported semantic checks remain pending, never silently pass."""
+"""Score the saved operator card against the teacher's scenario rubric."""
 
 from __future__ import annotations
 
@@ -22,8 +22,13 @@ def evaluate(
                 e
                 for e in events
                 if e["source"] == "operator"
-                and e["type"] == "card.status"
-                and e["payload"].get("status") == criterion["action"]
+                and (
+                    (criterion["action"] == "saved" and e["type"] == "card.update")
+                    or (
+                        e["type"] == "card.status"
+                        and e["payload"].get("status") == criterion["action"]
+                    )
+                )
             ]
             if matches:
                 first = min(matches, key=lambda e: e["sequence"])
@@ -36,7 +41,6 @@ def evaluate(
             status = "passed" if normalize(actual) == normalize(criterion["expected"]) else "failed"
         elif kind == "semantic":
             actual = card.get(criterion["field"], "")
-            # A model must return pass/fail/review using thresholds validated by teachers.
             status = semantic(actual, criterion["expected"]) if semantic else "review"
             if status not in ("passed", "failed", "review"):
                 raise ValueError("Invalid semantic evaluator verdict")

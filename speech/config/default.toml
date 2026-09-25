@@ -10,11 +10,8 @@ intent_provider = "contextual"
 intent_directory = ".models/e5-small-int8"
 audio_cache = ".cache/audio"
 
-[voices.demo]
+[voice]
 model = ".models/voices/demo.onnx"
-
-[voices.irina]
-model = ".models/voices/irina.onnx"
 
 [telephone]
 directory = "assets/telephone"

@@ -50,7 +50,7 @@ class Observer:
 class SpeechService:
     def __init__(self, socket, config, models, recordings):
         self.socket, self.config, self.recordings = socket, config, recordings
-        self.scheduler, self.vad, self.asr, self.intent, self.voices = models
+        self.scheduler, self.vad, self.asr, self.intent, self.voice = models
         self.peers: dict[bytes, Peer] = {}
 
     async def event(self, identity, value):
@@ -108,8 +108,6 @@ class SpeechService:
                     if any(p.attempt_id == attempt for p in self.peers.values()):
                         raise ValueError("Attempt already admitted on this node")
                     bundle = ScenarioBundle.parse(command["artifact"].encode(), command["sha256"])
-                    if bundle.document["voice_id"] not in self.voices:
-                        raise ValueError("Scenario voice is not installed on this node")
                     peer = Peer(attempt, bundle)
                     self.peers[identity] = peer
                     peer.task = asyncio.create_task(self.conversation(identity, peer))
@@ -153,13 +151,12 @@ class SpeechService:
             self.config.conversation,
             audio,
             dialogue,
-            self.voices[peer.bundle.document["voice_id"]],
+            self.voice,
             Observer(event),
         )
         tasks = set()
         try:
-            voice = self.voices[peer.bundle.document["voice_id"]]
-            await self.scheduler.run(voice.require, peer.bundle.utterances())
+            await self.scheduler.run(self.voice.require, peer.bundle.utterances())
             tasks = {
                 asyncio.create_task(session.run()),
                 asyncio.create_task(self.receive_audio(identity, peer, audio)),

@@ -409,7 +409,7 @@ public final class TrainingRepository {
           WHERE t.assignment_id=a.id ORDER BY t.created_at DESC LIMIT 1) latest ON true
         LEFT JOIN LATERAL (SELECT min((criterion->>'seconds')::integer) AS seconds
           FROM jsonb_array_elements(s.document->'rubric') criterion
-          WHERE criterion->>'kind'='deadline' AND criterion->>'action'='accepted') deadline ON true
+          WHERE criterion->>'kind'='deadline' AND criterion->>'action'='saved') deadline ON true
         WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY latest.created_at DESC NULLS LAST,u.login LIMIT 1000
         """,
         Tuple.of(actor.id()));
@@ -984,7 +984,7 @@ public final class TrainingRepository {
         LEFT JOIN LATERAL (
           SELECT min((criterion->>'seconds')::integer) AS seconds
           FROM jsonb_array_elements(s.document->'rubric') criterion
-          WHERE criterion->>'kind' = 'deadline' AND criterion->>'action' = 'accepted'
+          WHERE criterion->>'kind' = 'deadline' AND criterion->>'action' = 'saved'
         ) deadline ON true
         WHERE l.id = $1 AND g.teacher_id = $2
         ORDER BY u.login

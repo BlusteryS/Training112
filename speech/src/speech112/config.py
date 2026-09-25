@@ -50,7 +50,6 @@ class RuntimeConfig:
 
 @dataclass(frozen=True, slots=True)
 class VoiceConfig:
-    id: str
     model: str
 
 
@@ -61,7 +60,7 @@ class AppConfig:
     conversation: ConversationConfig
     telephone: TelephoneConfig
     runtime: RuntimeConfig
-    voices: tuple[VoiceConfig, ...]
+    voice: VoiceConfig
 
     @classmethod
     def load(cls, path: Path) -> AppConfig:
@@ -69,7 +68,7 @@ class AppConfig:
             values = tomllib.load(stream)
         if values.pop("version", None) != 2:
             raise ValueError("Only CPU runtime configuration version 2 is supported")
-        unknown = set(values) - {"audio", "vad", "conversation", "telephone", "runtime", "voices"}
+        unknown = set(values) - {"audio", "vad", "conversation", "telephone", "runtime", "voice"}
         if unknown:
             raise ValueError(f"Unknown configuration sections: {sorted(unknown)}")
         config = cls(
@@ -78,7 +77,7 @@ class AppConfig:
             ConversationConfig(**values.get("conversation", {})),
             TelephoneConfig(**values.get("telephone", {})),
             RuntimeConfig(**values.get("runtime", {})),
-            tuple(VoiceConfig(key, **value) for key, value in values.get("voices", {}).items()),
+            VoiceConfig(**values.get("voice", {})),
         )
         if config.audio != AudioConfig():
             raise ValueError("Audio protocol requires 16 kHz PCM16 input / 24 kHz output / 32 ms")
@@ -99,6 +98,6 @@ class AppConfig:
             raise ValueError("Invalid end-of-turn settings")
         if not 0 < c.idle_seconds <= c.idle_repeat_seconds or c.resume_seconds != 30:
             raise ValueError("Invalid idle or reconnect settings")
-        if not 0 <= config.telephone.level <= 1 or not config.voices:
+        if not 0 <= config.telephone.level <= 1:
             raise ValueError("A voice and valid ambience level are required")
         return config

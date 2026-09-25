@@ -26,7 +26,7 @@ def voice_fingerprint(voice: VoiceConfig) -> str:
 
 
 class PreparationEngines:
-    """Only the preparation worker loads synthesis weights; voice aliases share weights."""
+    """Only the preparation worker loads synthesis weights."""
 
     def __init__(self):
         self.models = {}
@@ -50,11 +50,9 @@ async def open_models(config: AppConfig):
             ToneRecognizer, Path(settings.asr_directory), settings.model_threads, scheduler
         )
         intent = await scheduler.run(make_understanding, settings, scheduler)
-        voices = {}
-        for voice in config.voices:
-            digest = await scheduler.run(voice_fingerprint, voice)
-            voices[voice.id] = CachedVoice(None, scheduler, Path(settings.audio_cache), digest)
-        yield scheduler, vad, asr, intent, voices
+        digest = await scheduler.run(voice_fingerprint, config.voice)
+        voice = CachedVoice(None, scheduler, Path(settings.audio_cache), digest)
+        yield scheduler, vad, asr, intent, voice
     finally:
         await scheduler.close()
 

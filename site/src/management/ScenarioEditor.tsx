@@ -47,7 +47,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       {Object.entries(document.facts).map(([key, value]) => <Field key={key} label={factNames[key] ?? key}>
         <textarea rows={2} required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />
       </Field>)}
-      {document.rubric.map((rule, index) => <Field key={rule.id} label={rule.kind === 'deadline' ? 'Принятие карточки, секунд' : rule.description}>
+      {document.rubric.map((rule, index) => <Field key={rule.id} label={rule.kind === 'deadline' ? 'Сохранение карточки, секунд' : rule.description}>
         {rule.expected !== undefined && <textarea required rows={2} maxLength={2000} value={rule.expected} onChange={(event) => setDocument({
           ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? { ...item, expected: event.target.value } : item),
         })} />}
@@ -55,7 +55,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
           const seconds = Number(event.target.value);
           setDocument({
             ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? {
-              ...item, seconds, description: `Карточка принята в течение ${seconds} секунд.`,
+              ...item, seconds, description: `Карточка сохранена в течение ${seconds} секунд.`,
             } : item),
           });
         }} />}

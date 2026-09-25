@@ -6,7 +6,7 @@ import { Field } from '../components/ui/Field';
 import { attemptNames, type Assignment } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
-type Check = { id: string; description: string; status: string };
+type Check = { id: string; description: string; status: string; actual?: string; expected?: string };
 type Review = { reason: string; result: { score?: number; recommendation?: string }; created_at: string };
 type Result = { score: number | null; earned: number; possible: number; checks: Check[]; reviews: Review[] };
 const columns = 'minmax(140px, 1fr) minmax(180px, 1.4fr) 160px 120px';
@@ -58,7 +58,11 @@ export function Results() {
       }}>
       {result && <div>
         <div>{result.score === null ? 'На проверке' : `${result.score} / 100`} · {result.earned} / {result.possible}</div>
-        {result.checks.map((check) => <div key={check.id}>{check.description} — {statusNames[check.status] ?? check.status}</div>)}
+        {result.checks.map((check) => <div key={check.id}>
+          {check.description} — {statusNames[check.status] ?? check.status}
+          {check.status === 'review' && check.actual !== undefined && <div>Ответ: {check.actual || 'не заполнено'}</div>}
+          {check.status === 'review' && check.expected !== undefined && <div>Эталон: {check.expected}</div>}
+        </div>)}
         {result.reviews.map((item) => <div key={item.created_at}>{item.result.score ?? ''} · {item.reason}{item.result.recommendation ? ` · ${item.result.recommendation}` : ''}</div>)}
       </div>}
       <div className={formGrid}>

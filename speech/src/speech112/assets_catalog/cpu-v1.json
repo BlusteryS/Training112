@@ -50,24 +50,6 @@
       "bytes": 1075
     },
     {
-      "path": "voices/irina.MODEL_CARD",
-      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/MODEL_CARD",
-      "sha256": "f4fc2deb0e8c6219f29202b8dd06c9638c5ffd50ad5c6b2c90cf1aa59d507593",
-      "bytes": 271
-    },
-    {
-      "path": "voices/irina.onnx.json",
-      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json",
-      "sha256": "c2ec28bb38e2b59e93b959b3e40348c1afebbd272f30fed5d41205d08e98a9d7",
-      "bytes": 4765
-    },
-    {
-      "path": "voices/irina.onnx",
-      "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
-      "sha256": "8ff38212d23da300bbe3705c645e6e5b9475f0bfde01558eb17813e22acaaaaa",
-      "bytes": 63201294
-    },
-    {
       "path": "e5-small-int8/model.onnx",
       "url": "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/onnx/model_qint8_avx512_vnni.onnx",
       "sha256": "dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88",

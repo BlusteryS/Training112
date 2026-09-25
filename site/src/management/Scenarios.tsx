@@ -126,7 +126,7 @@ function ReferenceDialog({ busy, error, onClose, onSubmit }: {
       <Field label="Сложность"><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></Field>
-      <Field label="Принятие карточки, секунд"><input inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} /></Field>
+      <Field label="Сохранение карточки, секунд"><input inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} /></Field>
       <Field label="Источник"><select value={origin} onChange={(event) => setOrigin(event.target.value)}>
         {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
       </select></Field>

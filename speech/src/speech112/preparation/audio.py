@@ -16,7 +16,7 @@ class AudioPreparer:
         self.config = config or AppConfig.load(
             Path(os.environ.get("SPEECH_CONFIG", "config/default.toml"))
         )
-        self.voices = {}
+        self.voice = None
         self.engines = PreparationEngines()
         self.recognizer = make_understanding(self.config.runtime, None)
 
@@ -32,19 +32,15 @@ class AudioPreparer:
                 await scheduler.close()
 
         asyncio.run(check())
-        voice_id = bundle.document["voice_id"]
-        if voice_id not in self.voices:
-            voice = next((v for v in self.config.voices if v.id == voice_id), None)
-            if voice is None:
-                raise ValueError("Scenario voice is not installed")
-            self.voices[voice_id] = CachedVoice(
-                self.engines.load(voice, 1),
+        if self.voice is None:
+            self.voice = CachedVoice(
+                self.engines.load(self.config.voice, 1),
                 None,
                 Path(self.config.runtime.audio_cache),
-                voice_fingerprint(voice),
+                voice_fingerprint(self.config.voice),
             )
         for text in bundle.utterances():
-            self.voices[voice_id]._render(text)
+            self.voice._render(text)
 
 
 def main():

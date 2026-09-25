@@ -6,7 +6,7 @@ import io.vertx.core.json.JsonObject;
 import java.util.Map;
 import java.util.Set;
 
-/** Builds a schema-valid reference scenario from the lesson parameters. Voice is prepared later by the compiler. */
+/** Builds a reference call scenario from the lesson parameters. */
 public final class ScenarioReference {
   private static final Set<String> DIFFICULTIES = Set.of("basic", "intermediate", "advanced");
   private static final Map<String, String> INCIDENTS =
@@ -57,7 +57,8 @@ public final class ScenarioReference {
       if ("description".equals(rule.getString("field"))) rule.put("expected", story);
       if ("deadline".equals(rule.getString("kind"))) {
         rule.put("seconds", seconds);
-        rule.put("description", "Карточка принята в течение " + seconds + " секунд.");
+        rule.put("action", "saved");
+        rule.put("description", "Карточка сохранена в течение " + seconds + " секунд.");
       }
     }
     return ScenarioDocuments.validate(document);

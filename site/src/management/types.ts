@@ -19,7 +19,7 @@ export type Assignment = {
   card: Record<string, string> | null;
 };
 export type ScenarioDocument = {
-  schema_version: number; title: string; voice_id: string; origin: string;
+  schema_version: number; title: string; origin: string;
   difficulty?: string; instructions?: string;
   facts: Record<string, string>;
   initial_state: string; states: string[];

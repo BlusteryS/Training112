@@ -129,7 +129,8 @@ class JobWorker:
                 if error is None:
                     db.execute(
                         (
-                            "UPDATE scenario SET status='prepared',artifact=%s,"
+                            "UPDATE scenario SET status=CASE WHEN approved_by IS NULL "
+                            "THEN 'prepared' ELSE 'approved' END,artifact=%s,"
                             "artifact_sha256=%s "
                             "WHERE id=%s AND status='preparing' "
                         ),
@@ -146,7 +147,7 @@ class JobWorker:
                     """
                     INSERT INTO attempt_evaluation
                     (attempt_id,scenario_id,result,evaluator_version)
-                    SELECT a.id,l.scenario_id,%s,'rules-v1' FROM training_attempt a
+                    SELECT a.id,l.scenario_id,%s,'contextual-semantic-v1' FROM training_attempt a
                     JOIN lesson_assignment la ON la.id=a.assignment_id
                     JOIN lesson l ON l.id=la.lesson_id WHERE a.id=%s
                     ON CONFLICT (attempt_id) DO NOTHING
@@ -198,9 +199,14 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
     from speech112.preparation.audio import AudioPreparer
+    from speech112.preparation.semantic import SemanticCardEvaluator
 
     prepare = AudioPreparer()
-    worker = JobWorker(os.environ.get("TRAINING_DATABASE_URL", ""), prepare=prepare)
+    worker = JobWorker(
+        os.environ.get("TRAINING_DATABASE_URL", ""),
+        semantic=SemanticCardEvaluator(prepare.recognizer),
+        prepare=prepare,
+    )
     while True:
         worked = worker.run_once()
         if args.once:
