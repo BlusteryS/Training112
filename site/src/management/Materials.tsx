@@ -44,7 +44,7 @@ export function Materials() {
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
   return <Desk title="Материалы" actions={<button type="button" onClick={() => { setError(''); setUploading(true); }}>Загрузить</button>}>
     {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Файл</span><span>Байт</span><span /></>}>
-      {rows.map((row) => <DeskRow key={row.id} columns={columns}>
+      {rows.map((row) => <DeskRow key={row.id}>
         <span>{row.title}</span>
         <span>{row.filename}</span>
         <span>{row.byte_size}</span>

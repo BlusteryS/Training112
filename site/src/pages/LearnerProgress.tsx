@@ -41,7 +41,7 @@ export function LearnerProgress() {
         </div>
         {rows.length === 0 ? <DeskEmpty>Истории занятий пока нет</DeskEmpty> :
           <DeskTable columns={columns} head={<><span>Карточка</span><span>Дата</span><span>Результат</span><span>Оценка</span><span>Ошибки и рекомендации</span></>}>
-            {rows.map((row) => <DeskRow key={row.attempt_id} columns={columns}>
+            {rows.map((row) => <DeskRow key={row.attempt_id}>
               <span>{row.title}</span>
               <span>{new Date(row.finished_at).toLocaleString('ru-RU')}</span>
               <span>{row.status === 'completed' ? 'Завершена' : 'Прервана'}</span>

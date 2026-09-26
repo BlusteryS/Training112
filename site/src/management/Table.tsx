@@ -14,8 +14,8 @@ export function DeskTable({ columns, head, children, minWidth }: {
   </div>;
 }
 
-export function DeskRow({ columns, children }: { columns: string; children: ReactNode }) {
-  return <div className={styles.row} style={{ '--cols': columns } as TableStyle}>{children}</div>;
+export function DeskRow({ children }: { children: ReactNode }) {
+  return <div className={styles.row}>{children}</div>;
 }
 
 export const deskActions = styles.actions;

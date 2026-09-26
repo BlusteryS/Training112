@@ -12,7 +12,7 @@ import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './D
 
 type SavedScenario = Scenario & { document: ScenarioDocument };
 type Editor = { document: ScenarioDocument; scenarioId?: string };
-const columns = 'minmax(180px, 1fr) 190px minmax(400px, max-content)';
+const columns = 'minmax(220px, 1.5fr) minmax(180px, .8fr) minmax(400px, 1.8fr)';
 
 export function Scenarios() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -47,8 +47,8 @@ export function Scenarios() {
     <button type="button" disabled={busy} onClick={() => setCreating(true)}>Создать</button>
     <button type="button" disabled={busy} onClick={() => setImporting(true)}>Импорт</button>
   </>}>
-    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable columns={columns} minWidth={850} head={<><span>Название</span><span>Статус</span><span /></>}>
-      {scenarios.map((item) => <DeskRow key={item.id} columns={columns}>
+    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable columns={columns} minWidth={900} head={<><span>Название</span><span>Статус</span><span /></>}>
+      {scenarios.map((item) => <DeskRow key={item.id}>
         <span>{item.title}</span>
         <span>{scenarioNames[item.status] ?? item.status}</span>
         <span className={deskActions}>

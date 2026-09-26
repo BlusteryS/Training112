@@ -34,7 +34,7 @@ export function Results() {
 
   return <Desk title="Результаты">
     {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Обучающийся</span><span>Занятие</span><span>Статус</span><span /></>}>
-      {rows.map((row) => <DeskRow key={row.attempt_id} columns={columns}>
+      {rows.map((row) => <DeskRow key={row.attempt_id}>
         <span>{row.learner_login}</span>
         <span>{row.title}</span>
         <span>{attemptNames[row.attempt_status ?? ''] ?? row.attempt_status}</span>

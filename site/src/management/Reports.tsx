@@ -42,7 +42,7 @@ export function Reports() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [progress, setProgress] = useState<Progress[]>([]);
   const [error, setError] = useState('');
-  const columns = '140px minmax(180px, 1fr) 120px 70px 70px 90px 70px minmax(140px, 1fr) minmax(140px, 1fr)';
+  const columns = 'minmax(140px, 1fr) minmax(180px, 1.4fr) minmax(120px, .8fr) 80px 80px 100px 80px minmax(160px, 1.3fr) minmax(160px, 1.3fr)';
 
   useEffect(() => {
     void Promise.all([api<Lesson[]>('training/lessons'), api<Insight[]>('training/insights'), api<Progress[]>('training/progress')])
@@ -81,8 +81,8 @@ export function Reports() {
   </>}>
     {lessons.length === 0 && <DeskEmpty>Занятий нет</DeskEmpty>}
     {lesson && rows.length === 0 && <DeskEmpty>По занятию записей нет</DeskEmpty>}
-    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable columns={columns} head={<><span>Обучающийся</span><span>Карточка</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
-      {rows.map((row) => <DeskRow key={row.attempt_id ?? row.learner_login} columns={columns}>
+    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable columns={columns} minWidth={1320} head={<><span>Обучающийся</span><span>Карточка</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
+      {rows.map((row) => <DeskRow key={row.attempt_id ?? row.learner_login}>
         <span>{row.learner_login}</span>
         <span>{row.card_title ?? ''}</span>
         <span>{row.attempt_status ?? ''}</span>
@@ -95,12 +95,12 @@ export function Reports() {
       </DeskRow>)}
     </DeskTable></DeskSection>}
     {progress.length > 0 && <DeskSection title="Динамика обучающихся"><DeskTable columns="minmax(140px, 1fr) 100px 120px 100px 140px" head={<><span>Обучающийся</span><span>Попытки</span><span>Завершено</span><span>Прервано</span><span>Средняя оценка</span></>}>
-      {progress.map((row) => <DeskRow key={row.login} columns="minmax(140px, 1fr) 100px 120px 100px 140px">
+      {progress.map((row) => <DeskRow key={row.login}>
         <span>{row.login}</span><span>{row.attempts}</span><span>{row.completed}</span><span>{row.failed}</span><span>{row.average_score ?? ''}</span>
       </DeskRow>)}
     </DeskTable></DeskSection>}
     {insights.length > 0 && <DeskSection title="Частые ошибки"><DeskTable columns="minmax(160px, 1fr) 120px 120px 90px minmax(240px, 1.4fr)" head={<><span>Критерий</span><span>Ошибки</span><span>На проверке</span><span>Всего</span><span>Что отработать</span></>}>
-      {insights.map((item) => <DeskRow key={`${item.id}-${item.description}`} columns="minmax(160px, 1fr) 120px 120px 90px minmax(240px, 1.4fr)">
+      {insights.map((item) => <DeskRow key={`${item.id}-${item.description}`}>
         <span>{item.description}</span><span>{item.failed}</span><span>{item.review}</span><span>{item.total}</span><span>{recommendation(item)}</span>
       </DeskRow>)}
     </DeskTable></DeskSection>}

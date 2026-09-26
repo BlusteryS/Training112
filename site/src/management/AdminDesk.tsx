@@ -75,7 +75,7 @@ function Accounts() {
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
   return <Desk title="Пользователи" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
     {users.length === 0 ? <DeskEmpty>Пользователей нет</DeskEmpty> : <DeskTable columns={userColumns} head={<><span>Логин</span><span>Роль</span><span>Доступ</span><span /></>}>
-      {users.map((entry) => <DeskRow key={entry.id} columns={userColumns}>
+      {users.map((entry) => <DeskRow key={entry.id}>
         <span>{entry.login}</span>
         <span>{roleNames[entry.role] ?? entry.role}</span>
         <span>{entry.blocked ? 'Закрыт' : 'Открыт'}</span>
@@ -196,7 +196,7 @@ function Journal() {
   const columns = '220px minmax(0, 1fr) 180px';
   return <Desk title="Журнал">
     {rows.length === 0 ? <DeskEmpty>Записей нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Время</span><span>Событие</span><span>Кто</span></>}>
-      {rows.map((row) => <DeskRow key={row.id} columns={columns}>
+      {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{actionNames[row.action]}</span>
         <span>{row.login ?? ''}</span>
@@ -268,7 +268,7 @@ function Backups() {
   const [busy, setBusy] = useState(false);
   const refresh = () => api<typeof rows>('admin/backups').then(setRows);
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
-  const columns = '220px 180px 140px';
+  const columns = 'minmax(220px, 1fr) minmax(180px, 1fr) minmax(140px, .7fr)';
   return <Desk title="Резервные копии" actions={<button type="button" disabled={busy} onClick={() => {
     setBusy(true); setError('');
     void api<Record<string, unknown>>('admin/backups', {})
@@ -285,7 +285,7 @@ function Backups() {
       .finally(() => setBusy(false));
   }}>Снять копию</button>}>
     {rows.length === 0 ? <DeskEmpty>Копий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Время</span><span>Кто</span><span>Размер</span></>}>
-      {rows.map((row) => <DeskRow key={row.id} columns={columns}>
+      {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{row.source === 'automatic' ? 'Автоматически' : row.login}</span>
         <span>{row.byte_size}</span>

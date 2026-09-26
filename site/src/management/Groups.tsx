@@ -59,7 +59,7 @@ export function Groups() {
   }
   return <Desk title="Группы" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
     {groups.length === 0 ? <DeskEmpty>Групп нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Служба</span><span>Участники</span><span /></>}>
-      {groups.map((item) => <DeskRow key={item.id} columns={columns}>
+      {groups.map((item) => <DeskRow key={item.id}>
         <span>{item.name}</span>
         <span>{item.service_code}</span>
         <span>{item.member_count}</span>
