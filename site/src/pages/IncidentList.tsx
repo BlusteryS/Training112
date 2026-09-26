@@ -64,7 +64,11 @@ function operatorNumber(login: string) {
   return login.match(/\d+/)?.[0] ?? login;
 }
 
-function IncidentRow({ assignment, onViewResult }: { assignment: Assignment; onViewResult: (assignment: Assignment) => void }) {
+function IncidentRow({ assignment, onViewResult, onViewLinks }: {
+  assignment: Assignment;
+  onViewResult: (assignment: Assignment) => void;
+  onViewLinks: (assignment: Assignment) => void;
+}) {
   const created = dateParts(assignment.created_at);
   const status = assignmentStatus(assignment);
   const description = assignment.instructions?.trim() || incidentType(assignment);
@@ -79,7 +83,10 @@ function IncidentRow({ assignment, onViewResult }: { assignment: Assignment; onV
           <img src={expandIcon} alt="" />
         </Link>
         : <div className={styles.iconCell}><img src={expandIcon} alt="" /></div>}
-      <div className={styles.iconCell}><img src={linkIcon} alt="" /></div>
+      {assignment.mode === 'call' && assignment.attempt_id && assignment.attempt_status === 'completed'
+        ? <button type="button" className={styles.cellButton} title="Связи карточки"
+          onClick={() => onViewLinks(assignment)}><img src={linkIcon} alt="" /></button>
+        : <div className={styles.iconCell} />}
       <div className={styles.iconCell}><img src={bookmarkIcon} alt="" /></div>
       <div className={styles.iconCell}><img src={boltIcon} alt="" /></div>
       <div className={styles.iconCell}><img src={timerIcon} alt="" /></div>
@@ -127,6 +134,16 @@ export type IncidentSearch = {
   status: string;
   cardNumber: string;
   visOperator: string;
+};
+
+type LinkedCard = {
+  id: string;
+  main?: boolean;
+  matched?: boolean;
+  incident: string;
+  address: string;
+  phone: string;
+  created_at: string;
 };
 
 function same(left: string, right: string) {
@@ -188,6 +205,13 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
   const [resultAssignment, setResultAssignment] = useState<Assignment | null>(null);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [resultError, setResultError] = useState('');
+  const [linkAssignment, setLinkAssignment] = useState<Assignment | null>(null);
+  const [links, setLinks] = useState<LinkedCard[]>([]);
+  const [candidates, setCandidates] = useState<LinkedCard[]>([]);
+  const [linkQuery, setLinkQuery] = useState('');
+  const [linkError, setLinkError] = useState('');
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkReload, setLinkReload] = useState(0);
   const groups = useMemo(() => [...new Set(assignments.map((item) => item.group_name))].sort(), [assignments]);
   const needle = filter.trim().toLocaleLowerCase('ru');
   const filtered = assignments.filter((assignment) => {
@@ -237,6 +261,33 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
       .catch((cause: Error) => setResultError(cause.message));
   }
 
+  useEffect(() => {
+    const id = linkAssignment?.attempt_id;
+    if (!id) return;
+    let active = true;
+    void Promise.all([
+      api<LinkedCard[]>(`training/attempts/${id}/links`),
+      api<LinkedCard[]>(`training/attempts/${id}/link-candidates?q=${encodeURIComponent(linkQuery)}`),
+    ]).then(([chain, options]) => {
+      if (active) { setLinks(chain); setCandidates(options); }
+    }).catch((cause: Error) => { if (active) setLinkError(cause.message); });
+    return () => { active = false; };
+  }, [linkAssignment, linkQuery, linkReload]);
+
+  async function linkAction(path: string, body: Record<string, string> = {}) {
+    if (!linkAssignment?.attempt_id || linkBusy) return;
+    setLinkBusy(true);
+    setLinkError('');
+    try {
+      await api(`training/attempts/${linkAssignment.attempt_id}/links${path}`, body);
+      setLinkReload((value) => value + 1);
+    } catch (cause) {
+      setLinkError(cause instanceof Error ? cause.message : 'Не удалось изменить связь карточек.');
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
   if (loading) return null;
 
   return <div className={styles.board} id="incident-list">
@@ -262,7 +313,10 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
           <span>Тип происшествия</span><span>Постр.</span><span>Статус</span><span>Адрес</span><span /><span>Проверено</span>
         </div>
         <div className={styles.rows}>
-          {rows.map((assignment) => <IncidentRow assignment={assignment} onViewResult={viewResult} key={assignment.id} />)}
+          {rows.map((assignment) => <IncidentRow assignment={assignment} onViewResult={viewResult}
+            onViewLinks={(item) => {
+              setLinkAssignment(item); setLinkQuery(''); setLinks([]); setCandidates([]); setLinkError('');
+            }} key={assignment.id} />)}
         </div>
       </div>
     </div>
@@ -309,6 +363,46 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
         </div>
         {evaluation && <EvaluationDetails evaluation={evaluation} />}
         {resultError && <div role="alert">{resultError}</div>}
+      </div>
+    </ModalForm>}
+    {linkAssignment?.attempt_id && <ModalForm label="Связи карточки" onClose={() => setLinkAssignment(null)}>
+      <div className={styles.resultPanel}>
+        <div className={styles.resultHeading}>
+          <span>Связи карточки {shortNumber(linkAssignment.attempt_id)}</span>
+          <button type="button" onClick={() => setLinkAssignment(null)}>Закрыть</button>
+        </div>
+        <div className={styles.linkList}>
+          {links.length <= 1 ? <div>Связанных карточек нет</div>
+            : links.map((card) => <div className={styles.linkItem} key={card.id}>
+              <span>{shortNumber(card.id)} · {card.incident} · {card.address}</span>
+              <span>{card.main ? 'Главная' : 'Подчинённая'}</span>
+            </div>)}
+        </div>
+        {links.find((card) => card.id === linkAssignment.attempt_id && !card.main) &&
+          <div className={styles.linkActions}>
+            <button disabled={linkBusy} type="button" onClick={() => void linkAction('/promote')}>
+              Сделать главной
+            </button>
+            <button disabled={linkBusy} type="button" onClick={() => void linkAction('/detach')}>
+              Отвязать
+            </button>
+          </div>}
+        {links.some((card) => card.id === linkAssignment.attempt_id && card.main) && <>
+          <label className={styles.linkSearch}>Найти карточку по номеру, адресу или типу
+            <input value={linkQuery} maxLength={100} onChange={(event) => setLinkQuery(event.target.value)} />
+          </label>
+          <div className={styles.linkList}>
+            {candidates.filter((card) => !links.some((linked) => linked.id === card.id))
+              .map((card) => <div className={styles.linkItem} key={card.id}>
+                <span>{shortNumber(card.id)} · {card.incident} · {card.address}
+                  {card.matched && <span className={styles.match}> · Совпадение</span>}</span>
+                <button disabled={linkBusy} type="button" onClick={() => void linkAction('', { parent_id: card.id })}>
+                  Привязать
+                </button>
+              </div>)}
+          </div>
+        </>}
+        {linkError && <div role="alert" className={styles.linkError}>{linkError}</div>}
       </div>
     </ModalForm>}
   </div>;

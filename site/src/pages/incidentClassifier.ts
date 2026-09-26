@@ -27,8 +27,9 @@ export function incidentOptions(cards: ClassifierCard[], type: string, sign2?: s
   return [...new Set(rows.map((card) => sign2 === undefined ? card.sign2 : card.sign3).filter(Boolean))];
 }
 
-export function matchingCard(cards: ClassifierCard[], type: string, sign2: string, sign3: string) {
-  return cards.find((card) => card.type === type && card.sign2 === sign2 && card.sign3 === sign3);
+export function matchingCard(cards: ClassifierCard[], type: string, sign2: string, sign3: string, code = '') {
+  const matches = cards.filter((card) => card.type === type && card.sign2 === sign2 && card.sign3 === sign3);
+  return matches.length === 1 ? matches[0] : matches.find((card) => card.code === code);
 }
 
 export function servicesForCard(card: ClassifierCard | undefined, address: string, district: string,

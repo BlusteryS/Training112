@@ -10,6 +10,9 @@ public final class CardSnapshot {
   public static JsonObject from(JsonObject document, String service) {
     JsonObject source = document == null ? new JsonObject() : document;
     JsonObject facts = source.getJsonObject("facts", new JsonObject());
+    String classifierCode = text(source, "classifier_code");
+    JsonObject survey = IncidentClassifier.card(classifierCode);
+    String type = survey == null ? text(source, "title") : survey.getString("type");
     return new JsonObject()
         .put("caller_name", text(facts, "caller_name"))
         .put("phone", text(facts, "phone"))
@@ -21,7 +24,10 @@ public final class CardSnapshot {
         .put("address_description", text(facts, "address_description"))
         .put("scene_phone", text(facts, "scene_phone"))
         .put("object", text(facts, "object"))
-        .put("incident_code", text(source, "title"))
+        .put("incident_code", type)
+        .put("classifier_code", classifierCode)
+        .put("incident_sign_2", survey == null ? "" : survey.getString("sign2"))
+        .put("incident_sign_3", survey == null ? "" : survey.getString("sign3"))
         .put("origin", text(source, "origin"))
         .put("services", service == null ? "" : service)
         .put("dds_service", service == null ? "" : service);
@@ -30,6 +36,11 @@ public final class CardSnapshot {
   public static JsonObject fromTemplate(JsonObject template, String service) {
     JsonObject facts = template.getJsonObject("facts");
     JsonObject card = facts.copy();
+    if ("103".equals(service == null ? "" : service.trim().replaceFirst("^Служба\\s+", ""))) {
+      String description = card.getString("description", "");
+      int length = description.codePointCount(0, description.length());
+      if (length > 100) card.put("description", description.substring(0, description.offsetByCodePoints(0, 100)));
+    }
     JsonArray services = template.getJsonArray("services", new JsonArray());
     java.util.StringJoiner names = new java.util.StringJoiner(", ");
     for (Object item : services) names.add(String.valueOf(item));

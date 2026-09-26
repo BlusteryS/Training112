@@ -17,6 +17,8 @@ const factNames: Record<string, string> = {
   danger: 'Опасность для заявителя', fire: 'Место горения', weapon: 'Оружие',
   description_details: 'Приметы и дополнительные подробности', vehicle: 'Транспорт',
   incident_code: 'Тип происшествия', description: 'Описание происшествия',
+  classifier_code: 'Код сценария реагирования', incident_sign_2: 'Признак 2',
+  incident_sign_3: 'Признак 3',
   district: 'Район происшествия', okrug: 'Округ происшествия',
 };
 

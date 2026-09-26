@@ -52,6 +52,21 @@ public final class ScenarioDraft {
         rule.put("description", "Карточка сохранена в течение " + seconds + " секунд.");
       }
     }
+    rubric.add(fieldRule("classifier_code", "Код сценария реагирования выбран верно.", classifierCode));
+    if (!incident.getString("sign2").isEmpty()) {
+      rubric.add(fieldRule("incident_sign_2", "Второй признак происшествия выбран верно.",
+          incident.getString("sign2")));
+    }
+    if (!incident.getString("sign3").isEmpty()) {
+      rubric.add(fieldRule("incident_sign_3", "Третий признак происшествия выбран верно.",
+          incident.getString("sign3")));
+    }
     return document;
+  }
+
+  private static JsonObject fieldRule(String field, String description, String expected) {
+    return new JsonObject().put("id", field).put("kind", "field_equals")
+        .put("field", field).put("expected", expected).put("weight", 1)
+        .put("description", description);
   }
 }

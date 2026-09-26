@@ -222,6 +222,77 @@
   cursor: pointer;
 }
 
+.linkList {
+  display: grid;
+  max-height: 260px;
+  overflow: auto;
+  gap: 8px;
+}
+
+.linkItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #838f97;
+  font-size: 14px;
+}
+
+.linkItem > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.linkItem button,
+.linkActions button {
+  flex: none;
+  padding: 7px 10px;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+  background: #2f353a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.linkItem button:disabled,
+.linkActions button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.linkActions {
+  display: flex;
+  margin: 16px 0;
+  gap: 8px;
+}
+
+.linkSearch {
+  display: grid;
+  margin: 20px 0 12px;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.linkSearch input {
+  height: 36px;
+  padding: 6px 8px;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+  background: #2f353a;
+  color: #fff;
+  font: inherit;
+}
+
+.match {
+  color: #f5b49f;
+}
+
+.linkError {
+  margin-top: 12px;
+  color: #ffd0c0;
+}
+
 .footer {
   display: flex;
   align-items: center;

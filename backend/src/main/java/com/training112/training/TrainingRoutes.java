@@ -202,6 +202,18 @@ public final class TrainingRoutes {
     router
         .get("/api/training/attempts/:id")
         .handler(c -> json(c, repository.attempt(actor(c), id(c))));
+    router.get("/api/training/attempts/:id/links")
+        .handler(c -> json(c, repository.cardLinks().chain(actor(c), id(c))));
+    router.get("/api/training/attempts/:id/link-candidates")
+        .handler(c -> json(c, repository.cardLinks().candidates(actor(c), id(c),
+            c.request().getParam("q", ""))));
+    router.post("/api/training/attempts/:id/links")
+        .handler(c -> empty(c, repository.cardLinks().attach(actor(c), id(c),
+            uuid(body(c).getString("parent_id")))));
+    router.post("/api/training/attempts/:id/links/detach")
+        .handler(c -> empty(c, repository.cardLinks().detach(actor(c), id(c))));
+    router.post("/api/training/attempts/:id/links/promote")
+        .handler(c -> empty(c, repository.cardLinks().promote(actor(c), id(c))));
     router.get("/api/training/attempts/:id/services")
         .handler(c -> json(c, repository.ddsServices(actor(c), id(c))));
     router.get("/api/training/attempts/:id/phone")

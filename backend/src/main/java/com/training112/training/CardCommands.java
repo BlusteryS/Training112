@@ -89,6 +89,24 @@ public final class CardCommands {
     return value.isEmpty() || options.contains(value);
   }
 
+  public static void validateForSave(JsonObject card) {
+    String comment = card.getString("comment", "");
+    if (Set.of("Нет контакта с заявителем", "Срыв звонка").contains(comment)) return;
+    for (String field : new String[] {"caller_name", "caller_status", "address", "okrug",
+        "description", "incident_details", "services", "classifier_code"}) {
+      if (card.getString(field, "").isBlank()) {
+        throw invalid("Заполните обязательные поля карточки перед сохранением.");
+      }
+    }
+    JsonObject survey = IncidentClassifier.card(card.getString("classifier_code"));
+    if (survey == null || !survey.getString("type").equals(card.getString("incident_code", ""))
+        || !survey.getString("sign2").equals(card.getString("incident_sign_2", ""))
+        || !survey.getString("sign3").equals(card.getString("incident_sign_3", ""))) {
+      throw invalid("Проверьте тип и признаки происшествия.");
+    }
+    validateIncidentTypes(card);
+  }
+
   private static void validateIncidentTypes(JsonObject card) {
     String value = card.getString("incident_types", "");
     if (value.isBlank()) return;
@@ -105,14 +123,22 @@ public final class CardCommands {
       String type = selected.getString("type", "");
       String second = selected.getString("sign2", "");
       String third = selected.getString("sign3", "");
-      JsonObject row = IncidentClassifier.card(type, second, third);
-      if (row == null) throw invalid("Неизвестный тип или признак происшествия.");
+      String code = selected.getString("code", "");
+      JsonObject row = code.isEmpty()
+          ? IncidentClassifier.card(type, second, third) : IncidentClassifier.card(code);
+      if (row == null || !row.getString("type").equals(type)
+          || !row.getString("sign2").equals(second)
+          || !row.getString("sign3").equals(third)) {
+        throw invalid("Неизвестный тип или признак происшествия.");
+      }
       if (!seen.add(row.getString("code"))) throw invalid("Тип происшествия выбран повторно.");
     }
     JsonObject first = incidents.getJsonObject(0);
     if (!first.getString("type").equals(card.getString("incident_code"))
         || !first.getString("sign2").equals(card.getString("incident_sign_2"))
-        || !first.getString("sign3").equals(card.getString("incident_sign_3"))) {
+        || !first.getString("sign3").equals(card.getString("incident_sign_3"))
+        || !first.getString("code", card.getString("classifier_code"))
+            .equals(card.getString("classifier_code"))) {
       throw invalid("Основной тип происшествия не совпадает с карточкой.");
     }
   }

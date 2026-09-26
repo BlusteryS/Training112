@@ -18,9 +18,15 @@ import java.util.UUID;
 /** Business transactions own scenarios, attempts and events; Speech never owns a DB connection. */
 public final class TrainingRepository {
   private final Pool pool;
+  private final CardLinks cardLinks;
 
   public TrainingRepository(Pool pool) {
     this.pool = pool;
+    this.cardLinks = new CardLinks(pool);
+  }
+
+  public CardLinks cardLinks() {
+    return cardLinks;
   }
 
   public static void teacher(Account actor) {
@@ -983,9 +989,9 @@ public final class TrainingRepository {
     return one(
             db,
             """
-            SELECT l.mode,l.scenario_id,l.card_template AS lesson_pool,
+            SELECT l.mode,l.scenario_id,l.card_template AS lesson_pool,a.card,
               COALESCE(a.card_template,l.card_template) AS selected_template,
-              a.assignment_id,g.service_code,l.status AS lesson_status
+              a.assignment_id,la.learner_id,g.service_code,l.status AS lesson_status
             FROM training_attempt a
             JOIN lesson_assignment la ON la.id=a.assignment_id
             JOIN lesson l ON l.id=la.lesson_id
@@ -995,6 +1001,8 @@ public final class TrainingRepository {
         .compose(
             mode -> {
               boolean card = "card".equals(mode.getString("mode"));
+              if (!card && !failed && actor != null && actor.equals(mode.getUUID("learner_id")))
+                CardCommands.validateForSave(mode.getJsonObject("card"));
                   return db.preparedQuery("UPDATE training_attempt SET status=$2,finished_at=now() WHERE id=$1")
                   .execute(Tuple.of(id, failed ? "failed" : "completed"))
                   .compose(

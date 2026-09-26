@@ -3,7 +3,8 @@ import messageIcon from '../../assets/call/message-muted.svg';
 import globeIcon from '../../assets/call/globe.svg';
 import styles from './PhoneCard.module.css';
 
-export function PhoneCard({ label, value, placeholder, onChange, onCopy, foreign, onForeignChange }: {
+export function PhoneCard({ id, label, value, placeholder, onChange, onCopy, foreign, onForeignChange }: {
+  id?: string;
   label: string;
   value: string;
   placeholder?: string;
@@ -26,9 +27,9 @@ export function PhoneCard({ label, value, placeholder, onChange, onCopy, foreign
         </button>}
       </div>
       <div className={styles.numberRow}>
-        {onChange ? <input value={value} onChange={(event) => onChange(event.target.value)}
+        {onChange ? <input id={id} value={value} onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder ?? '+X (XXX) XXX XX-XX'} />
-          : <div className={styles.number}>{value || 'Номер не определён'}</div>}
+          : <div id={id} tabIndex={id ? -1 : undefined} className={styles.number}>{value || 'Номер не определён'}</div>}
         {onCopy && <button className={styles.copy} type="button" onClick={onCopy}>АОН</button>}
       </div>
     </div>

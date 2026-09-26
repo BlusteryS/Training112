@@ -107,7 +107,7 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   onSubmit: (body: Record<string, string | number>) => void;
 }) {
   const [classifier, setClassifier] = useState<ClassifierCard[]>([]);
-  const [incident, setIncident] = useState<SurveySelection>({ type: '', sign2: '', sign3: '' });
+  const [incident, setIncident] = useState<SurveySelection>({ type: '', sign2: '', sign3: '', code: '' });
   const [localError, setLocalError] = useState('');
   const [location, setLocation] = useState('Москва, учебная улица, дом 10');
   const [difficulty, setDifficulty] = useState('basic');
@@ -124,7 +124,7 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   return <ModalForm label="Создать сценарий" onClose={onClose}>
 <FormCard title="Сведения для сценария" submitLabel="Продолжить" busy={busy} error={localError || error}
   onClose={onClose} onSubmit={() => {
-    const card = matchingCard(classifier, incident.type, incident.sign2, incident.sign3);
+    const card = matchingCard(classifier, incident.type, incident.sign2, incident.sign3, incident.code);
     if (!card) { setLocalError('Выберите тип происшествия и его признаки.'); return; }
     setLocalError('');
     onSubmit({ classifier_code: card.code, location, difficulty, seconds: Number(seconds),

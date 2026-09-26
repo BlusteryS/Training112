@@ -13,6 +13,7 @@ public final class DdsCardTemplate {
       "incident_code", "district", "okrug", "object", "scene_phone", "provided_phone",
       "communication_channel", "caller_status", "street", "house", "entrance", "floor",
       "landmark", "incident_sign_2", "incident_sign_3", "incident_details", "classifier_code",
+      "incident_types",
       "city", "country", "foreign_language", "foreign_phone");
 
   private DdsCardTemplate() {}

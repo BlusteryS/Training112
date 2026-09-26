@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { IncidentSurvey, type SurveySelection } from '../components/call/IncidentSurvey';
@@ -69,7 +69,8 @@ function additionalIncidents(card?: Record<string, string> | null): SurveySelect
     if (!Array.isArray(values)) return [];
     return values.slice(1).filter((item): item is SurveySelection => item !== null
       && typeof item === 'object' && typeof item.type === 'string'
-      && typeof item.sign2 === 'string' && typeof item.sign3 === 'string');
+      && typeof item.sign2 === 'string' && typeof item.sign3 === 'string')
+      .map((item) => ({ ...item, code: typeof item.code === 'string' ? item.code : '' }));
   } catch {
     return [];
   }
@@ -98,6 +99,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   onCancel: () => void;
   onSave: (draft: IncidentDraft) => Promise<void>;
 }) {
+  const pageRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState(() => initialDraft(phone, initialCard));
   const [confirm, setConfirm] = useState<'save' | 'no-contact' | 'dropped' | null>(null);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -107,14 +109,15 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   const [manualServices, setManualServices] = useState(() => splitServices(initialCard?.services ?? ''));
   const [excludedServices, setExcludedServices] = useState<string[]>([]);
   const [extraIncidents, setExtraIncidents] = useState(() => additionalIncidents(initialCard));
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const services = useMemo(() => splitServices(draft.services), [draft.services]);
   const types = useMemo(() => [...new Set(classifier.map((card) => card.type))].sort((a, b) => a.localeCompare(b, 'ru')),
     [classifier]);
   const selectedCard = useMemo(() => matchingCard(classifier, draft.incident_code,
-    draft.incident_sign_2, draft.incident_sign_3),
-  [classifier, draft.incident_code, draft.incident_sign_2, draft.incident_sign_3]);
+    draft.incident_sign_2, draft.incident_sign_3, draft.classifier_code),
+  [classifier, draft.incident_code, draft.incident_sign_2, draft.incident_sign_3, draft.classifier_code]);
   const selectedCards = useMemo(() => [selectedCard, ...extraIncidents.map((item) =>
-    matchingCard(classifier, item.type, item.sign2, item.sign3))], [selectedCard, extraIncidents, classifier]);
+    matchingCard(classifier, item.type, item.sign2, item.sign3, item.code))], [selectedCard, extraIncidents, classifier]);
   const suggestedServices = useMemo(() => [...new Set(selectedCards.flatMap((card) =>
     servicesForCard(card, draft.address, draft.district, draft.okrug, draft.victims)))],
   [selectedCards, draft.address, draft.district, draft.okrug, draft.victims]);
@@ -123,6 +126,19 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
     ...suggestedServices, ...services])].sort((a, b) => a.localeCompare(b, 'ru')),
   [classifier, suggestedServices, services]);
   const time = elapsedParts(elapsed);
+  const overdue = deadlineSeconds !== null && deadlineSeconds !== undefined && elapsed >= deadlineSeconds;
+  const missingFields = [
+    !draft.caller_name.trim() && 'ФИО заявителя',
+    !draft.caller_status && 'Статус заявителя',
+    !draft.address.trim() && 'Адрес происшествия',
+    !draft.okrug && 'Округ',
+    !draft.description.trim() && 'Описание со слов заявителя',
+    !draft.incident_details.trim() && 'Подробности происшествия',
+    selectedCards.some((card) => !card) && 'Тип и признаки происшествия',
+    new Set(selectedCards.map((card) => card?.code)).size !== selectedCards.length
+      && 'Повторяющийся тип происшествия',
+    services.length === 0 && 'Службы для оповещения',
+  ].filter((item): item is string => typeof item === 'string');
 
   useEffect(() => {
     let active = true;
@@ -135,12 +151,59 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
     const next = [...new Set([...suggestedServices.filter((service) => !excludedServices.includes(service)),
       ...manualServices])].join(', ');
     const all = JSON.stringify([{ type: draft.incident_code, sign2: draft.incident_sign_2,
-      sign3: draft.incident_sign_3 }, ...extraIncidents]);
+      sign3: draft.incident_sign_3, code: selectedCard?.code ?? draft.classifier_code }, ...extraIncidents]);
     setDraft((current) => current.services === next && current.classifier_code === (selectedCard?.code ?? '')
       && current.incident_types === all ? current : { ...current, services: next,
         classifier_code: selectedCard?.code ?? '', incident_types: all });
   }, [suggestedServices, manualServices, excludedServices, selectedCard,
     draft.incident_code, draft.incident_sign_2, draft.incident_sign_3, extraIncidents]);
+
+  useEffect(() => {
+    const targets: Record<string, string> = {
+      F1: 'card-aon', F2: 'card-provided-phone', F3: 'card-scene-phone',
+      KeyK: 'card-channel', KeyQ: 'card-caller', KeyA: 'card-address',
+      KeyP: 'card-victims', KeyN: 'card-no-contact', KeyT: 'incident-types-input',
+      KeyR: 'incident-types-input', KeyO: 'card-description',
+    };
+    function onKeyDown(event: KeyboardEvent) {
+      if (document.querySelector('[data-modal-form]')) return;
+      if (event.key === 'Alt') { setShowShortcuts(true); return; }
+      if (!event.altKey || event.shiftKey || event.metaKey) return;
+      if (event.code === 'KeyS' && !event.ctrlKey) {
+        event.preventDefault();
+        pageRef.current?.querySelector<HTMLFormElement>('#incident-card-form')?.requestSubmit();
+        return;
+      }
+      if (event.code === 'KeyZ' && !event.ctrlKey) {
+        event.preventDefault();
+        setServicesOpen(true);
+        return;
+      }
+      const number = /^Digit([1-9])$/.exec(event.code)?.[1];
+      const id = number && event.ctrlKey ? number === '1' ? 'incident-types-sign2'
+        : number === '2' ? 'incident-types-sign3' : undefined
+        : number ? number === '1' ? 'incident-types-input'
+          : `incident-type-${Number(number) - 2}-input` : targets[event.code];
+      if (!id || event.ctrlKey && !number) return;
+      const target = pageRef.current?.querySelector<HTMLElement>(`#${id}`);
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    function onKeyUp(event: KeyboardEvent) {
+      if (event.key === 'Alt') setShowShortcuts(false);
+    }
+    function onBlur() { setShowShortcuts(false); }
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
 
   function change<K extends keyof IncidentDraft>(key: K, value: IncidentDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -148,20 +211,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (selectedCards.some((card) => !card)
-      || new Set(selectedCards.map((card) => card?.code)).size !== selectedCards.length) {
-      setError('Выберите тип происшествия и все признаки из классификатора.');
-      return;
-    }
-    if (services.length === 0) {
-      setError('Добавьте хотя бы одну службу для оповещения.');
-      return;
-    }
     setError('');
     setConfirm('save');
   }
 
   async function save() {
+    if (confirm === 'save' && missingFields.length > 0) return;
     setError('');
     const reason = confirm === 'no-contact' ? 'Нет контакта с заявителем'
       : confirm === 'dropped' ? 'Срыв звонка' : '';
@@ -190,7 +245,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
     day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   }).format(registeredAt).replace(',', ' в');
   const operatorNumber = user.login.match(/\d+/)?.[0];
-  return <div className={styles.page}>
+  return <div ref={pageRef} className={`${styles.page} ${overdue ? styles.overdue : ''}`}>
+    {showShortcuts && <div className={styles.shortcutHints}>
+      <span>Alt+A — адрес</span><span>Alt+T — тип происшествия</span>
+      <span>Alt+F2/F3 — телефоны</span><span>Alt+O — описание</span>
+      <span>Alt+Z — службы</span><span>Alt+S — сохранить</span>
+    </div>}
     <div className={styles.top}>
       <div className={styles.callControl}>
         <button type="button" onClick={onEndCall} disabled={!connected} title="Завершить звонок">
@@ -198,11 +258,11 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         </button>
       </div>
       <div className={styles.phoneGrid}>
-        <PhoneCard label="АОН" value={phone} foreign={draft.foreign_phone === 'true'}
+        <PhoneCard id="card-aon" label="АОН" value={phone} foreign={draft.foreign_phone === 'true'}
           onForeignChange={(value) => change('foreign_phone', String(value))} />
-        <PhoneCard label="Предоставленный номер" value={draft.provided_phone}
+        <PhoneCard id="card-provided-phone" label="Предоставленный номер" value={draft.provided_phone}
           onChange={(value) => change('provided_phone', value)} onCopy={() => change('provided_phone', phone)} />
-        <PhoneCard label="Телефон на место" value={draft.scene_phone}
+        <PhoneCard id="card-scene-phone" label="Телефон на место" value={draft.scene_phone}
           onChange={(value) => change('scene_phone', value)} onCopy={() => change('scene_phone', phone)} />
       </div>
       <div className={styles.incidentMeta}>
@@ -221,16 +281,16 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       </div>
     </div>
 
-    <form id="incident-card-form" className={styles.form} onSubmit={submit}>
+    <form id="incident-card-form" className={styles.form} onSubmit={submit} noValidate>
       <div className={styles.callerRow}>
-        <input required value={draft.caller_name} onChange={(event) => change('caller_name', event.target.value)}
+        <input id="card-caller" required value={draft.caller_name} onChange={(event) => change('caller_name', event.target.value)}
           placeholder="Заявитель" />
         <select required value={draft.caller_status} onChange={(event) => change('caller_status', event.target.value)}>
           <option value="">Статус заявителя</option>
           <option>Очевидец</option><option>Пострадавший</option><option>Родственник</option>
           <option>Знакомый</option><option>Ребёнок</option><option>Участник</option>
         </select>
-        <select value={draft.communication_channel}
+        <select id="card-channel" value={draft.communication_channel}
           onChange={(event) => change('communication_channel', event.target.value)}>
           <option>Мобильный телефон</option>
           <option>Стационарный телефон</option>
@@ -241,7 +301,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           <img src={languageIcon} alt="" /> Язык
         </button>
       </div>
-      <div className={styles.victimsRow}>
+      <div id="card-victims" tabIndex={-1} className={styles.victimsRow}>
         <span>Есть пострадавшие?</span>
         <ToggleGroup value={draft.victims === 'Нет' ? 'no' : 'yes'}
           options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' }] as const}
@@ -251,13 +311,13 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           aria-label="Количество пострадавших" />}
       </div>
       <div className={styles.quickActions}>
-        <button type="button" onClick={() => setConfirm('no-contact')}>Нет контакта</button>
+        <button id="card-no-contact" type="button" onClick={() => setConfirm('no-contact')}>Нет контакта</button>
         <button type="button" onClick={() => setConfirm('dropped')}>Срыв звонка</button>
       </div>
 
       <div className={styles.addressPanel}>
         <div className={styles.panelTitle}>Адрес <img src={locationIcon} alt="" /></div>
-        <input required value={draft.address} onChange={(event) => change('address', event.target.value)}
+        <input id="card-address" required value={draft.address} onChange={(event) => change('address', event.target.value)}
           placeholder="Адрес с номером дома" />
         <div className={styles.addressGrid}>
           <label>Страна<input value={draft.country} onChange={(event) => change('country', event.target.value)} /></label>
@@ -278,7 +338,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
             placeholder="Опишите место, если точного адреса нет" />
         </label>
         <label className={styles.description}>Описание со слов заявителя
-          <AutosizeTextarea required maxLength={1999} value={draft.description}
+          <AutosizeTextarea id="card-description" required maxLength={1999} value={draft.description}
             onChange={(event) => change('description', event.target.value)} placeholder="Введите описание происшествия" />
           <span>{draft.description.length} / 1999</span>
         </label>
@@ -288,8 +348,10 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         <div className={styles.panelTitle}>Что случилось?</div>
         <IncidentSurvey cards={classifier} types={types} listId="incident-types" value={{
           type: draft.incident_code, sign2: draft.incident_sign_2, sign3: draft.incident_sign_3,
+          code: draft.classifier_code,
         }} onChange={(value) => setDraft((current) => ({ ...current,
           incident_code: value.type, incident_sign_2: value.sign2, incident_sign_3: value.sign3,
+          classifier_code: value.code,
         }))} />
         {extraIncidents.map((item, index) => <IncidentSurvey key={index} cards={classifier}
           types={types} listId={`incident-type-${index}`} value={item}
@@ -297,7 +359,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
             rowIndex === index ? value : row))}
           onRemove={() => setExtraIncidents((current) => current.filter((_, rowIndex) => rowIndex !== index))} />)}
         <button className={styles.addIncident} type="button" onClick={() => setExtraIncidents((current) =>
-          [...current, { type: '', sign2: '', sign3: '' }])}>Добавить ещё тип происшествия</button>
+          [...current, { type: '', sign2: '', sign3: '', code: '' }])}>Добавить ещё тип происшествия</button>
         {classifierError && <div className={styles.modalError} role="alert">{classifierError}</div>}
         {error && !confirm && <div className={styles.modalError} role="alert">{error}</div>}
         <label className={styles.details}>Подробности происшествия
@@ -334,9 +396,14 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         <div className={styles.modalTitle}>{confirm === 'save' ? 'Сохранить карточку?' : 'Завершить обработку вызова?'}</div>
         <div>{confirm === 'save' ? `Будут оповещены службы: ${services.join(', ') || 'не выбраны'}.`
           : `Карточка будет сохранена с признаком «${confirm === 'no-contact' ? 'Нет контакта' : 'Срыв звонка'}».`}</div>
+        {confirm === 'save' && missingFields.length > 0 && <div className={styles.missingFields}>
+          <div>Заполните обязательные поля:</div>
+          <ul>{missingFields.map((field) => <li key={field}>{field}</li>)}</ul>
+        </div>}
         {error && <div className={styles.modalError} role="alert">{error}</div>}
         <div className={styles.modalActions}>
-          <button className={styles.primary} type="button" disabled={saving} onClick={() => void save()}>
+          <button className={styles.primary} type="button" disabled={saving || confirm === 'save' && missingFields.length > 0}
+            onClick={() => void save()}>
             {confirm === 'save' ? 'Оповестить и сохранить' : 'Сохранить карточку'}
           </button>
           <button type="button" disabled={saving} onClick={() => setConfirm(null)}>Вернуться к заполнению</button>
