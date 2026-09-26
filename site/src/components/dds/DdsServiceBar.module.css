@@ -22,16 +22,22 @@
 
 .history {
   display: grid;
+  grid-template-columns: repeat(4, max-content);
   max-height: 150px;
   overflow: auto;
-  gap: 6px;
+  column-gap: 10px;
+  row-gap: 6px;
   font-size: 13px;
 }
 
 .history > div {
   display: grid;
-  grid-template-columns: 125px minmax(160px, 1fr) 90px minmax(120px, 1.5fr);
-  gap: 10px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.history > span {
+  grid-column: 1 / -1;
 }
 
 .otherNotice {

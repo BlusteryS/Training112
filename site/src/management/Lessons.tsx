@@ -9,7 +9,6 @@ import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, ty
 import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
 import styles from './LessonCreate.module.css';
 
-const columns = 'minmax(180px, 1.4fr) minmax(140px, 1fr) 120px 160px 220px';
 type OperatorCard = { id: string; incident_code: string; address: string; services: string; created_at: string };
 
 export function Lessons() {
@@ -47,8 +46,8 @@ export function Lessons() {
   }, []);
 
   const approved = scenarios.filter((item) => item.status === 'approved');
-  return <Desk title="Занятия" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Назначить</button>}>
-    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Сценарий или карточка</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
+  return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Назначить</button>}>
+    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable head={<><span>Сценарий или карточка</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
       {lessons.map((lesson) => <DeskRow key={lesson.id}>
         <span>{lesson.title}</span>
         <span>{lesson.group_name}</span>
@@ -61,7 +60,7 @@ export function Lessons() {
       </DeskRow>)}
     </DeskTable>}
     {lessons.some((lesson) => lesson.status === 'active') && assignments.some((item) => lessons.some((lesson) => lesson.status === 'active' && lesson.id === item.lesson_id)) &&
-      <DeskSection title="Ход занятий"><DeskTable columns="minmax(0, 1fr) minmax(0, 1fr) 220px" head={<><span>Обучающийся</span><span>Занятие</span><span>Состояние</span></>}>
+      <DeskSection title="Ход занятий"><DeskTable head={<><span>Обучающийся</span><span>Занятие</span><span>Состояние</span></>}>
         {assignments.filter((item) => lessons.some((lesson) => lesson.status === 'active' && lesson.id === item.lesson_id)).map((item) => <DeskRow key={item.id}>
           <span>{item.learner_login}</span>
           <span>{item.title}</span>

@@ -6,7 +6,6 @@ import { InputField } from '../components/ui/InputField';
 import type { Group, Learner } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
-const columns = 'minmax(180px, 1fr) minmax(140px, 1fr) 120px 120px';
 
 export function Groups() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -57,8 +56,8 @@ export function Groups() {
       setBusy(false);
     }
   }
-  return <Desk title="Группы" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
-    {groups.length === 0 ? <DeskEmpty>Групп нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Служба</span><span>Участники</span><span /></>}>
+  return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
+    {groups.length === 0 ? <DeskEmpty>Групп нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Служба</span><span>Участники</span><span /></>}>
       {groups.map((item) => <DeskRow key={item.id}>
         <span>{item.name}</span>
         <span>{item.service_code}</span>

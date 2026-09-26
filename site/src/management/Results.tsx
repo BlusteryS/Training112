@@ -8,7 +8,6 @@ import { EvaluationDetails, type Evaluation } from '../components/EvaluationDeta
 import { attemptNames, type Assignment } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
-const columns = 'minmax(140px, 1fr) minmax(180px, 1.4fr) 160px 120px';
 
 export function Results() {
   const [rows, setRows] = useState<Assignment[]>([]);
@@ -32,8 +31,8 @@ export function Results() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Оценка ещё не готова.'); }
   }
 
-  return <Desk title="Результаты">
-    {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Обучающийся</span><span>Занятие</span><span>Статус</span><span /></>}>
+  return <Desk>
+    {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable head={<><span>Обучающийся</span><span>Занятие</span><span>Статус</span><span /></>}>
       {rows.map((row) => <DeskRow key={row.attempt_id}>
         <span>{row.learner_login}</span>
         <span>{row.title}</span>

@@ -62,14 +62,17 @@
 }
 
 .table {
-  min-width: 2003px;
+  display: grid;
+  grid-template-columns: repeat(16, max-content);
+  width: max-content;
+  min-width: 100%;
 }
 
 .tableHead,
 .rowMain {
   display: grid;
-  grid-template-columns: repeat(5, 80px) repeat(5, 100px) minmax(0, 1fr) 100px 128px minmax(0, 1fr) 80px 80px;
-  min-width: 2003px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
 }
 
 .tableHead {
@@ -84,27 +87,24 @@
   justify-content: center;
   min-width: 0;
   padding: 0 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .rows {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+  display: contents;
 }
 
 .row {
-  overflow: hidden;
-  border: 1px solid #838f97;
-  border-radius: 6px;
-  background: #49555d;
+  display: contents;
 }
 
 .rowMain {
   height: 36px;
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid #838f97;
+  border-radius: 6px 6px 0 0;
+  background: #49555d;
 }
 
 .cell,
@@ -117,11 +117,9 @@
   justify-content: center;
   height: 36px;
   padding: 8px 12px;
-  overflow: hidden;
   border: 1px solid #838f97;
   background: #49555d;
   color: rgba(255, 255, 255, .8);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -181,6 +179,7 @@
 }
 
 .description {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -188,6 +187,7 @@
   padding: 8px 12px;
   overflow: hidden;
   border: 1px solid #838f97;
+  border-radius: 0 0 6px 6px;
   background: #49555d;
   white-space: nowrap;
 }

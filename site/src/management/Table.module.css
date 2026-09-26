@@ -1,17 +1,23 @@
+.viewport {
+  min-width: 0;
+  overflow-x: auto;
+}
+
 .table {
   display: grid;
-  gap: 8px;
-  overflow-x: auto;
+  grid-template-columns: repeat(var(--column-count), max-content);
+  width: max-content;
+  min-width: 100%;
+  row-gap: 8px;
 }
 
 .head,
 .row {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: var(--cols);
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  width: 100%;
-  min-width: var(--table-min-width, 0px);
   min-height: 48px;
   column-gap: 0;
 }

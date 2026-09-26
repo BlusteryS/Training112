@@ -20,7 +20,7 @@ type Section = keyof typeof sections;
 
 export function TeacherWorkspace() {
   const [section, setSection] = useState<Section>('lessons');
-  return <div>
+  return <div data-tab-workspace>
     <SectionTabs value={section} options={sections} onChange={setSection} />
     {section === 'lessons' && <Lessons />}
     {section === 'scenarios' && <Scenarios />}

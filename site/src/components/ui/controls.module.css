@@ -72,3 +72,10 @@
 .tabs button:hover {
   color: #fff;
 }
+
+:global([data-tab-workspace]) .tabs {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+}

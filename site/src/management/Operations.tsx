@@ -39,7 +39,7 @@ export function Operations() {
     setSettings((current) => current && { ...current, [key]: Number(value) });
   }
 
-  return <Desk title="Параметры комплекса">
+  return <Desk>
     {settings && <form className={styles.form} onSubmit={save}>
       <DeskSection title="Сервисы">
         <div className={styles.fields}>

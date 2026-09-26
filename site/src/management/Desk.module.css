@@ -99,3 +99,25 @@
 .error {
   color: #ffd0c8;
 }
+
+:global([data-tab-workspace]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px 16px;
+  color: #fff;
+}
+
+:global([data-tab-workspace]) .board {
+  display: contents;
+}
+
+:global([data-tab-workspace]) .toolbar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+:global([data-tab-workspace]) .content {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}

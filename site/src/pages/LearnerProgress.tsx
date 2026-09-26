@@ -18,7 +18,6 @@ type History = {
   recommendations: string[];
 };
 
-const columns = 'minmax(160px, 1.5fr) 140px 140px 100px minmax(220px, 2fr)';
 
 export function LearnerProgress() {
   const navigate = useNavigate();
@@ -40,7 +39,7 @@ export function LearnerProgress() {
           <div>Ошибок по критериям: {mistakes.length}</div>
         </div>
         {rows.length === 0 ? <DeskEmpty>Истории занятий пока нет</DeskEmpty> :
-          <DeskTable columns={columns} head={<><span>Карточка</span><span>Дата</span><span>Результат</span><span>Оценка</span><span>Ошибки и рекомендации</span></>}>
+          <DeskTable head={<><span>Карточка</span><span>Дата</span><span>Результат</span><span>Оценка</span><span>Ошибки и рекомендации</span></>}>
             {rows.map((row) => <DeskRow key={row.attempt_id}>
               <span>{row.title}</span>
               <span>{new Date(row.finished_at).toLocaleString('ru-RU')}</span>

@@ -1,16 +1,17 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { Children, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import styles from './Table.module.css';
 
-type TableStyle = CSSProperties & { '--cols': string; '--table-min-width'?: string };
+type TableStyle = CSSProperties & { '--column-count': number };
 
-export function DeskTable({ columns, head, children, minWidth }: {
-  columns: string; head: ReactNode; children: ReactNode; minWidth?: number;
+export function DeskTable({ head, children }: {
+  head: ReactElement<{ children: ReactNode }>; children: ReactNode;
 }) {
-  const style: TableStyle = { '--cols': columns };
-  if (minWidth) style['--table-min-width'] = `${minWidth}px`;
-  return <div className={styles.table} style={style}>
-    <div className={styles.head}>{head}</div>
-    {children}
+  const style: TableStyle = { '--column-count': Children.count(head.props.children) };
+  return <div className={styles.viewport}>
+    <div className={styles.table} style={style}>
+      <div className={styles.head}>{head}</div>
+      {children}
+    </div>
   </div>;
 }
 

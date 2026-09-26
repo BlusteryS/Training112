@@ -49,11 +49,10 @@ const actionNames: Record<string, string> = {
   'attempt.failed': 'Попытка прервана',
 };
 
-const userColumns = 'minmax(160px, 1fr) 180px 140px 120px';
 
 export function AdminDesk() {
   const [section, setSection] = useState<Section>('users');
-  return <div>
+  return <div data-tab-workspace>
     <SectionTabs value={section} options={sections} onChange={setSection} />
     {section === 'users' && <Accounts />}
     {section === 'status' && <Status />}
@@ -73,8 +72,8 @@ function Accounts() {
   const [error, setError] = useState('');
   const refresh = () => api<(User & { blocked: boolean })[]>('admin/users').then(setUsers);
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
-  return <Desk title="Пользователи" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
-    {users.length === 0 ? <DeskEmpty>Пользователей нет</DeskEmpty> : <DeskTable columns={userColumns} head={<><span>Логин</span><span>Роль</span><span>Доступ</span><span /></>}>
+  return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
+    {users.length === 0 ? <DeskEmpty>Пользователей нет</DeskEmpty> : <DeskTable head={<><span>Логин</span><span>Роль</span><span>Доступ</span><span /></>}>
       {users.map((entry) => <DeskRow key={entry.id}>
         <span>{entry.login}</span>
         <span>{roleNames[entry.role] ?? entry.role}</span>
@@ -179,7 +178,7 @@ function Status() {
     ['Память', `${Math.round(Number(row.memory_used) / 1048576)} / ${Math.round(Number(row.memory_max) / 1048576)} МиБ`],
     ...(row.worker_seen ? [['Обработчик', new Date(String(row.worker_seen)).toLocaleString('ru-RU')]] : []),
   ] : [];
-  return <Desk title="Состояние">
+  return <Desk>
     {lines.length > 0 && <SummaryGrid items={lines.map(([label, value]) => ({ label: String(label), value }))} />}
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
@@ -193,9 +192,8 @@ function Journal() {
       .then((items) => setRows(items.filter((item) => actionNames[item.action])))
       .catch((cause: Error) => setError(cause.message));
   }, []);
-  const columns = '220px minmax(0, 1fr) 180px';
-  return <Desk title="Журнал">
-    {rows.length === 0 ? <DeskEmpty>Записей нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Время</span><span>Событие</span><span>Кто</span></>}>
+  return <Desk>
+    {rows.length === 0 ? <DeskEmpty>Записей нет</DeskEmpty> : <DeskTable head={<><span>Время</span><span>Событие</span><span>Кто</span></>}>
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{actionNames[row.action]}</span>
@@ -222,7 +220,7 @@ function Statistics() {
     ['Завершённые попытки', row.completed_attempts],
     ['Сбойные задачи', row.failed_jobs],
   ] : [];
-  return <Desk title="Статистика">
+  return <Desk>
     {lines.length > 0 && <SummaryGrid items={lines.map(([label, value]) => ({ label: String(label), value }))} />}
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
@@ -240,7 +238,7 @@ function Policy() {
       setSessionHours(row.session_hours);
     }).catch((cause: Error) => setError(cause.message));
   }, []);
-  return <Desk title="Политика доступа" actions={<button type="button" onClick={() => { setError(''); setOpen(true); }}>Изменить</button>}>
+  return <Desk actions={<button type="button" onClick={() => { setError(''); setOpen(true); }}>Изменить</button>}>
     <SummaryGrid items={[
       { label: 'Минимальная длина пароля', value: `${passwordMin} символов` },
       { label: 'Время действия сессии', value: `${sessionHours} часов` },
@@ -268,8 +266,7 @@ function Backups() {
   const [busy, setBusy] = useState(false);
   const refresh = () => api<typeof rows>('admin/backups').then(setRows);
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
-  const columns = 'minmax(220px, 1fr) minmax(180px, 1fr) minmax(140px, .7fr)';
-  return <Desk title="Резервные копии" actions={<button type="button" disabled={busy} onClick={() => {
+  return <Desk actions={<button type="button" disabled={busy} onClick={() => {
     setBusy(true); setError('');
     void api<Record<string, unknown>>('admin/backups', {})
       .then((payload) => {
@@ -284,7 +281,7 @@ function Backups() {
       .catch((cause: Error) => setError(cause.message))
       .finally(() => setBusy(false));
   }}>Снять копию</button>}>
-    {rows.length === 0 ? <DeskEmpty>Копий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Время</span><span>Кто</span><span>Размер</span></>}>
+    {rows.length === 0 ? <DeskEmpty>Копий нет</DeskEmpty> : <DeskTable head={<><span>Время</span><span>Кто</span><span>Размер</span></>}>
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{row.source === 'automatic' ? 'Автоматически' : row.login}</span>

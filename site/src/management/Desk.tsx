@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import styles from './Desk.module.css';
 
-export function Desk({ title, actions, children }: { title: string; actions?: ReactNode; children?: ReactNode }) {
+export function Desk({ title, actions, children }: { title?: string; actions?: ReactNode; children?: ReactNode }) {
   return <div className={styles.board}>
     <div className={styles.toolbar}>
-      <div className={styles.title}>{title}</div>
+      {title && <div className={styles.title}>{title}</div>}
       {actions && <div className={styles.controls}>{actions}</div>}
     </div>
     <div className={styles.content}>{children}</div>

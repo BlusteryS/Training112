@@ -15,7 +15,6 @@ const mediaTypes: Record<string, string> = {
   'audio/mpeg': 'audio/mpeg',
   'audio/mp3': 'audio/mpeg',
 };
-const columns = 'minmax(180px, 1.4fr) minmax(140px, 1fr) 100px 220px';
 
 async function encode(file: File) {
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -42,8 +41,8 @@ export function Materials() {
   const [busy, setBusy] = useState(false);
   const refresh = () => api<Material[]>('training/materials').then(setRows);
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
-  return <Desk title="Материалы" actions={<button type="button" onClick={() => { setError(''); setUploading(true); }}>Загрузить</button>}>
-    {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Файл</span><span>Байт</span><span /></>}>
+  return <Desk actions={<button type="button" onClick={() => { setError(''); setUploading(true); }}>Загрузить</button>}>
+    {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Файл</span><span>Байт</span><span /></>}>
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{row.title}</span>
         <span>{row.filename}</span>
