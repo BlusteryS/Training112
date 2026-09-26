@@ -54,7 +54,7 @@
 
 .controls select {
   height: 41px;
-  padding: 0 28px 0 0;
+  padding: 0 28px 0 12px;
   appearance: none;
   text-indent: 0;
   border: 1px solid rgba(255, 255, 255, .24);
