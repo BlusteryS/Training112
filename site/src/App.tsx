@@ -119,6 +119,8 @@ function OperatorWorkspace() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
+  const advancedSearchRef = useRef<HTMLFormElement>(null);
 
   const [draft, setDraft] = useState(blankAdvanced);
   const [applied, setApplied] = useState(blankAdvanced);
@@ -130,6 +132,24 @@ function OperatorWorkspace() {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!advancedOpen) return;
+    function closeOnOutsideClick(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!searchPanelRef.current?.contains(target) && !advancedSearchRef.current?.contains(target))
+        setAdvancedOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setAdvancedOpen(false);
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [advancedOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -228,7 +248,7 @@ function OperatorWorkspace() {
   return <div className={styles.workspace}>
     <WorkspaceHeader
       menu={<><MaterialsMenu /><button type="button" onClick={() => navigate('/progress')}>Мои результаты</button></>}
-      leading={<div className={styles.searchPanel}>
+      leading={<div ref={searchPanelRef} className={styles.searchPanel}>
         <label className={styles.searchField}>
           <span className={styles.visuallyHidden}>Поиск происшествий</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск происшествий" />
@@ -252,7 +272,8 @@ function OperatorWorkspace() {
         <span>{availabilityLabel}</span>
       </button>}
     />
-    {advancedOpen && <form className={styles.advancedSearch} onSubmit={(event) => { event.preventDefault(); applySearch(); }}>
+    {advancedOpen && <form ref={advancedSearchRef} className={styles.advancedSearch}
+      onSubmit={(event) => { event.preventDefault(); applySearch(); }}>
       <div className={styles.dateRow}>
         <div>Искать по времени и дате:</div>
         <div className={styles.dateRange}>

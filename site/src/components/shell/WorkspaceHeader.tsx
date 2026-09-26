@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { useNotification } from '../Notifications';
 import helpIcon from '../../assets/workspace/help.svg';
@@ -33,11 +33,28 @@ export function WorkspaceHeader({ leading, footer, menu, person }: {
   const { user, logout } = useAuth();
   const notify = useNotification();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (!menuOpen) return;
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (document.querySelector('[data-modal-form]')) return;
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !document.querySelector('[data-modal-form]')) setMenuOpen(false);
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [menuOpen]);
   const currentTime = new Date(now);
   const workstation = (user.workstation ?? '000').padStart(3, '0');
   return <div className={styles.operatorHeader}>
@@ -49,8 +66,9 @@ export function WorkspaceHeader({ leading, footer, menu, person }: {
           <div className={styles.operatorMeta}>
             <span>{person ?? personLabel(user.role, user.login)}</span>
             <span><img src={workstationIcon} alt="" /> АРМ {workstation}</span>
-            <div className={styles.helpMenu}>
-              <button className={styles.helpButton} onClick={() => setMenuOpen((value) => !value)} title="Меню">
+            <div ref={menuRef} className={styles.helpMenu}>
+              <button type="button" className={styles.helpButton} onClick={() => setMenuOpen((value) => !value)}
+                title="Меню" aria-expanded={menuOpen}>
                 <img src={helpIcon} alt="" />
               </button>
               {menuOpen && <div className={styles.sessionMenu}>
