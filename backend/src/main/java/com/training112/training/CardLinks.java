@@ -32,10 +32,16 @@ public final class CardLinks {
     });
   }
 
-  public Future<JsonArray> candidates(Account actor, UUID attempt, String query) {
+  public Future<JsonArray> candidates(Account actor, UUID attempt, String query, String phone, String address) {
     if (query.length() > 100) throw invalid("Слишком длинный поисковый запрос.");
+    if (phone.length() > 100 || address.length() > 500)
+      throw invalid("Слишком длинные данные для поиска карточек.");
     return accessible(pool, actor, attempt, false).compose(current -> {
-      requireSavedCall(current);
+      if (!"call".equals(current.getString("mode")))
+        throw invalid("Связывать можно только карточки оператора 112.");
+      JsonObject card = current.getJsonObject("card");
+      String currentPhone = phone.isBlank() ? card.getString("phone", "") : phone.trim();
+      String currentAddress = address.isBlank() ? card.getString("address", "") : address.trim();
       return list(pool, """
           SELECT jsonb_build_object('id',a.id,'incident',a.card->>'incident_code',
             'address',a.card->>'address','phone',a.card->>'phone',
@@ -52,8 +58,7 @@ public final class CardLinks {
             a.created_at DESC
           LIMIT 100
           """, Tuple.of(current.getUUID("teacher_id"), attempt,
-              current.getJsonObject("card").getString("phone", ""),
-              current.getJsonObject("card").getString("address", ""),
+              currentPhone, currentAddress,
               query.isBlank() ? "" : "%" + query.trim() + "%"));
     });
   }

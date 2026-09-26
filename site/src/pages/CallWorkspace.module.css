@@ -276,6 +276,10 @@
   border-radius: 8px;
 }
 
+.lawLabel {
+  margin-left: auto;
+}
+
 .quickActions {
   grid-area: actions;
   display: flex;
@@ -286,7 +290,7 @@
 }
 
 .quickActions button {
-  width: 124px;
+  min-width: 124px;
   height: 34px;
   padding: 8px;
   border: 1px solid #d7d9da;
@@ -295,6 +299,10 @@
   color: #000;
   font-size: 14px;
   cursor: pointer;
+}
+
+.quickActions button:first-child {
+  width: auto;
 }
 
 .addressPanel,
@@ -511,6 +519,44 @@
   border-color: #2f353a;
   background: #2f353a;
   color: #fff;
+}
+
+.linkSearch {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #d7d9da;
+  border-radius: 8px;
+}
+
+.linkList {
+  display: flex;
+  max-height: 300px;
+  flex-direction: column;
+  overflow: auto;
+  gap: 6px;
+}
+
+.linkRow {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid #d7d9da;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  text-align: left;
+  gap: 12px;
+}
+
+button.linkRow {
+  cursor: pointer;
+}
+
+.linkRow span:last-child {
+  flex-shrink: 0;
 }
 
 .modalActions {

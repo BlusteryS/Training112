@@ -5,6 +5,7 @@ import { IncidentSurvey, type SurveySelection } from '../components/call/Inciden
 import { ToggleGroup } from '../components/call/ToggleGroup';
 import { ModalForm } from '../components/ModalForm';
 import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
+import { api } from '../api';
 import { moscowOkrugs } from '../incidentSources';
 import hangupIcon from '../assets/call/hangup.svg';
 import languageIcon from '../assets/call/language.svg';
@@ -43,8 +44,17 @@ export type IncidentDraft = {
   floor: string;
   description: string;
   victims: string;
+  law_violation: string;
   services: string;
   comment: string;
+};
+
+type LinkedCard = {
+  id: string;
+  incident: string;
+  address: string;
+  phone: string;
+  matched: boolean;
 };
 
 function initialDraft(phone: string, card?: Record<string, string> | null): IncidentDraft {
@@ -55,7 +65,7 @@ function initialDraft(phone: string, card?: Record<string, string> | null): Inci
     incident_sign_2: '', incident_sign_3: '', incident_details: '',
     address: '', address_description: '', country: 'Россия', city: 'Москва', okrug: '',
     district: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Нет',
-    services: '', comment: '', ...card,
+    law_violation: 'false', services: '', comment: '', ...card,
   };
 }
 
@@ -84,7 +94,7 @@ function elapsedParts(seconds: number) {
 }
 
 export function CallWorkspace({ user, phone, elapsed, registeredAt, message, connected, initialCard, incidentNumber,
-  deadlineSeconds, saving, onEndCall, onCancel, onSave }: {
+  attemptId, deadlineSeconds, saving, onEndCall, onCancel, onSave }: {
   user: User;
   phone: string;
   elapsed: number;
@@ -93,11 +103,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   connected: boolean;
   initialCard?: Record<string, string> | null;
   incidentNumber: string;
+  attemptId: string;
   deadlineSeconds?: number | null;
   saving: boolean;
   onEndCall: () => void;
   onCancel: () => void;
-  onSave: (draft: IncidentDraft) => Promise<void>;
+  onSave: (draft: IncidentDraft, linkedTo: string | null) => Promise<void>;
 }) {
   const pageRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState(() => initialDraft(phone, initialCard));
@@ -110,6 +121,11 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   const [excludedServices, setExcludedServices] = useState<string[]>([]);
   const [extraIncidents, setExtraIncidents] = useState(() => additionalIncidents(initialCard));
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
+  const [linkQuery, setLinkQuery] = useState('');
+  const [linkedTo, setLinkedTo] = useState<LinkedCard | null>(null);
+  const [linkCandidates, setLinkCandidates] = useState<LinkedCard[]>([]);
+  const [linkError, setLinkError] = useState('');
   const services = useMemo(() => splitServices(draft.services), [draft.services]);
   const types = useMemo(() => [...new Set(classifier.map((card) => card.type))].sort((a, b) => a.localeCompare(b, 'ru')),
     [classifier]);
@@ -119,10 +135,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   const selectedCards = useMemo(() => [selectedCard, ...extraIncidents.map((item) =>
     matchingCard(classifier, item.type, item.sign2, item.sign3, item.code))], [selectedCard, extraIncidents, classifier]);
   const suggestedServices = useMemo(() => [...new Set(selectedCards.flatMap((card) =>
-    servicesForCard(card, draft.address, draft.district, draft.okrug, draft.victims)))],
-  [selectedCards, draft.address, draft.district, draft.okrug, draft.victims]);
+    servicesForCard(card, draft.address, draft.district, draft.okrug, draft.victims,
+      draft.law_violation === 'true')))],
+  [selectedCards, draft.address, draft.district, draft.okrug, draft.victims, draft.law_violation]);
   const serviceOptions = useMemo(() => [...new Set(['101', '102', '103', '104',
     ...classifier.flatMap((card) => card.services), ...classifier.flatMap((card) => card.victim_services),
+    ...classifier.flatMap((card) => card.law_services),
     ...suggestedServices, ...services])].sort((a, b) => a.localeCompare(b, 'ru')),
   [classifier, suggestedServices, services]);
   const time = elapsedParts(elapsed);
@@ -146,6 +164,25 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       .catch(() => { if (active) setClassifierError('Не удалось открыть классификатор происшествий.'); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!attemptId || !phone.trim() && !draft.address.trim() && !linksOpen) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ q: linksOpen ? linkQuery : '', phone,
+        address: draft.address.trim() });
+      void api<LinkedCard[]>(`training/attempts/${attemptId}/link-candidates?${params}`)
+        .then((cards) => {
+          if (active) {
+            setLinkCandidates(linksOpen ? cards : cards.filter((card) => card.matched));
+            setLinkError('');
+          }
+        }).catch((cause: unknown) => {
+          if (active) setLinkError(cause instanceof Error ? cause.message : 'Не удалось найти карточки.');
+        });
+    }, 350);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [attemptId, phone, draft.address, linksOpen, linkQuery]);
 
   useEffect(() => {
     const next = [...new Set([...suggestedServices.filter((service) => !excludedServices.includes(service)),
@@ -224,7 +261,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       classifier_code: '', incident_types: '[]', incident_sign_2: '', incident_sign_3: '',
       services: '', description: reason } : draft;
     try {
-      await onSave(value);
+      await onSave(value, linkedTo?.id ?? null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Не удалось сохранить карточку.');
     }
@@ -309,8 +346,15 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         {draft.victims !== 'Нет' && <input className={styles.count} min="1" type="number"
           value={draft.victims} onChange={(event) => change('victims', event.target.value)}
           aria-label="Количество пострадавших" />}
+        <span className={styles.lawLabel}>Правонарушение?</span>
+        <ToggleGroup value={draft.law_violation === 'true' ? 'yes' : 'no'}
+          options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' }] as const}
+          onChange={(value) => change('law_violation', String(value === 'yes'))} />
       </div>
       <div className={styles.quickActions}>
+        <button type="button" onClick={() => setLinksOpen(true)}>
+          {linkedTo ? 'Связь выбрана' : linkCandidates.length ? `Совпадение (${linkCandidates.length})` : 'Связать карточку'}
+        </button>
         <button id="card-no-contact" type="button" onClick={() => setConfirm('no-contact')}>Нет контакта</button>
         <button type="button" onClick={() => setConfirm('dropped')}>Срыв звонка</button>
       </div>
@@ -394,11 +438,33 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       </div>
     </ModalForm>}
 
+    {linksOpen && <ModalForm label="Связать карточку" onClose={() => setLinksOpen(false)}>
+      <div className={styles.modal}>
+        <div className={styles.modalTitle}>Связь с существующим происшествием</div>
+        <input className={styles.linkSearch} value={linkQuery}
+          onChange={(event) => setLinkQuery(event.target.value)}
+          placeholder="Поиск по номеру, адресу или типу происшествия" />
+        {linkedTo && <div className={styles.linkRow}>
+          <span>Выбрана карточка: {linkedTo.incident} · {linkedTo.address || linkedTo.phone}</span>
+          <button type="button" onClick={() => setLinkedTo(null)}>Убрать связь</button>
+        </div>}
+        {linkError && <div className={styles.modalError} role="alert">{linkError}</div>}
+        <div className={styles.linkList}>{linkCandidates.length ? linkCandidates.map((card) =>
+          <button type="button" className={styles.linkRow} key={card.id}
+            onClick={() => { setLinkedTo(card); setLinksOpen(false); }}>
+            <span>{card.incident || 'Происшествие'} · {card.address || 'Адрес не указан'} · {card.phone}</span>
+            {card.matched && <span>Совпадение</span>}
+          </button>) : !linkError && <div>Карточки не найдены</div>}</div>
+        <button className={styles.primary} type="button" onClick={() => setLinksOpen(false)}>Закрыть</button>
+      </div>
+    </ModalForm>}
+
     {confirm && <ModalForm label="Подтверждение сохранения" onClose={() => { if (!saving) setConfirm(null); }}>
       <div className={styles.modal}>
         <div className={styles.modalTitle}>{confirm === 'save' ? 'Сохранить карточку?' : 'Завершить обработку вызова?'}</div>
         <div>{confirm === 'save' ? `Будут оповещены службы: ${services.join(', ') || 'не выбраны'}.`
           : `Карточка будет сохранена с признаком «${confirm === 'no-contact' ? 'Нет контакта' : 'Срыв звонка'}».`}</div>
+        {linkedTo && <div>Связать с карточкой: {linkedTo.incident} · {linkedTo.address || linkedTo.phone}</div>}
         {confirm === 'save' && missingFields.length > 0 && <div className={styles.missingFields}>
           <div>Заполните обязательные поля:</div>
           <ul>{missingFields.map((field) => <li key={field}>{field}</li>)}</ul>

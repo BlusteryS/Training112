@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { api } from '../api';
+import { useNotification } from '../components/Notifications';
 import { startCooldown } from '../operatorAvailability';
 import { finishAttempt, saveAttemptCard, startAssignedAttempt } from '../speech/trainingApi';
 import { VoiceCall } from '../speech/VoiceCall';
@@ -16,6 +18,7 @@ function incidentNumber(id: string) {
 
 export function SpeechPage() {
   const { user } = useAuth();
+  const notify = useNotification();
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const assignmentId = search.get('assignment_id') ?? '';
@@ -122,7 +125,7 @@ export function SpeechPage() {
     };
   }, [assignmentId, retry, user.id]);
 
-  async function save(draft: IncidentDraft) {
+  async function save(draft: IncidentDraft, linkedTo: string | null) {
     const id = attemptIdRef.current;
     if (!id) throw new Error('Карточка вызова не создана.');
     setSaving(true);
@@ -132,6 +135,14 @@ export function SpeechPage() {
       leavingRef.current = true;
       call.current?.close();
       await finishAttempt(id);
+      if (linkedTo) {
+        try {
+          await api(`training/attempts/${id}/links`, { parent_id: linkedTo });
+        } catch (cause) {
+          notify(cause instanceof Error ? `Карточка сохранена, но связь не добавлена: ${cause.message}`
+            : 'Карточка сохранена, но связь не добавлена.', 'error');
+        }
+      }
       startCooldown(user.id);
       navigate('/');
     } finally {
@@ -176,6 +187,7 @@ export function SpeechPage() {
     registeredAt={startedAt}
     message={message || (phase === 'active' ? 'Идёт разговор' : 'Разговор завершён')}
     connected={phase === 'active'} initialCard={card} incidentNumber={incidentNumber(attemptId)}
+    attemptId={attemptId}
     deadlineSeconds={deadlineSeconds}
     saving={saving} onEndCall={() => call.current?.close()} onCancel={() => void cancel()} onSave={save} />;
 }

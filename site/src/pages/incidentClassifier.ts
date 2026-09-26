@@ -8,6 +8,7 @@ export type ClassifierCard = {
   result: string;
   services: string[];
   victim_services: string[];
+  law_services: string[];
   district_dds: boolean;
   okrug_dds: boolean;
 };
@@ -33,10 +34,11 @@ export function matchingCard(cards: ClassifierCard[], type: string, sign2: strin
 }
 
 export function servicesForCard(card: ClassifierCard | undefined, address: string, district: string,
-  okrug: string, victims: string) {
+  okrug: string, victims: string, lawViolation: boolean) {
   if (!card || !address.trim()) return [];
   const services = [...card.services];
   if (victims !== 'Нет') services.push(...card.victim_services);
+  if (lawViolation) services.push(...card.law_services);
   if (district.trim() && card.district_dds) services.push(`ДДС района ${district.trim()}`);
   if (okrug.trim() && card.okrug_dds) services.push(`ДДС ${okrug.trim()}`);
   return [...new Set(services)];

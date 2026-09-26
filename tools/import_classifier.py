@@ -62,9 +62,9 @@ def convert(source):
                 continue
             main = [MAIN_SERVICES.get(part.strip(), part.strip()) for part in row.get("M", "").split(",")]
             base = main + [service for column, service in OTHER_SERVICES.items() if row.get(column)]
-            if any(row.get(column) for column in ("N", "O", "P", "Q", "R", "S", "T")):
+            if any(row.get(column) for column in ("N", "P", "T")):
                 base.append("101")
-            if row.get("U") or row.get("V"):
+            if row.get("U"):
                 base.append("102")
             if row.get("X"):
                 base.append("103")
@@ -72,6 +72,7 @@ def convert(source):
                 base.append("104")
             victims = [service for column, service in (("W", "102"), ("Y", "103"))
                        if row.get(column)]
+            law = ["102"] if row.get("V") else []
             entries.append({
                 "code": code,
                 "type": first,
@@ -80,6 +81,7 @@ def convert(source):
                 "result": row.get("K", "") or first,
                 "services": unique(base),
                 "victim_services": unique(victims),
+                "law_services": law,
                 "district_dds": bool(row.get("BW")),
                 "okrug_dds": bool(row.get("BX")),
             })

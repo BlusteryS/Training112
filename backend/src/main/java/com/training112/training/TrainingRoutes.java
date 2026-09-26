@@ -206,7 +206,8 @@ public final class TrainingRoutes {
         .handler(c -> json(c, repository.cardLinks().chain(actor(c), id(c))));
     router.get("/api/training/attempts/:id/link-candidates")
         .handler(c -> json(c, repository.cardLinks().candidates(actor(c), id(c),
-            c.request().getParam("q", ""))));
+            c.request().getParam("q", ""), c.request().getParam("phone", ""),
+            c.request().getParam("address", ""))));
     router.post("/api/training/attempts/:id/links")
         .handler(c -> empty(c, repository.cardLinks().attach(actor(c), id(c),
             uuid(body(c).getString("parent_id")))));
