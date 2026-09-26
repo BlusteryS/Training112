@@ -8,7 +8,7 @@ import { FormCard, formGrid } from './FormCard';
 import { SectionTabs } from '../components/ui/SectionTabs';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
 import { SummaryGrid } from './SummaryGrid';
 import { Operations } from './Operations';
 import { RoleField, roleNames } from './RoleField';
