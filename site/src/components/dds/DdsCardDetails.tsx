@@ -44,6 +44,7 @@ export function DdsCardDetails({ card, assignment }: {
       <Field label="Заявитель" text={card.caller_name || facts?.caller_name} />
       <Field label="Статус заявителя" text={card.caller_status} />
       <Field label="Пострадавшие" text={card.victims || facts?.victims} />
+      {card.law_violation === 'true' && <Field label="Правонарушение" text="Да" />}
     </div>
     <div className={styles.columns}>
       <div className={styles.column}>

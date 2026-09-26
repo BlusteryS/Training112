@@ -14,7 +14,7 @@ public final class DdsCardTemplate {
       "communication_channel", "caller_status", "street", "house", "entrance", "floor",
       "landmark", "incident_sign_2", "incident_sign_3", "incident_details", "classifier_code",
       "incident_types",
-      "city", "country", "foreign_language", "foreign_phone");
+      "city", "country", "foreign_language", "foreign_phone", "law_violation");
 
   private DdsCardTemplate() {}
 
