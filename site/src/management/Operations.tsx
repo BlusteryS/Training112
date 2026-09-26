@@ -59,13 +59,13 @@ export function Operations() {
       </DeskSection>
       <DeskSection title="Журналирование">
         <div className={styles.fields}>
-          <InputField label="Хранить журнал действий, дней" type="number" min={30} max={3650} required
+          <InputField label="Хранить журнал действий, дней" type="number" min={186} max={3650} required
             value={settings.audit_retention_days} onChange={(event) => number('audit_retention_days', event.target.value)} />
         </div>
       </DeskSection>
       <DeskSection title="Автоматическое резервное копирование">
         <div className={styles.fields}>
-          <InputField label="Интервал между копиями, часов" type="number" min={1} max={168} required
+          <InputField label="Интервал между копиями, часов" type="number" min={1} max={24} required
             value={settings.backup_interval_hours} onChange={(event) => number('backup_interval_hours', event.target.value)} />
           <InputField label="Хранить последних копий" type="number" min={1} max={30} required
             value={settings.backup_retention_count} onChange={(event) => number('backup_retention_count', event.target.value)} />

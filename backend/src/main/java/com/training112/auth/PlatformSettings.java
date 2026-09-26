@@ -22,7 +22,7 @@ public final class PlatformSettings {
   }
 
   public static Future<Integer> auditRetentionDays(Pool pool) {
-    return number(pool, "audit_retention_days", 30, 3650);
+    return number(pool, "audit_retention_days", 186, 3650);
   }
 
   private static Future<Integer> number(Pool pool, String key, int min, int max) {

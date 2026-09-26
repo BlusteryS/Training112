@@ -340,8 +340,8 @@ public final class AdminRoutes {
         .put("service_speech_enabled", requiredInt(body, "service_speech_enabled", 0, 1))
         .put("service_worker_enabled", requiredInt(body, "service_worker_enabled", 0, 1))
         .put("dds_phone_enabled", requiredInt(body, "dds_phone_enabled", 0, 1))
-        .put("audit_retention_days", requiredInt(body, "audit_retention_days", 30, 3650))
-        .put("backup_interval_hours", requiredInt(body, "backup_interval_hours", 1, 168))
+        .put("audit_retention_days", requiredInt(body, "audit_retention_days", 186, 3650))
+        .put("backup_interval_hours", requiredInt(body, "backup_interval_hours", 1, 24))
         .put("backup_retention_count", requiredInt(body, "backup_retention_count", 1, 30));
     pool.withTransaction(database -> {
       Future<Void> changes = Future.succeededFuture();
