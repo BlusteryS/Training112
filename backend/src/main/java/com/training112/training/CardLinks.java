@@ -51,13 +51,13 @@ public final class CardLinks {
           JOIN lesson_assignment la ON la.id=a.assignment_id
           JOIN lesson l ON l.id=la.lesson_id
           JOIN training_group g ON g.id=l.group_id
-          WHERE g.teacher_id=$1 AND l.mode='call' AND a.status='completed' AND a.id<>$2
+          WHERE g.instructor_id=$1 AND l.mode='call' AND a.status='completed' AND a.id<>$2
             AND ($5='' OR a.card->>'incident_code' ILIKE $5
               OR a.card->>'address' ILIKE $5 OR a.card->>'phone' ILIKE $5)
           ORDER BY (($3<>'' AND a.card->>'phone'=$3) OR ($4<>'' AND a.card->>'address'=$4)) DESC,
             a.created_at DESC
           LIMIT 100
-          """, Tuple.of(current.getUUID("teacher_id"), attempt,
+          """, Tuple.of(current.getUUID("instructor_id"), attempt,
               currentPhone, currentAddress,
               query.isBlank() ? "" : "%" + query.trim() + "%"));
     });
@@ -71,8 +71,8 @@ public final class CardLinks {
           JOIN lesson_assignment la ON la.id=a.assignment_id
           JOIN lesson l ON l.id=la.lesson_id
           JOIN training_group g ON g.id=l.group_id
-          WHERE a.id=$1 AND g.teacher_id=$2 FOR UPDATE OF a
-          """).execute(Tuple.of(parent, current.getUUID("teacher_id"))).compose(rows -> {
+          WHERE a.id=$1 AND g.instructor_id=$2 FOR UPDATE OF a
+          """).execute(Tuple.of(parent, current.getUUID("instructor_id"))).compose(rows -> {
         if (rows.size() == 0) return Future.failedFuture(invalid("Карточка для связи не найдена."));
         requireSavedCall(rows.iterator().next());
         return root(db, parent).compose(main -> {
@@ -130,10 +130,10 @@ public final class CardLinks {
 
   private static Future<Row> accessible(SqlClient db, Account actor, UUID attempt, boolean lock) {
     return db.preparedQuery("""
-        SELECT a.id,a.status,a.card,l.mode,g.teacher_id
+        SELECT a.id,a.status,a.card,l.mode,g.instructor_id
         FROM training_attempt a JOIN lesson_assignment la ON la.id=a.assignment_id
         JOIN lesson l ON l.id=la.lesson_id JOIN training_group g ON g.id=l.group_id
-        WHERE a.id=$1 AND (la.learner_id=$2 OR g.teacher_id=$2)
+        WHERE a.id=$1 AND (la.learner_id=$2 OR g.instructor_id=$2)
         """ + (lock ? " FOR UPDATE OF a" : ""))
         .execute(Tuple.of(attempt, actor.id()))
         .compose(rows -> rows.size() == 0

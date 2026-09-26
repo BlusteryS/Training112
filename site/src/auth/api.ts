@@ -4,7 +4,7 @@ export { ApiError } from '../api';
 export type User = {
   id: string;
   login: string;
-  role: 'user' | 'teacher' | 'admin';
+  role: 'user' | 'instructor' | 'admin';
   workstation?: string;
 };
 

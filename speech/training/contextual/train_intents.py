@@ -84,18 +84,18 @@ def run(args):
 
     from speech112.runtime.models import OnnxEncoder
 
-    teacher = OnnxEncoder(Path(".models/e5-small-int8"), 1)
+    encoder = OnnxEncoder(Path(".models/e5-small-int8"), 1)
     texts = sorted({r["text"] for r in train})
     vectors = {}
     for i in range(0, len(texts), 16):
         block = texts[i : i + 16]
-        values = teacher.encode([ExampleIntentRecognizer.normalize(t) for t in block])
+        values = encoder.encode([ExampleIntentRecognizer.normalize(t) for t in block])
         vectors.update(zip(block, values, strict=True))
     anchors = np.stack([vectors[r["text"]] for r in train])
     anchor_rows = np.array(
         [r["family"] in ("single", "history_invariance", "history_distractor") for r in train]
     )
-    del teacher, vectors
+    del encoder, vectors
     tokenizer = ContextTokenizer(Path(".models/e5-small-int8/tokenizer.json"), args.input_format)
     model, arrays, mapping = load_base(
         Path(".models/e5-small-int8/model.onnx"),

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { api } from './api';
 import { ApiError, authApi, type User } from './auth/api';
@@ -11,7 +11,7 @@ import { ActionButton, ActionRow } from './components/ui/ActionButton';
 import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';
 import { LoginPage } from './pages/LoginPage';
-import { MaterialsMenu } from './management/Materials';
+import { MaterialsMenu } from './management/MaterialsMenu';
 import { readCooldown, readManualAvailability, writeManualAvailability } from './operatorAvailability';
 import chevronDarkIcon from './assets/workspace/chevron-dark.svg';
 import headsetIcon from './assets/workspace/headset.svg';
@@ -21,7 +21,8 @@ import searchIcon from './assets/workspace/search.svg';
 import searchPlusIcon from './assets/workspace/search-plus.svg';
 import styles from './App.module.css';
 
-const Management = lazy(() => import('./management/Management').then((module) => ({ default: module.Management })));
+const AdminDesk = lazy(() => import('./management/AdminDesk').then((module) => ({ default: module.AdminDesk })));
+const InstructorWorkspace = lazy(() => import('./management/InstructorWorkspace').then((module) => ({ default: module.InstructorWorkspace })));
 const CardDesk = lazy(() => import('./pages/CardDesk').then((module) => ({ default: module.CardDesk })));
 const LearnerProgress = lazy(() => import('./pages/LearnerProgress').then((module) => ({ default: module.LearnerProgress })));
 const SpeechPage = lazy(() => import('./pages/SpeechPage').then((module) => ({ default: module.SpeechPage })));
@@ -338,7 +339,7 @@ function OperatorWorkspace() {
   </div>;
 }
 
-function StaffWorkspace() {
+function StaffWorkspace({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   return <div className={styles.workspace}>
     <WorkspaceHeader leading={<div className={styles.searchPanel}>
@@ -347,7 +348,7 @@ function StaffWorkspace() {
       <div className={styles.searchFooter}>Учебный комплекс</div>
     </div>} />
     <div className={styles.operatorContent}>
-      <Suspense fallback={null}><Management /></Suspense>
+      {children}
     </div>
   </div>;
 }
@@ -355,7 +356,7 @@ function StaffWorkspace() {
 function Home() {
   const { user } = useAuth();
   return user.role === 'user' ? <OperatorWorkspace />
-    : <Navigate replace to={user.role === 'admin' ? '/admin/users' : '/teacher/lessons'} />;
+    : <Navigate replace to={user.role === 'admin' ? '/admin/users' : '/instructor/lessons'} />;
 }
 
 function Application() {
@@ -404,8 +405,8 @@ function Application() {
             <Route element={session.user.role === 'user' ? <SpeechPage /> : <Navigate replace to="/" />} path="/session" />
             <Route element={session.user.role === 'user' ? <CardDesk /> : <Navigate replace to="/" />} path="/card" />
             <Route element={session.user.role === 'user' ? <LearnerProgress /> : <Navigate replace to="/" />} path="/progress" />
-            <Route element={session.user.role === 'teacher' ? <StaffWorkspace /> : <Navigate replace to="/" />} path="/teacher/:section" />
-            <Route element={session.user.role === 'admin' ? <StaffWorkspace /> : <Navigate replace to="/" />} path="/admin/:section" />
+            <Route element={session.user.role === 'instructor' ? <StaffWorkspace><InstructorWorkspace /></StaffWorkspace> : <Navigate replace to="/" />} path="/instructor/:section" />
+            <Route element={session.user.role === 'admin' ? <StaffWorkspace><AdminDesk /></StaffWorkspace> : <Navigate replace to="/" />} path="/admin/:section" />
             <Route element={<Home />} path="/" />
             <Route element={<Navigate replace to="/" />} path="*" />
           </Routes></Suspense>

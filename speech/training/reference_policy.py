@@ -87,7 +87,7 @@ class EmbeddingIntentRecognizer:
     async def classify(self, text: str, examples: dict[str, list[str]]) -> str | None:
         if not examples:
             return None
-        # Explicit scenario examples are authoritative, even when a teacher groups
+        # Explicit scenario examples are authoritative, even when a instructor groups
         # several fine-grained canonical intents into one response.
         exact = await ExampleIntentRecognizer().classify(text, examples)
         if exact is not None:
@@ -103,7 +103,7 @@ class EmbeddingIntentRecognizer:
                     return specialist
                 if specialist == "other":
                     return None
-                # A teacher may define new intent identifiers. The fixed head
+                # A instructor may define new intent identifiers. The fixed head
                 # cannot classify those: allow the scenario encoder to match them.
                 examples = {
                     key: values for key, values in examples.items() if key not in self.head.labels
@@ -112,7 +112,7 @@ class EmbeddingIntentRecognizer:
                     return None
         labels = [key for key, values in examples.items() for _ in values]
         # ASR output is lowercase and unpunctuated. Use the same representation for
-        # teacher-entered examples and recognized questions to avoid modality drift.
+        # instructor-entered examples and recognized questions to avoid modality drift.
         values = [
             ExampleIntentRecognizer.normalize(value)
             for values in examples.values()

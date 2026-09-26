@@ -19,7 +19,7 @@ function displayDate(value: Date) {
 
 function personLabel(role: string, login: string) {
   if (role === 'admin') return 'Администратор';
-  if (role === 'teacher') return 'Преподаватель';
+  if (role === 'instructor') return 'Преподаватель';
   const number = login.match(/\d+/)?.[0];
   return number ? `оп. ${number}, ${login}` : 'Оператор';
 }

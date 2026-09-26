@@ -3,15 +3,18 @@ package com.training112.training;
 import com.training112.auth.ApiException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
-/** Creates an editable dialogue from a classified incident and the teacher's case details. */
+/** Creates an editable dialogue from a classified incident and the instructor's case details. */
 public final class ScenarioDraft {
   private static final Set<String> DIFFICULTIES = Set.of("basic", "intermediate", "advanced");
+  private static final JsonObject TEMPLATE = loadTemplate();
 
   private ScenarioDraft() {}
 
-  public static JsonObject build(JsonObject demo, String classifierCode, String location,
+  public static JsonObject build(String classifierCode, String location,
       String difficulty, int seconds, String origin, String caller) {
     JsonObject incident = IncidentClassifier.card(classifierCode);
     if (incident == null || !DIFFICULTIES.contains(difficulty)
@@ -23,7 +26,7 @@ public final class ScenarioDraft {
 
     String type = incident.getString("type");
     String description = incident.getString("result");
-    JsonObject document = demo.copy();
+    JsonObject document = TEMPLATE.copy();
     document.put("title", "Учебный сценарий: " + description);
     document.put("classifier_code", classifierCode);
     document.put("origin", origin);
@@ -68,5 +71,14 @@ public final class ScenarioDraft {
     return new JsonObject().put("id", field).put("kind", "field_equals")
         .put("field", field).put("expected", expected).put("weight", 1)
         .put("description", description);
+  }
+
+  private static JsonObject loadTemplate() {
+    try (var input = ScenarioDraft.class.getResourceAsStream("/contracts/demo-scenario.json")) {
+      if (input == null) throw new IllegalStateException("Missing scenario template");
+      return new JsonObject(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+    } catch (IOException error) {
+      throw new IllegalStateException("Cannot read scenario template", error);
+    }
   }
 }

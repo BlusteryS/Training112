@@ -5,9 +5,9 @@ import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository;
 import com.training112.auth.AuthRepository.Account;
 import com.training112.auth.AuthSession;
+import com.training112.auth.RequestGuard;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -30,28 +30,7 @@ public final class TrainingRoutes {
   }
 
   public void mount(Router router) {
-    router
-        .route("/api/training/*")
-        .handler(
-            ctx -> {
-              if (ctx.request().method() != HttpMethod.GET) {
-                String origin = ctx.request().getHeader("Origin");
-                String content = ctx.request().getHeader("Content-Type");
-                if (!"training112".equals(ctx.request().getHeader("X-Requested-With"))
-                    || (origin != null && !origin.equals(config.appOrigin()))
-                    || "cross-site".equals(ctx.request().getHeader("Sec-Fetch-Site"))) {
-                  ctx.fail(
-                      new ApiException(403, "forbidden_origin", "Запрос с этого сайта запрещён."));
-                  return;
-                }
-                if (content == null
-                    || !content.split(";", 2)[0].trim().equalsIgnoreCase("application/json")) {
-                  ctx.fail(new ApiException(415, "unsupported_media_type", "Нужен JSON."));
-                  return;
-                }
-              }
-              ctx.next();
-            });
+    router.route("/api/training/*").handler(ctx -> RequestGuard.jsonWrites(ctx, config));
     // Subscribe to the body before asynchronous authentication can let the stream end.
     router
         .route("/api/training/*")
@@ -110,20 +89,12 @@ public final class TrainingRoutes {
     router
         .post("/api/training/scenarios/draft")
         .handler(c -> {
-          TrainingRepository.teacher(actor(c));
+          TrainingRepository.instructor(actor(c));
           JsonObject body = body(c);
           Object seconds = body.getValue("seconds");
           if (!(seconds instanceof Number number) || number.intValue() < 1 || number.intValue() > 86_400
               || number.doubleValue() != number.intValue()) throw invalid();
-          JsonObject demo;
-          try (var input = TrainingRoutes.class.getResourceAsStream("/contracts/demo-scenario.json")) {
-            if (input == null) throw new IllegalStateException("Missing demo scenario");
-            demo = new JsonObject(new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
-          } catch (java.io.IOException error) {
-            c.fail(error);
-            return;
-          }
-          JsonObject document = ScenarioDraft.build(demo, text(c, "classifier_code", 32), text(c, "location", 1000),
+          JsonObject document = ScenarioDraft.build(text(c, "classifier_code", 32), text(c, "location", 1000),
               text(c, "difficulty", 32), number.intValue(), text(c, "origin", 80), text(c, "caller_name", 200));
           json(c, Future.succeededFuture(document));
         });

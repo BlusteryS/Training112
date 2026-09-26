@@ -11,6 +11,7 @@ import { SelectField } from '../components/ui/SelectField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 import { SummaryGrid } from './SummaryGrid';
 import { Operations } from './Operations';
+import { RoleField, roleNames } from './RoleField';
 
 const sections = {
   users: 'Пользователи',
@@ -22,7 +23,6 @@ const sections = {
   backups: 'Резервные копии',
 } as const;
 
-const roleNames: Record<string, string> = { user: 'Обучающийся', teacher: 'Преподаватель', admin: 'Администратор' };
 const actionNames: Record<string, string> = {
   'user.created': 'Создана учётная запись',
   'user.role_changed': 'Изменена роль',
@@ -55,7 +55,7 @@ export function AdminDesk() {
   if (!section || !Object.hasOwn(pages, section)) return <Navigate replace to="/admin/users" />;
   const Page = pages[section as keyof typeof pages];
   return <div data-tab-workspace>
-    <SectionTabs value={section} options={sections} basePath="/admin" />
+    <SectionTabs options={sections} basePath="/admin" />
     <Page />
   </div>;
 }
@@ -86,7 +86,7 @@ function Accounts() {
 function UserCreate({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState<User['role']>('user');
   const [minLength, setMinLength] = useState(8);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -103,14 +103,7 @@ function UserCreate({ onClose, onDone }: { onClose: () => void; onDone: () => vo
     <div className={formGrid}>
       <InputField label="Логин" value={login} required pattern="[a-z0-9_]{3,32}" autoComplete="off" onChange={(event) => setLogin(event.target.value)} />
       <InputField label={`Пароль, от ${minLength} символов`} value={password} type="password" autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} />
-      <SelectField label="Роль" value={role} onChange={(event) => {
-        const value = event.target.value;
-        if (value === 'user' || value === 'teacher' || value === 'admin') setRole(value);
-      }}>
-        <option value="user">Обучающийся</option>
-        <option value="teacher">Преподаватель</option>
-        <option value="admin">Администратор</option>
-      </SelectField>
+      <RoleField value={role} onChange={setRole} />
     </div>
   </FormCard>
 </ModalForm>;
@@ -130,14 +123,7 @@ function UserEdit({ entry, onClose, onDone }: { entry: User & { blocked: boolean
     })().then(onDone).catch((cause: Error) => { setError(cause.message); setBusy(false); });
   }}>
     <div className={formGrid}>
-      <SelectField label="Роль" value={role} onChange={(event) => {
-        const value = event.target.value;
-        if (value === 'user' || value === 'teacher' || value === 'admin') setRole(value);
-      }}>
-        <option value="user">Обучающийся</option>
-        <option value="teacher">Преподаватель</option>
-        <option value="admin">Администратор</option>
-      </SelectField>
+      <RoleField value={role} onChange={setRole} />
       <SelectField label="Доступ" value={blocked ? 'closed' : 'open'} onChange={(event) => setBlocked(event.target.value === 'closed')}>
         <option value="open">Открыт</option>
         <option value="closed">Закрыт</option>
@@ -206,7 +192,7 @@ function Statistics() {
   useEffect(() => { void api<Record<string, number>>('admin/statistics').then(setRow).catch((cause: Error) => setError(cause.message)); }, []);
   const lines = row ? [
     ['Администраторы', row.admins],
-    ['Преподаватели', row.teachers],
+    ['Преподаватели', row.instructors],
     ['Обучающиеся', row.learners],
     ['Доступ закрыт', row.blocked],
     ['Сценарии', row.scenarios],

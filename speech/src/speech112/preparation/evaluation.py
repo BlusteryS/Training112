@@ -1,4 +1,4 @@
-"""Score the saved operator card against the teacher's scenario rubric."""
+"""Score the saved operator card against the instructor's scenario rubric."""
 
 from __future__ import annotations
 

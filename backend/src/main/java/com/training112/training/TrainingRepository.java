@@ -29,8 +29,8 @@ public final class TrainingRepository {
     return cardLinks;
   }
 
-  public static void teacher(Account actor) {
-    if (!"teacher".equals(actor.role())) throw forbidden();
+  public static void instructor(Account actor) {
+    if (!"instructor".equals(actor.role())) throw forbidden();
   }
 
   public static ApiException forbidden() {
@@ -78,13 +78,13 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> createGroup(Account actor, String name, String service) {
-    teacher(actor);
+    instructor(actor);
     UUID id = UUID.randomUUID();
     return pool.withTransaction(
         db ->
             one(
                     db,
-                    "INSERT INTO training_group(id,teacher_id,name,service_code) VALUES"
+                    "INSERT INTO training_group(id,instructor_id,name,service_code) VALUES"
                         + " ($1,$2,$3,$4) RETURNING to_jsonb(training_group) AS value",
                     Tuple.of(id, actor.id(), name, service))
                 .compose(
@@ -94,33 +94,33 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> lessons(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, """
         SELECT to_jsonb(l) || jsonb_build_object('group_name',g.name,
           'title',COALESCE(l.card_template->>'title',s.document->>'title')) AS value
         FROM lesson l JOIN training_group g ON g.id=l.group_id
         LEFT JOIN scenario s ON s.id=l.scenario_id
-        WHERE g.teacher_id=$1 ORDER BY l.created_at DESC LIMIT 100
+        WHERE g.instructor_id=$1 ORDER BY l.created_at DESC LIMIT 100
         """, Tuple.of(actor.id()));
   }
 
   public Future<JsonArray> learners(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, "SELECT jsonb_build_object('id',id,'login',login) AS value FROM app_user WHERE role='user' AND NOT blocked ORDER BY login LIMIT 1000", Tuple.tuple());
   }
 
   public Future<JsonArray> groups(Account actor) {
     return list(
         pool,
-        "SELECT to_jsonb(g) || jsonb_build_object('member_count', (SELECT count(*) FROM training_group_member WHERE group_id=g.id)) AS value FROM training_group g WHERE teacher_id=$1 OR EXISTS (SELECT 1"
+        "SELECT to_jsonb(g) || jsonb_build_object('member_count', (SELECT count(*) FROM training_group_member WHERE group_id=g.id)) AS value FROM training_group g WHERE instructor_id=$1 OR EXISTS (SELECT 1"
             + " FROM training_group_member m WHERE m.group_id=g.id AND m.user_id=$1) ORDER BY"
             + " created_at DESC LIMIT 100",
         Tuple.of(actor.id()));
   }
 
   public Future<JsonArray> members(Account actor, UUID group) {
-    teacher(actor);
-    return one(pool, "SELECT id FROM training_group WHERE id=$1 AND teacher_id=$2",
+    instructor(actor);
+    return one(pool, "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2",
         Tuple.of(group, actor.id())).compose(ignored -> list(pool, """
         SELECT jsonb_build_object('id',u.id,'login',u.login,'blocked',u.blocked) AS value
         FROM training_group_member m JOIN app_user u ON u.id=m.user_id
@@ -129,9 +129,9 @@ public final class TrainingRepository {
   }
 
   public Future<Void> removeMember(Account actor, UUID group, UUID learner) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(db ->
-        one(db, "SELECT id FROM training_group WHERE id=$1 AND teacher_id=$2 FOR UPDATE",
+        one(db, "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
             Tuple.of(group, actor.id()))
         .compose(ignored -> db.preparedQuery(
             "DELETE FROM training_group_member WHERE group_id=$1 AND user_id=$2")
@@ -141,12 +141,12 @@ public final class TrainingRepository {
   }
 
   public Future<Void> addMember(Account actor, UUID group, UUID learner) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(
         db ->
             one(
                     db,
-                    "SELECT id FROM training_group WHERE id=$1 AND teacher_id=$2 FOR UPDATE",
+                    "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
                     Tuple.of(group, actor.id()))
                 .compose(
                     ignored ->
@@ -171,7 +171,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> scenarios(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(
         pool,
         "SELECT jsonb_build_object('id',id,'title',title,'status',status) AS value FROM"
@@ -180,7 +180,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> createScenario(Account actor, JsonObject document) {
-    teacher(actor);
+    instructor(actor);
     JsonObject validated = ScenarioDocuments.validate(document);
     UUID scenario = UUID.randomUUID();
     return pool.withTransaction(
@@ -201,7 +201,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> updateScenario(Account actor, UUID scenario, JsonObject document) {
-    teacher(actor);
+    instructor(actor);
     JsonObject validated = ScenarioDocuments.validate(document);
     return pool.withTransaction(
         db ->
@@ -243,7 +243,7 @@ public final class TrainingRepository {
   }
 
   public Future<Void> archiveScenario(Account actor, UUID scenario) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(db ->
         one(db, "SELECT id FROM scenario WHERE id=$1 AND author_id=$2 FOR UPDATE",
             Tuple.of(scenario, actor.id()))
@@ -260,7 +260,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> scenario(Account actor, UUID scenario) {
-    teacher(actor);
+    instructor(actor);
     return one(
             pool,
             "SELECT to_jsonb(s)-'artifact'-'artifact_sha256' AS value FROM scenario s"
@@ -270,7 +270,7 @@ public final class TrainingRepository {
   }
 
   public Future<Void> approve(Account actor, UUID scenario) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(
         db ->
             one(
@@ -295,7 +295,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> jobs(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(
         pool,
         """
@@ -304,13 +304,13 @@ public final class TrainingRepository {
         LEFT JOIN scenario s ON s.id=j.scenario_id
         LEFT JOIN training_attempt a ON a.id=j.attempt_id LEFT JOIN lesson_assignment la ON la.id=a.assignment_id
         LEFT JOIN lesson l ON l.id=la.lesson_id LEFT JOIN training_group g ON g.id=l.group_id
-        WHERE s.author_id=$1 OR g.teacher_id=$1 ORDER BY j.created_at DESC LIMIT 100
+        WHERE s.author_id=$1 OR g.instructor_id=$1 ORDER BY j.created_at DESC LIMIT 100
         """,
         Tuple.of(actor.id()));
   }
 
   public Future<JsonObject> createLesson(Account actor, UUID group, UUID scenario, String mode) {
-    teacher(actor);
+    instructor(actor);
     if (!"call".equals(mode))
       throw new ApiException(400, "invalid_mode", "Неизвестный режим занятия.");
     UUID id = UUID.randomUUID();
@@ -318,7 +318,7 @@ public final class TrainingRepository {
         db ->
             one(
                     db,
-                    "SELECT id FROM training_group WHERE id=$1 AND teacher_id=$2 FOR UPDATE",
+                    "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
                     Tuple.of(group, actor.id()))
                 .compose(
                     ignored ->
@@ -341,7 +341,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> operatorCards(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, """
         SELECT jsonb_build_object('id',a.id,'incident_code',a.card->>'incident_code',
           'address',a.card->>'address','services',a.card->>'services',
@@ -350,17 +350,17 @@ public final class TrainingRepository {
         JOIN lesson_assignment la ON la.id=a.assignment_id
         JOIN lesson l ON l.id=la.lesson_id
         JOIN training_group g ON g.id=l.group_id
-        WHERE g.teacher_id=$1 AND l.mode='call' AND a.status='completed'
+        WHERE g.instructor_id=$1 AND l.mode='call' AND a.status='completed'
           AND a.card->>'description' IS NOT NULL
         ORDER BY a.created_at DESC LIMIT 100
         """, Tuple.of(actor.id()));
   }
 
   public Future<JsonObject> createCardLesson(Account actor, UUID group, JsonObject body) {
-    teacher(actor);
+    instructor(actor);
     UUID id = UUID.randomUUID();
     return pool.withTransaction(db -> one(db,
-        "SELECT service_code FROM training_group WHERE id=$1 AND teacher_id=$2 FOR UPDATE",
+        "SELECT service_code FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
         Tuple.of(group, actor.id())).compose(groupRow -> {
       String service = groupRow.getString("service_code");
       Object sourceValue = body.getValue("sources");
@@ -408,7 +408,7 @@ public final class TrainingRepository {
           JOIN lesson_assignment la ON la.id=a.assignment_id
           JOIN lesson l ON l.id=la.lesson_id
           JOIN training_group g ON g.id=l.group_id
-          WHERE a.id=$1 AND g.teacher_id=$2 AND l.mode='call' AND a.status='completed'
+          WHERE a.id=$1 AND g.instructor_id=$2 AND l.mode='call' AND a.status='completed'
           """, Tuple.of(sourceId, actor.id()))
           .map(row -> DdsCardTemplate.fromOperator(row.getJsonObject("card"), options, service, sourceId));
     if ("generated".equals(type)) return one(db,
@@ -431,14 +431,14 @@ public final class TrainingRepository {
   }
 
   public Future<Void> startLesson(Account actor, UUID id) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(
         db ->
             one(
                     db,
                     "SELECT l.*,s.status AS scenario_status,s.document,g.service_code FROM lesson l"
                         + " JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON"
-                        + " s.id=l.scenario_id WHERE l.id=$1 AND g.teacher_id=$2 FOR UPDATE OF l",
+                        + " s.id=l.scenario_id WHERE l.id=$1 AND g.instructor_id=$2 FOR UPDATE OF l",
                     Tuple.of(id, actor.id()))
                 .compose(
                     row -> {
@@ -529,13 +529,13 @@ public final class TrainingRepository {
         LEFT JOIN LATERAL (SELECT min((criterion->>'seconds')::integer) AS seconds
           FROM jsonb_array_elements(COALESCE(s.document->'rubric','[]'::jsonb)) criterion
           WHERE criterion->>'kind'='deadline' AND criterion->>'action'='saved') deadline ON true
-        WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY latest.created_at DESC NULLS LAST,u.login LIMIT 1000
+        WHERE a.learner_id=$1 OR g.instructor_id=$1 ORDER BY latest.created_at DESC NULLS LAST,u.login LIMIT 1000
         """,
         Tuple.of(actor.id()));
   }
 
   public Future<JsonArray> completedAttempts(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, """
         SELECT jsonb_build_object('id',la.id,'attempt_id',a.id,'attempt_status',a.status,
           'learner_login',u.login,'mode',l.mode,'title',
@@ -547,7 +547,7 @@ public final class TrainingRepository {
         JOIN training_group g ON g.id=l.group_id
         JOIN app_user u ON u.id=la.learner_id
         LEFT JOIN scenario s ON s.id=l.scenario_id
-        WHERE g.teacher_id=$1 AND a.status IN ('completed','failed')
+        WHERE g.instructor_id=$1 AND a.status IN ('completed','failed')
         ORDER BY a.created_at DESC LIMIT 1000
         """, Tuple.of(actor.id()));
   }
@@ -628,10 +628,10 @@ public final class TrainingRepository {
         """
         SELECT a.*,la.learner_id,l.id AS lesson_id,l.scenario_id,
           COALESCE(a.card_template,l.card_template) AS card_template,l.mode,
-          l.status AS lesson_status,g.teacher_id
+          l.status AS lesson_status,g.instructor_id
         FROM training_attempt a JOIN lesson_assignment la ON la.id=a.assignment_id
         JOIN lesson l ON l.id=la.lesson_id JOIN training_group g ON g.id=l.group_id
-        WHERE a.id=$1 AND (la.learner_id=$2 OR g.teacher_id=$2)
+        WHERE a.id=$1 AND (la.learner_id=$2 OR g.instructor_id=$2)
         """
             + (lock ? " FOR UPDATE OF a" : ""),
         Tuple.of(id, actor.id()));
@@ -1041,13 +1041,13 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> finishLesson(Account actor, UUID id) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(
         db ->
             one(
                     db,
                     "SELECT l.id FROM lesson l JOIN training_group g ON g.id=l.group_id WHERE"
-                        + " l.id=$1 AND g.teacher_id=$2 FOR UPDATE OF l",
+                        + " l.id=$1 AND g.instructor_id=$2 FOR UPDATE OF l",
                     Tuple.of(id, actor.id()))
                 .compose(
                     ignored ->
@@ -1100,19 +1100,19 @@ public final class TrainingRepository {
   }
 
   public Future<Void> review(Account actor, UUID id, JsonObject result, String reason) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(
         db ->
             accessibleAttempt(db, actor, id, true)
                 .compose(
                     row -> {
-                      if (!actor.id().equals(row.getUUID("teacher_id")))
+                      if (!actor.id().equals(row.getUUID("instructor_id")))
                         return Future.failedFuture(forbidden());
                       if (!Set.of("completed", "failed").contains(row.getString("status")))
                         return Future.failedFuture(conflict("Попытка ещё не завершена."));
                       return db.preparedQuery(
                               "INSERT INTO"
-                                  + " evaluation_review(id,attempt_id,teacher_id,result,reason)"
+                                  + " evaluation_review(id,attempt_id,instructor_id,result,reason)"
                                   + " VALUES ($1,$2,$3,$4,$5)")
                           .execute(Tuple.of(UUID.randomUUID(), id, actor.id(), result, reason));
                     })
@@ -1127,7 +1127,7 @@ public final class TrainingRepository {
   }
 
   public Future<Void> deleteScenario(Account actor, UUID scenario) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(db ->
         one(db, """
             SELECT
@@ -1149,13 +1149,13 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> materials(Account actor) {
-    String scope = "teacher".equals(actor.role())
-        ? "m.teacher_id=$1"
+    String scope = "instructor".equals(actor.role())
+        ? "m.instructor_id=$1"
         : """
           EXISTS (SELECT 1 FROM training_group g JOIN training_group_member gm ON gm.group_id=g.id
-            WHERE g.teacher_id=m.teacher_id AND gm.user_id=$1)
+            WHERE g.instructor_id=m.instructor_id AND gm.user_id=$1)
           """;
-    if (!Set.of("teacher", "user").contains(actor.role())) throw forbidden();
+    if (!Set.of("instructor", "user").contains(actor.role())) throw forbidden();
     return list(pool, """
         SELECT jsonb_build_object('id',m.id,'title',m.title,'filename',m.filename,
           'media_type',m.media_type,'byte_size',m.byte_size,'created_at',m.created_at) AS value
@@ -1164,12 +1164,12 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> material(Account actor, UUID id) {
-    if (!Set.of("teacher", "user").contains(actor.role())) throw forbidden();
-    String scope = "teacher".equals(actor.role())
-        ? "teacher_id=$2"
+    if (!Set.of("instructor", "user").contains(actor.role())) throw forbidden();
+    String scope = "instructor".equals(actor.role())
+        ? "instructor_id=$2"
         : """
           EXISTS (SELECT 1 FROM training_group g JOIN training_group_member gm ON gm.group_id=g.id
-            WHERE g.teacher_id=teaching_material.teacher_id AND gm.user_id=$2)
+            WHERE g.instructor_id=teaching_material.instructor_id AND gm.user_id=$2)
           """;
     return one(pool, "SELECT title,filename,media_type,content FROM teaching_material WHERE id=$1 AND " + scope,
             Tuple.of(id, actor.id()))
@@ -1181,7 +1181,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> addMaterial(Account actor, String title, String filename, String media, byte[] content) {
-    teacher(actor);
+    instructor(actor);
     if (title.isBlank() || title.length() > 200 || filename.isBlank() || filename.length() > 200
         || !Set.of("application/pdf", "text/plain", "audio/wav", "audio/mpeg", "application/json").contains(media)
         || content.length < 1 || content.length > 98_304) {
@@ -1189,7 +1189,7 @@ public final class TrainingRepository {
     }
     UUID id = UUID.randomUUID();
     return pool.withTransaction(db -> db.preparedQuery(
-            "INSERT INTO teaching_material(id,teacher_id,title,filename,media_type,content,byte_size)"
+            "INSERT INTO teaching_material(id,instructor_id,title,filename,media_type,content,byte_size)"
                 + " VALUES ($1,$2,$3,$4,$5,$6,$7)")
         .execute(Tuple.of(id, actor.id(), title, filename, media, Buffer.buffer(content), content.length))
         .compose(ignored -> audit(db, actor.id(), "material.created", id, new JsonObject().put("title", title)))
@@ -1197,15 +1197,15 @@ public final class TrainingRepository {
   }
 
   public Future<Void> deleteMaterial(Account actor, UUID id) {
-    teacher(actor);
+    instructor(actor);
     return pool.withTransaction(db ->
-        one(db, "SELECT id FROM teaching_material WHERE id=$1 AND teacher_id=$2 FOR UPDATE", Tuple.of(id, actor.id()))
+        one(db, "SELECT id FROM teaching_material WHERE id=$1 AND instructor_id=$2 FOR UPDATE", Tuple.of(id, actor.id()))
             .compose(ignored -> db.preparedQuery("DELETE FROM teaching_material WHERE id=$1").execute(Tuple.of(id)))
             .compose(ignored -> audit(db, actor.id(), "material.deleted", id, new JsonObject())));
   }
 
   public Future<JsonArray> lessonReport(Account actor, UUID lesson) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, """
         SELECT jsonb_build_object(
           'learner_login', u.login,
@@ -1243,7 +1243,7 @@ public final class TrainingRepository {
           FROM jsonb_array_elements(COALESCE(s.document->'rubric','[]'::jsonb)) criterion
           WHERE criterion->>'kind' = 'deadline' AND criterion->>'action' = 'saved'
         ) deadline ON true
-        WHERE l.id = $1 AND g.teacher_id = $2
+        WHERE l.id = $1 AND g.instructor_id = $2
         ORDER BY u.login,a.created_at
         """, Tuple.of(lesson, actor.id()))
         .map(rows -> {
@@ -1269,7 +1269,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> insights(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, """
         SELECT jsonb_build_object('id',c.id,'kind',c.kind,'description',c.description,
           'failed',c.failed,'review',c.review,'total',c.total) AS value
@@ -1285,7 +1285,7 @@ public final class TrainingRepository {
           JOIN training_group g ON g.id = l.group_id
           CROSS JOIN LATERAL jsonb_to_recordset(e.result->'checks')
             AS check_row(id text, kind text, description text, status text)
-          WHERE g.teacher_id = $1
+          WHERE g.instructor_id = $1
           GROUP BY check_row.id,check_row.kind,check_row.description
         ) c
         WHERE c.failed > 0 OR c.review > 0
@@ -1295,7 +1295,7 @@ public final class TrainingRepository {
   }
 
   public Future<JsonArray> progress(Account actor) {
-    teacher(actor);
+    instructor(actor);
     return list(pool, """
         SELECT jsonb_build_object(
           'login', u.login,
@@ -1310,7 +1310,7 @@ public final class TrainingRepository {
         JOIN app_user u ON u.id = la.learner_id
         LEFT JOIN training_attempt a ON a.assignment_id = la.id
         LEFT JOIN attempt_evaluation e ON e.attempt_id = a.id
-        WHERE g.teacher_id = $1
+        WHERE g.instructor_id = $1
         GROUP BY u.id, u.login
         ORDER BY u.login
         """, Tuple.of(actor.id()));

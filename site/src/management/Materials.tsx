@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
-import { FormCard, formChoice, formGrid } from './FormCard';
+import { FormCard, formGrid } from './FormCard';
 import { InputField } from '../components/ui/InputField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
-type Material = { id: string; title: string; filename: string; media_type: string; byte_size: number };
+import { downloadMaterial, type Material } from './materialDownload';
 
 const mediaTypes: Record<string, string> = {
   'application/pdf': 'application/pdf',
@@ -23,17 +23,6 @@ async function encode(file: File) {
   return btoa(binary);
 }
 
-async function download(id: string) {
-  const file = await api<{ filename: string; media_type: string; content_base64: string }>(`training/materials/${id}`);
-  const bytes = Uint8Array.from(atob(file.content_base64), (char) => char.charCodeAt(0));
-  const url = URL.createObjectURL(new Blob([bytes], { type: file.media_type }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = file.filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export function Materials() {
   const [rows, setRows] = useState<Material[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -48,7 +37,7 @@ export function Materials() {
         <span>{row.filename}</span>
         <span>{row.byte_size}</span>
         <span className={deskActions}>
-          <button type="button" onClick={() => void download(row.id).catch((cause: Error) => setError(cause.message))}>Скачать</button>
+          <button type="button" onClick={() => void downloadMaterial(row.id).catch((cause: Error) => setError(cause.message))}>Скачать</button>
           <button type="button" disabled={busy} onClick={() => {
             setBusy(true); setError('');
             void api(`training/materials/${row.id}/delete`, {}).then(refresh).catch((cause: Error) => setError(cause.message)).finally(() => setBusy(false));
@@ -71,27 +60,6 @@ export function Materials() {
       } finally { setBusy(false); }
     }} />}
   </Desk>;
-}
-
-export function MaterialsMenu() {
-  const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState<Material[] | null>(null);
-  const [error, setError] = useState('');
-  return <>
-    <button type="button" onClick={() => {
-      setOpen(true);
-      setError('');
-      setRows(null);
-      void api<Material[]>('training/materials').then(setRows).catch((cause: Error) => setError(cause.message));
-    }}>Учебные материалы</button>
-    {open && <ModalForm label="Материалы" onClose={() => setOpen(false)}>
-      <FormCard title="Материалы" onClose={() => setOpen(false)}>
-        {error && <div role="alert">{error}</div>}
-        {rows && rows.length === 0 && <div>Материалов нет</div>}
-        {rows?.map((row) => <button key={row.id} className={formChoice} type="button" onClick={() => void download(row.id).catch((cause: Error) => setError(cause.message))}>{row.title}</button>)}
-      </FormCard>
-    </ModalForm>}
-  </>;
 }
 
 function UploadDialog({ busy, onClose, onSubmit }: { busy: boolean; onClose: () => void; onSubmit: (title: string, file: File) => Promise<void> }) {

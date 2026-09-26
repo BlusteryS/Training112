@@ -19,12 +19,12 @@ const sections = {
 const pages = { lessons: Lessons, scenarios: Scenarios, groups: Groups,
   materials: Materials, results: Results, reports: Reports };
 
-export function TeacherWorkspace() {
+export function InstructorWorkspace() {
   const { section } = useParams();
-  if (!section || !Object.hasOwn(pages, section)) return <Navigate replace to="/teacher/lessons" />;
+  if (!section || !Object.hasOwn(pages, section)) return <Navigate replace to="/instructor/lessons" />;
   const Page = pages[section as keyof typeof pages];
   return <div data-tab-workspace>
-    <SectionTabs value={section} options={sections} basePath="/teacher" />
+    <SectionTabs options={sections} basePath="/instructor" />
     <Page />
   </div>;
 }

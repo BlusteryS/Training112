@@ -4,7 +4,6 @@ import com.training112.AppConfig;
 import io.vertx.core.Future;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -27,24 +26,7 @@ public final class AuthRoutes {
     }
 
     public void mount(Router router) {
-        router.route("/api/auth/*").handler(context -> {
-            context.response().putHeader("Cache-Control", "no-store");
-            if (context.request().method() == HttpMethod.POST) {
-                String origin = context.request().getHeader("Origin");
-                String fetchSite = context.request().getHeader("Sec-Fetch-Site");
-                if (!"training112".equals(context.request().getHeader("X-Requested-With"))
-                        || (origin != null && !config.appOrigin().equals(origin)) || "cross-site".equals(fetchSite)) {
-                    context.fail(new ApiException(403, "forbidden_origin", "Запрос с этого сайта запрещён."));
-                    return;
-                }
-                String contentType = context.request().getHeader("Content-Type");
-                if (contentType == null || !contentType.split(";", 2)[0].trim().equalsIgnoreCase("application/json")) {
-                    context.fail(new ApiException(415, "unsupported_media_type", "Отправьте данные в формате JSON."));
-                    return;
-                }
-            }
-            context.next();
-        });
+        router.route("/api/auth/*").handler(context -> RequestGuard.jsonWrites(context, config));
         router.route("/api/auth/*").handler(BodyHandler.create().setBodyLimit(4096).setHandleFileUploads(false));
         router.post("/api/auth/login").handler(this::login);
         router.get("/api/auth/me").handler(this::currentUser);

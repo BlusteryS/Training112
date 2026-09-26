@@ -63,7 +63,6 @@ services:
       DB_USER: training112
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       APP_ORIGIN: https://${SERVER_IP:?Run deploy/setup.py first}
-      TLS_TERMINATED_BY_PROXY: "true"
       SPEECH_ENDPOINT: tcp://127.0.0.1:5555
     depends_on:
       db:

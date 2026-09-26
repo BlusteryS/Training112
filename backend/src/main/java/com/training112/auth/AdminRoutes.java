@@ -3,7 +3,6 @@ package com.training112.auth;
 import com.training112.AppConfig;
 import com.training112.speech.SpeechConfig;
 import io.vertx.core.Future;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -22,7 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class AdminRoutes {
-  private static final Set<String> ROLES = Set.of("admin", "teacher", "user");
+  private static final Set<String> ROLES = Set.of("admin", "instructor", "user");
 
   private AdminRoutes() {}
 
@@ -33,10 +32,11 @@ public final class AdminRoutes {
       PasswordHasher passwords,
       AppConfig config,
       SpeechConfig speech) {
+    router.route("/api/admin/*").handler(context -> RequestGuard.jsonWrites(context, config));
     router
         .route("/api/admin/*")
         .handler(BodyHandler.create().setBodyLimit(8192).setHandleFileUploads(false));
-    router.route("/api/admin/*").handler(context -> authorize(context, auth, config));
+    router.route("/api/admin/*").handler(context -> authorize(context, auth));
 
     router.get("/api/admin/users").handler(context -> listUsers(context, pool));
     router.post("/api/admin/users").handler(context -> createUser(context, pool, passwords));
@@ -53,20 +53,7 @@ public final class AdminRoutes {
     router.post("/api/admin/backups").handler(context -> exportBackup(context, pool));
   }
 
-  private static void authorize(
-      RoutingContext context, AuthRepository auth, AppConfig config) {
-    if (context.request().method() != HttpMethod.GET) {
-      String origin = context.request().getHeader("Origin");
-      String content = context.request().getHeader("Content-Type");
-      if (!"training112".equals(context.request().getHeader("X-Requested-With"))
-          || (origin != null && !origin.equals(config.appOrigin()))
-          || "cross-site".equals(context.request().getHeader("Sec-Fetch-Site"))
-          || content == null
-          || !content.split(";", 2)[0].trim().equalsIgnoreCase("application/json")) {
-        context.fail(new ApiException(403, "forbidden_origin", "Запрос запрещён."));
-        return;
-      }
-    }
+  private static void authorize(RoutingContext context, AuthRepository auth) {
     auth.findSession(AuthSession.tokenHash(context))
         .onSuccess(
             actor -> {
@@ -154,7 +141,7 @@ public final class AdminRoutes {
                               .preparedQuery(
                                   """
                                   SELECT EXISTS (
-                                    SELECT 1 FROM training_group WHERE teacher_id=$1
+                                    SELECT 1 FROM training_group WHERE instructor_id=$1
                                     UNION ALL SELECT 1 FROM scenario WHERE author_id=$1
                                     UNION ALL SELECT 1 FROM training_group_member WHERE user_id=$1
                                     UNION ALL SELECT 1 FROM lesson_assignment WHERE learner_id=$1
@@ -295,7 +282,7 @@ public final class AdminRoutes {
         SELECT jsonb_build_object(
           'users', (SELECT count(*) FROM app_user),
           'admins', (SELECT count(*) FROM app_user WHERE role = 'admin'),
-          'teachers', (SELECT count(*) FROM app_user WHERE role = 'teacher'),
+          'instructors', (SELECT count(*) FROM app_user WHERE role = 'instructor'),
           'learners', (SELECT count(*) FROM app_user WHERE role = 'user'),
           'blocked', (SELECT count(*) FROM app_user WHERE blocked),
           'scenarios', (SELECT count(*) FROM scenario WHERE NOT archived),

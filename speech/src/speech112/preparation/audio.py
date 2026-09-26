@@ -1,4 +1,4 @@
-"""Audio preparation in a background process before teacher approval."""
+"""Audio preparation in a background process before instructor approval."""
 
 import os
 from pathlib import Path
