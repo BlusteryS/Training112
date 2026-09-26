@@ -37,6 +37,8 @@ class ScenarioDialogue:
         self.state = self._document["initial_state"]
         self.revision = 0
         self._last_choices: dict[str, str] = {}
+        self._used_choices: dict[str, set[str]] = {}
+        self._choice_catalog: dict[str, set[str]] = {}
         self._last_reply: Reply | None = None
         self._history: list[str] = []
         unsupported = {i["id"] for i in self._document["intents"]} - set(recognizer.labels)
@@ -45,7 +47,10 @@ class ScenarioDialogue:
 
     def _choose(self, key: str, variants: list[str]) -> str:
         texts = [render(v, self._document["facts"]) for v in variants]
-        alternatives = [t for t in texts if t != self._last_choices.get(key)]
+        self._choice_catalog[key] = set(texts)
+        alternatives = [t for t in texts if t not in self._used_choices.get(key, set())]
+        if not alternatives:
+            alternatives = [t for t in texts if t != self._last_choices.get(key)]
         return self._rng.choice(alternatives or texts)
 
     def initiative(self, kind: str) -> Reply:
@@ -62,10 +67,10 @@ class ScenarioDialogue:
 
     async def respond(self, text: str) -> Reply:
         plan = await self._recognizer.understand(text, tuple(self._history))
-        intents = set(plan.intents)
-        if intents == {"contact"}:
+        intents = tuple(dict.fromkeys(plan.intents))
+        if intents == ("contact",):
             return replace(self.initiative("contact"), operator_text=text)
-        if intents == {"repeat"}:
+        if intents == ("repeat",):
             previous = self._last_reply or self.initiative("greeting")
             return Reply(
                 previous.text,
@@ -75,15 +80,16 @@ class ScenarioDialogue:
                 fragments=previous.fragments,
                 operator_text=text,
             )
-        if not intents or intents & {"other", "contact", "repeat"} or len(intents) > 3:
+        if not intents or set(intents) & {"other", "contact", "repeat"} or len(intents) > 6:
             return replace(self.initiative("clarification"), operator_text=text)
-        responses = [
-            r
-            for r in self._document["responses"]
-            if r["intent"] in intents and self.state in r["states"]
-        ]
-        if {r["intent"] for r in responses} != intents:
+        routes = {
+            response["intent"]: response
+            for response in self._document["responses"]
+            if self.state in response["states"]
+        }
+        if any(intent not in routes for intent in intents):
             return replace(self.initiative("clarification"), operator_text=text)
+        responses = [routes[intent] for intent in intents]
         # A hangup mixed with a question must never terminate an unfinished exchange.
         if len(responses) > 1 and any(r.get("end_call", False) for r in responses):
             return replace(self.initiative("clarification"), operator_text=text)
@@ -109,6 +115,11 @@ class ScenarioDialogue:
         self.state = reply.next_state
         self.revision += 1
         self._last_choices.update(reply.choices)
+        for key, value in reply.choices:
+            used = self._used_choices.setdefault(key, set())
+            if used >= self._choice_catalog[key]:
+                used.clear()
+            used.add(value)
         if reply.operator_text is not None:
             self._history.extend((reply.operator_text, reply.text))
             self._history = self._history[-4:]

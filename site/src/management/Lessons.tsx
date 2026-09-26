@@ -3,16 +3,20 @@ import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
 import { SelectField } from '../components/ui/SelectField';
+import { InputField } from '../components/ui/InputField';
+import { TextareaField } from '../components/ui/TextareaField';
 import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario } from './types';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
 
 const columns = 'minmax(180px, 1.4fr) minmax(140px, 1fr) 120px 160px 220px';
+type OperatorCard = { id: string; incident_code: string; address: string; services: string; created_at: string };
 
 export function Lessons() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [operatorCards, setOperatorCards] = useState<OperatorCard[]>([]);
   const [creating, setCreating] = useState(false);
   const [confirm, setConfirm] = useState<{ id: string; action: 'start' | 'finish' } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -26,8 +30,11 @@ export function Lessons() {
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
-    void Promise.all([api<Group[]>('training/groups'), api<Scenario[]>('training/scenarios')])
-      .then(([nextGroups, nextScenarios]) => { if (!cancelled) { setGroups(nextGroups); setScenarios(nextScenarios); } })
+    void Promise.all([api<Group[]>('training/groups'), api<Scenario[]>('training/scenarios'),
+      api<OperatorCard[]>('training/operator-cards')])
+      .then(([nextGroups, nextScenarios, cards]) => { if (!cancelled) {
+        setGroups(nextGroups); setScenarios(nextScenarios); setOperatorCards(cards);
+      } })
       .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     async function poll() {
       try { if (!cancelled) await refresh(); }
@@ -40,7 +47,8 @@ export function Lessons() {
 
   const approved = scenarios.filter((item) => item.status === 'approved');
   return <Desk title="Занятия" actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Назначить</button>}>
-    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Сценарий</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
+    <DeskSection title="Назначенные занятия">
+    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Сценарий или карточка</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
       {lessons.map((lesson) => <DeskRow key={lesson.id} columns={columns}>
         <span>{lesson.title}</span>
         <span>{lesson.group_name}</span>
@@ -52,23 +60,25 @@ export function Lessons() {
         </span>
       </DeskRow>)}
     </DeskTable>}
+    </DeskSection>
     {lessons.some((lesson) => lesson.status === 'active') && assignments.some((item) => lessons.some((lesson) => lesson.status === 'active' && lesson.id === item.lesson_id)) &&
-      <DeskTable columns="minmax(0, 1fr) minmax(0, 1fr) 220px" head={<><span>Участник</span><span>Занятие</span><span>Сейчас</span></>}>
+      <DeskSection title="Ход занятий"><DeskTable columns="minmax(0, 1fr) minmax(0, 1fr) 220px" head={<><span>Обучающийся</span><span>Занятие</span><span>Состояние</span></>}>
         {assignments.filter((item) => lessons.some((lesson) => lesson.status === 'active' && lesson.id === item.lesson_id)).map((item) => <DeskRow key={item.id} columns="minmax(0, 1fr) minmax(0, 1fr) 220px">
           <span>{item.learner_login}</span>
           <span>{item.title}</span>
           <span>{item.attempt_status ? attemptNames[item.attempt_status] ?? item.attempt_status : 'Ожидает'}</span>
         </DeskRow>)}
-      </DeskTable>}
+      </DeskTable></DeskSection>}
     {error && <div className={deskError} role="alert">{error}</div>}
-    {creating && <LessonCreate groups={groups} scenarios={approved} busy={busy} onClose={() => setCreating(false)} onSubmit={(groupId, scenarioId, mode) => {
+    {creating && <LessonCreate groups={groups} scenarios={approved} operatorCards={operatorCards} busy={busy}
+      error={error} onClose={() => setCreating(false)} onSubmit={(body) => {
       setBusy(true); setError('');
-      void api('training/lessons', { group_id: groupId, scenario_id: scenarioId, mode })
+      void api('training/lessons', body)
         .then(async () => { await refresh(); setCreating(false); })
         .catch((cause: Error) => setError(cause.message))
         .finally(() => setBusy(false));
     }} />}
-    {confirm && <ModalForm label={confirm.action === 'start' ? 'Запустить занятие' : 'Завершить занятие'}>
+    {confirm && <ModalForm label={confirm.action === 'start' ? 'Запустить занятие' : 'Завершить занятие'} onClose={() => setConfirm(null)}>
 <FormCard title={confirm.action === 'start' ? 'Запустить занятие' : 'Завершить занятие'}
       submitLabel={confirm.action === 'start' ? 'Запустить' : 'Завершить'} busy={busy} onClose={() => setConfirm(null)} onSubmit={() => {
         setBusy(true); setError('');
@@ -81,30 +91,105 @@ export function Lessons() {
   </Desk>;
 }
 
-function LessonCreate({ groups, scenarios, busy, onClose, onSubmit }: {
+function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, onSubmit }: {
   groups: Group[];
   scenarios: Scenario[];
+  operatorCards: OperatorCard[];
   busy: boolean;
+  error: string;
   onClose: () => void;
-  onSubmit: (groupId: string, scenarioId: string, mode: string) => void;
+  onSubmit: (body: Record<string, string>) => void;
 }) {
   const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
   const [scenarioId, setScenarioId] = useState(scenarios[0]?.id ?? '');
   const [mode, setMode] = useState('call');
-  const ready = Boolean(groupId && scenarioId && groups.find((item) => item.id === groupId)?.member_count);
-  return <ModalForm label="Занятие">
-<FormCard title="Занятие" submitLabel="Назначить" busy={busy || !ready} onClose={onClose} onSubmit={() => onSubmit(groupId, scenarioId, mode)}>
+  const [source, setSource] = useState('manual');
+  const [sourceAttemptId, setSourceAttemptId] = useState('');
+  const [incident, setIncident] = useState('');
+  const [caller, setCaller] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [addressDescription, setAddressDescription] = useState('');
+  const [district, setDistrict] = useState('');
+  const [okrug, setOkrug] = useState('');
+  const [object, setObject] = useState('');
+  const [scenePhone, setScenePhone] = useState('');
+  const [description, setDescription] = useState('');
+  const [victims, setVictims] = useState('');
+  const [services, setServices] = useState('');
+  const [expectedPrimary, setExpectedPrimary] = useState('accepted');
+  const [outcome, setOutcome] = useState('completed');
+  useEffect(() => {
+    if (!groupId && groups[0]) setGroupId(groups[0].id);
+  }, [groupId, groups]);
+  useEffect(() => {
+    if (!scenarioId && scenarios[0]) setScenarioId(scenarios[0].id);
+  }, [scenarioId, scenarios]);
+  const service = groups.find((item) => item.id === groupId)?.service_code ?? '';
+  const availableCards = operatorCards.filter((item) => item.services?.split(',').some((part) => {
+    const normalized = part.trim().toLowerCase().replace('служба ', '');
+    return normalized === service.toLowerCase().replace('служба ', '');
+  }));
+  const ready = Boolean(groupId && groups.find((item) => item.id === groupId)?.member_count
+    && (mode === 'call' ? scenarioId : source === 'operator' ? sourceAttemptId
+      : incident.trim() && phone.trim() && address.trim() && description.trim()));
+  function submit() {
+    if (mode === 'call') { onSubmit({ group_id: groupId, scenario_id: scenarioId, mode }); return; }
+    const shared = { group_id: groupId, mode, expected_primary: expectedPrimary, outcome };
+    if (source === 'operator') {
+      onSubmit({ ...shared, source_attempt_id: sourceAttemptId });
+    } else {
+      onSubmit({ ...shared, incident_code: incident, caller_name: caller, phone, address,
+        address_description: addressDescription, district, okrug, object, scene_phone: scenePhone,
+        description, victims, services: [service, services].filter(Boolean).join(', ') });
+    }
+  }
+  return <ModalForm label="Занятие" onClose={onClose}>
+<FormCard title="Занятие" submitLabel="Назначить" busy={busy || !ready} error={error} onClose={onClose} onSubmit={submit}>
     <div className={formGrid}>
       <SelectField label="Группа" value={groupId} onChange={(event) => setGroupId(event.target.value)}>
         {groups.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
       </SelectField>
-      <SelectField label="Сценарий" value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
-        {scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-      </SelectField>
       <SelectField label="Режим" value={mode} onChange={(event) => setMode(event.target.value)}>
         <option value="call">Звонок оператора 112</option>
-        <option value="card">Отработка карточки</option>
+        <option value="card">Карточка диспетчера ДДС</option>
       </SelectField>
+      {mode === 'call' ? <SelectField label="Сценарий звонка" value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
+        {scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+      </SelectField> : <>
+        <SelectField label="Источник карточки" value={source} onChange={(event) => setSource(event.target.value)}>
+          <option value="manual">Заполнить карточку</option>
+          <option value="operator">Карточка оператора 112</option>
+        </SelectField>
+        {source === 'operator' ? <SelectField label="Карточка оператора" value={sourceAttemptId}
+          onChange={(event) => setSourceAttemptId(event.target.value)}>
+          <option value="">Выберите карточку, направленную в {service}</option>
+          {availableCards.map((item) => <option key={item.id} value={item.id}>
+            {item.incident_code} — {item.address}
+          </option>)}
+        </SelectField> : <>
+          <InputField label="Тип происшествия" value={incident} maxLength={200} onChange={(event) => setIncident(event.target.value)} />
+          <InputField label="Заявитель" value={caller} maxLength={200} onChange={(event) => setCaller(event.target.value)} />
+          <InputField label="Телефон заявителя" value={phone} maxLength={100} onChange={(event) => setPhone(event.target.value)} />
+          <InputField label="Адрес" value={address} maxLength={1000} onChange={(event) => setAddress(event.target.value)} />
+          <InputField label="Район" value={district} maxLength={200} onChange={(event) => setDistrict(event.target.value)} />
+          <InputField label="Округ" value={okrug} maxLength={100} onChange={(event) => setOkrug(event.target.value)} />
+          <InputField label="Объект" value={object} maxLength={200} onChange={(event) => setObject(event.target.value)} />
+          <InputField label="Телефон на месте" value={scenePhone} maxLength={100} onChange={(event) => setScenePhone(event.target.value)} />
+          <InputField label="Ориентир" value={addressDescription} maxLength={1000} onChange={(event) => setAddressDescription(event.target.value)} />
+          <TextareaField label="Описание" value={description} maxLength={1000} onChange={(event) => setDescription(event.target.value)} />
+          <TextareaField label="Пострадавшие" value={victims} maxLength={1000} onChange={(event) => setVictims(event.target.value)} />
+          <InputField label="Другие оповещённые службы, через запятую" value={services} maxLength={1000}
+            onChange={(event) => setServices(event.target.value)} />
+        </>}
+        <SelectField label="Верное первичное решение ДДС" value={expectedPrimary}
+          onChange={(event) => setExpectedPrimary(event.target.value)}>
+          <option value="accepted">Принять</option><option value="rejected">Не принимать</option>
+        </SelectField>
+        <SelectField label="Исход работы бригады" value={outcome} onChange={(event) => setOutcome(event.target.value)}>
+          <option value="completed">Работы завершены</option><option value="refused">Отказ от выполнения работ</option>
+        </SelectField>
+      </>}
     </div>
   </FormCard>
 </ModalForm>;

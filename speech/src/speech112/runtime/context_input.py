@@ -14,6 +14,59 @@ def operator_text(text: str) -> str:
     return " ".join(re.findall(r"\w+", text.lower().replace("ё", "е")))
 
 
+_CLAUSE_BREAK = re.compile(
+    r"[;.!?]+\s*|,\s*(?=(?:кто|где|сколько|есть|назовите|скажите|уточните|сообщите|опишите)\b)"
+    r"|\s+(?:и|а также|затем|потом)\s+",
+    re.IGNORECASE,
+)
+_QUESTION_WORD = re.compile(
+    r"\b(?:кто|что|где|сколько|какой|какая|какие|какое|есть ли|можно ли"
+    r"|назовите|скажите|уточните|сообщите|опишите)\b",
+    re.IGNORECASE,
+)
+
+
+def question_parts(text: str) -> tuple[str, ...]:
+    """Keep every part of a spoken multi-question, including unpunctuated ASR text."""
+    clauses: list[str] = []
+    for piece in _CLAUSE_BREAK.split(text):
+        piece = piece.strip()
+        if not piece:
+            continue
+        if len(piece.split()) < 2 and clauses:
+            clauses[-1] += " " + piece
+        else:
+            clauses.append(piece)
+    parts: list[str] = []
+    for clause in clauses:
+        start = 0
+        for match in _QUESTION_WORD.finditer(clause):
+            if match.group().lower() in ("что", "кто") and re.match(
+                r"[-\s]+(?:то|нибудь)\b", clause[match.end():], re.IGNORECASE
+            ):
+                continue
+            before = clause[start:match.start()].strip()
+            after = clause[match.start():].strip()
+            if len(before.split()) >= 3 and len(after.split()) >= 2:
+                parts.append(before)
+                start = match.start()
+            elif (
+                parts
+                and before
+                and len(before.split()) <= 2
+                and not starts_question(before)
+                and len(after.split()) >= 2
+            ):
+                parts[-1] += " " + before
+                start = match.start()
+        parts.append(clause[start:].strip())
+    return tuple(part for part in parts if part)
+
+
+def starts_question(text: str) -> bool:
+    return _QUESTION_WORD.match(text.strip()) is not None
+
+
 class OperatorUtteranceTooLong(ValueError):
     """The full current question cannot fit; silently dropping its end is forbidden."""
 

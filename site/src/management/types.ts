@@ -7,6 +7,7 @@ export type Assignment = {
   title: string; group_name: string; mode: string; status: string;
   instructions: string | null; difficulty: string | null;
   attempt_id: string | null; attempt_status: string | null;
+  attempt_started_at: string | null; card_status: string | null;
   created_at: string | null;
   workstation: string | null;
   incident_source: string | null;
@@ -27,10 +28,10 @@ export type ScenarioDocument = {
   responses: { id: string; intent: string; states: string[]; variants: string[]; next_state?: string; end_call?: boolean }[];
   greeting: string[]; clarification: string[]; check_in: string[]; contact?: string[];
   rubric: { id: string; kind: string; weight: number; description: string; field?: string; expected?: string; action?: string; seconds?: number; source?: string }[];
-  acceptance_cases: { text: string; state: string; response_id?: string; response_ids?: string[] }[];
+  acceptance_cases?: { text: string; state: string; response_id?: string; response_ids?: string[] }[];
 };
 export const scenarioNames: Record<string, string> = {
-  draft: 'Черновик', preparing: 'Проверка диалога и запись голоса',
+  draft: 'Черновик', preparing: 'Подготовка голоса',
   prepared: 'Готов к утверждению', approved: 'Утверждён', failed: 'Не удалось подготовить',
 };
 export const lessonNames: Record<string, string> = { planned: 'Ожидает запуска', active: 'Идёт занятие', completed: 'Завершено' };

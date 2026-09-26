@@ -1,0 +1,44 @@
+.editor {
+  display: grid;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ebecec;
+  color: #000;
+  gap: 10px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(180px, 1fr) minmax(260px, 2fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.editor .controls button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: #ec653b;
+  color: #fff;
+  cursor: pointer;
+}
+
+.editor .controls button:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.hint {
+  color: #6d4931;
+  font-size: 13px;
+}
+
+@media (max-width: 1500px) {
+  .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

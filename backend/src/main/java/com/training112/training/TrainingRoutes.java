@@ -72,6 +72,8 @@ public final class TrainingRoutes {
                   .onFailure(ctx::fail);
             });
     router.get("/api/training/lessons").handler(c -> json(c, repository.lessons(actor(c))));
+    router.get("/api/training/operator-cards")
+        .handler(c -> json(c, repository.operatorCards(actor(c))));
     router.get("/api/training/learners").handler(c -> json(c, repository.learners(actor(c))));
     router.get("/api/training/groups").handler(c -> json(c, repository.groups(actor(c))));
     router
@@ -153,15 +155,15 @@ public final class TrainingRoutes {
     router.get("/api/training/jobs").handler(c -> json(c, repository.jobs(actor(c))));
     router
         .post("/api/training/lessons")
-        .handler(
-            c ->
-                json(
-                    c,
-                    repository.createLesson(
-                        actor(c),
-                        uuid(body(c).getString("group_id")),
-                        uuid(body(c).getString("scenario_id")),
-                        text(c, "mode", 16))));
+        .handler(c -> {
+          JsonObject request = body(c);
+          String mode = text(c, "mode", 16);
+          UUID group = uuid(request.getString("group_id"));
+          json(c, "card".equals(mode)
+              ? repository.createCardLesson(actor(c), group, request)
+              : repository.createLesson(actor(c), group,
+                  uuid(request.getString("scenario_id")), mode));
+        });
     router
         .post("/api/training/lessons/:id/start")
         .handler(c -> empty(c, repository.startLesson(actor(c), id(c))));
@@ -195,6 +197,17 @@ public final class TrainingRoutes {
     router
         .get("/api/training/attempts/:id")
         .handler(c -> json(c, repository.attempt(actor(c), id(c))));
+    router.get("/api/training/attempts/:id/services")
+        .handler(c -> json(c, repository.ddsServices(actor(c), id(c))));
+    router.get("/api/training/attempts/:id/phone")
+        .handler(c -> {
+          JsonObject request = new JsonObject()
+              .put("party", c.request().getParam("party", ""))
+              .put("direction", c.request().getParam("direction", ""));
+          String topic = c.request().getParam("topic");
+          if (topic != null) request.put("topic", topic);
+          json(c, repository.phonePreview(actor(c), id(c), request));
+        });
     router
         .get("/api/training/attempts/:id/events")
         .handler(

@@ -37,7 +37,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
         ? { ...rule, expected: value } : rule),
     }));
   }
-  return <ModalForm label={editing ? 'Сценарий' : 'Новый сценарий'}>
+  return <ModalForm label={editing ? 'Сценарий' : 'Новый сценарий'} onClose={onCancel}>
 <FormCard title={editing ? 'Сценарий' : 'Новый сценарий'} submitLabel="Сохранить" busy={busy} error={error} onClose={onCancel}
     onSubmit={() => { setError(''); void onSave(document).catch((cause: Error) => setError(cause.message)); }}>
     <div className={formGrid}>
@@ -56,7 +56,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
         ? <TextareaField key={rule.id} label={rule.description} required maxLength={2000} value={rule.expected} onChange={(event) => setDocument({
           ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? { ...item, expected: event.target.value } : item),
         })} />
-        : rule.kind === 'deadline' ? <InputField key={rule.id} label="Сохранение карточки, секунд" required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(event) => {
+        : rule.kind === 'deadline' ? <InputField key={rule.id} label="Норматив заполнения карточки оператора 112, секунд" required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(event) => {
           const seconds = Number(event.target.value);
           setDocument({
             ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? {

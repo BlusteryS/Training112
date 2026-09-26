@@ -45,7 +45,9 @@ export function finishAttempt(id: string, failed = false) {
   return api<void>(`training/attempts/${id}/finish`, { failed });
 }
 
-type CardAttempt = AttemptState & { card_status: string; started_at: string | null };
+export type CardAttempt = AttemptState & {
+  card_status: string; started_at: string | null; status: string; dds_crew: string | null;
+};
 
 export async function openCardAttempt(learnerId: string, assignmentId: string) {
   const assignments = await api<Assignment[]>('training/assignments');
@@ -64,20 +66,53 @@ export async function openCardAttempt(learnerId: string, assignmentId: string) {
 export type AttemptEvent = {
   type: string;
   created_at: string;
-  payload: { status?: string; comment?: string };
+  actor_id?: string | null;
+  source?: string;
+  payload: { status?: string; comment?: string; crew?: string; party?: string;
+    direction?: string; topic?: string; report_status?: string; message?: string; audio?: string };
 };
 
 export async function attemptEvents(id: string) {
   return api<AttemptEvent[]>(`training/attempts/${id}/events?after=0`);
 }
 
+export type DdsServiceState = {
+  service: string; status: string; started_at: string | null;
+  history: { status: string; comment: string; created_at: string; actor: string }[];
+};
+
+export function ddsServiceStates(id: string) {
+  return api<DdsServiceState[]>(`training/attempts/${id}/services`);
+}
+
 export async function postCardStatus(id: string, status: string, comment: string) {
+  await postDdsCommand(id, 'card.status', { status, comment });
+  return api<CardAttempt>(`training/attempts/${id}`);
+}
+
+async function postDdsCommand(id: string, type: string, payload: Record<string, string>) {
   const attempt = await api<CardAttempt>(`training/attempts/${id}`);
-  await api(`training/attempts/${id}/commands`, {
+  return api<AttemptEvent>(`training/attempts/${id}/commands`, {
     event_id: crypto.randomUUID(),
     expected_sequence: attempt.event_sequence,
-    type: 'card.status',
-    payload: { status, comment },
+    type,
+    payload,
   });
-  return api<CardAttempt>(`training/attempts/${id}`);
+}
+
+export function selectDdsCrew(id: string, crew: string) {
+  return postDdsCommand(id, 'dds.crew.select', { crew });
+}
+
+export type PhoneReport = { party: string; direction: string; topic?: string;
+  report_status?: string; audio: string; message: string };
+
+export function previewDdsPhone(id: string, party: 'crew' | 'caller', direction: 'incoming' | 'outgoing', topic?: string) {
+  const query = new URLSearchParams({ party, direction });
+  if (topic) query.set('topic', topic);
+  return api<PhoneReport>(`training/attempts/${id}/phone?${query}`);
+}
+
+export function recordDdsPhone(id: string, party: 'crew' | 'caller', direction: 'incoming' | 'outgoing', topic?: string) {
+  return postDdsCommand(id, 'dds.phone.report', { party, direction, ...(topic ? { topic } : {}) });
 }

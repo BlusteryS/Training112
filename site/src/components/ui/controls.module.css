@@ -45,21 +45,27 @@
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 16px;
+  gap: 4px;
+  margin: 0 0 24px;
+  padding-bottom: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, .3);
 }
 
 .tabs button {
-  height: 41px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, .24);
-  border-radius: 6px;
+  min-height: 45px;
+  padding: 0 18px;
+  border: 0;
+  border-bottom: 3px solid transparent;
   background: transparent;
-  color: #fff;
+  color: rgba(255, 255, 255, .78);
   cursor: pointer;
 }
 
 .tabs button[aria-current='page'] {
-  border-color: #ec653b;
-  color: #ec653b;
+  border-bottom-color: #ec653b;
+  color: #fff;
+}
+
+.tabs button:hover {
+  color: #fff;
 }

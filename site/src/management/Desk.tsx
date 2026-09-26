@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import styles from './Desk.module.css';
 
 export function Desk({ title, actions, children }: { title: string; actions?: ReactNode; children?: ReactNode }) {
@@ -7,25 +7,22 @@ export function Desk({ title, actions, children }: { title: string; actions?: Re
       <div className={styles.title}>{title}</div>
       {actions && <div className={styles.controls}>{actions}</div>}
     </div>
+    <div className={styles.content}>{children}</div>
+  </div>;
+}
+
+export function DeskSection({ title, children }: { title: string; children: ReactNode }) {
+  return <div className={styles.section}>
+    <div className={styles.sectionTitle}>{title}</div>
     {children}
   </div>;
 }
 
-export function DeskTable({ columns, head, children }: { columns: string; head: ReactNode; children: ReactNode }) {
-  const style = { '--cols': columns } as CSSProperties;
-  return <div className={styles.table}>
-    <div className={styles.head} style={style}>{head}</div>
-    {children}
-  </div>;
-}
-
-export function DeskRow({ columns, children }: { columns: string; children: ReactNode }) {
-  return <div className={styles.row} style={{ '--cols': columns } as CSSProperties}>{children}</div>;
-}
+export { DeskTable, DeskRow } from './Table';
 
 export function DeskEmpty({ children }: { children: string }) {
   return <div className={styles.empty}>{children}</div>;
 }
 
-export const deskActions = styles.actions;
 export const deskError = styles.error;
+export { deskActions } from './Table';

@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { ToggleGroup } from '../components/call/ToggleGroup';
+import { ModalForm } from '../components/ModalForm';
 import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
 import { moscowOkrugs } from '../incidentSources';
 import hangupIcon from '../assets/call/hangup.svg';
@@ -258,7 +259,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       <button className={styles.barIcon} type="button" onClick={onCancel} title="Закрыть карточку"><img src={closeIcon} alt="" /></button>
     </div>
 
-    {servicesOpen && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Службы на вызов">
+    {servicesOpen && <ModalForm label="Службы на вызов" onClose={() => setServicesOpen(false)}>
       <div className={styles.modal}>
         <div className={styles.modalTitle}>Службы на вызов</div>
         <div className={styles.serviceChoices}>{serviceOptions.map((service) => <button type="button"
@@ -266,9 +267,9 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           onClick={() => toggleService(service)}>{service}</button>)}</div>
         <button className={styles.primary} type="button" onClick={() => setServicesOpen(false)}>Сохранить и закрыть</button>
       </div>
-    </div>}
+    </ModalForm>}
 
-    {confirm && <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Подтверждение сохранения">
+    {confirm && <ModalForm label="Подтверждение сохранения" onClose={() => { if (!saving) setConfirm(null); }}>
       <div className={styles.modal}>
         <div className={styles.modalTitle}>{confirm === 'save' ? 'Сохранить карточку?' : 'Завершить обработку вызова?'}</div>
         <div>{confirm === 'save' ? `Будут оповещены службы: ${services.join(', ') || 'не выбраны'}.`
@@ -281,6 +282,6 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           <button type="button" disabled={saving} onClick={() => setConfirm(null)}>Вернуться к заполнению</button>
         </div>
       </div>
-    </div>}
+    </ModalForm>}
   </div>;
 }

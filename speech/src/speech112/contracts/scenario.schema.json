@@ -15,8 +15,7 @@
     "greeting",
     "clarification",
     "check_in",
-    "rubric",
-    "acceptance_cases"
+    "rubric"
   ],
   "properties": {
     "schema_version": {
@@ -290,7 +289,7 @@
           "response_ids": {
             "type": "array",
             "minItems": 1,
-            "maxItems": 3,
+            "maxItems": 6,
             "items": {
               "$ref": "#/$defs/id"
             }

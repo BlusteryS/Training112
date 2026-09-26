@@ -8,6 +8,7 @@ import { SectionTabs } from '../components/ui/SectionTabs';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { SummaryGrid } from './SummaryGrid';
 
 const sections = {
   users: 'Пользователи',
@@ -93,7 +94,7 @@ function UserCreate({ onClose, onDone }: { onClose: () => void; onDone: () => vo
   useEffect(() => {
     void api<{ password_min_length: number }>('admin/settings').then((row) => setMinLength(row.password_min_length)).catch((cause: Error) => setError(cause.message));
   }, []);
-  return <ModalForm label="Новый пользователь">
+  return <ModalForm label="Новый пользователь" onClose={onClose}>
 <FormCard title="Новый пользователь" submitLabel="Создать" busy={busy} error={error} onClose={onClose} onSubmit={() => {
     setBusy(true); setError('');
     void api('admin/users', { login, password, role })
@@ -121,7 +122,7 @@ function UserEdit({ entry, onClose, onDone }: { entry: User & { blocked: boolean
   const [blocked, setBlocked] = useState(entry.blocked);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  return <ModalForm label={entry.login}>
+  return <ModalForm label={entry.login} onClose={onClose}>
 <FormCard title={entry.login} submitLabel="Сохранить" busy={busy} error={error} onClose={onClose} onSubmit={() => {
     setBusy(true); setError('');
     void (async () => {
@@ -175,9 +176,7 @@ function Status() {
     ...(row.worker_seen ? [['Обработчик', new Date(String(row.worker_seen)).toLocaleString('ru-RU')]] : []),
   ] : [];
   return <Desk title="Состояние">
-    {lines.length > 0 && <DeskTable columns="220px minmax(0, 1fr)" head={<><span>Показатель</span><span>Значение</span></>}>
-      {lines.map(([name, value]) => <DeskRow key={name} columns="220px minmax(0, 1fr)"><span>{name}</span><span>{value}</span></DeskRow>)}
-    </DeskTable>}
+    {lines.length > 0 && <SummaryGrid items={lines.map(([label, value]) => ({ label: String(label), value }))} />}
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
 }
@@ -220,9 +219,7 @@ function Statistics() {
     ['Сбойные задачи', row.failed_jobs],
   ] : [];
   return <Desk title="Статистика">
-    {lines.length > 0 && <DeskTable columns="220px 120px" head={<><span>Показатель</span><span>Количество</span></>}>
-      {lines.map(([name, value]) => <DeskRow key={String(name)} columns="220px 120px"><span>{name}</span><span>{value}</span></DeskRow>)}
-    </DeskTable>}
+    {lines.length > 0 && <SummaryGrid items={lines.map(([label, value]) => ({ label: String(label), value }))} />}
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
 }
@@ -239,14 +236,13 @@ function Policy() {
       setSessionHours(row.session_hours);
     }).catch((cause: Error) => setError(cause.message));
   }, []);
-  const columns = '220px 120px';
   return <Desk title="Политика доступа" actions={<button type="button" onClick={() => { setError(''); setOpen(true); }}>Изменить</button>}>
-    <DeskTable columns={columns} head={<><span>Параметр</span><span>Значение</span></>}>
-      <DeskRow columns={columns}><span>Пароль, символов</span><span>{passwordMin}</span></DeskRow>
-      <DeskRow columns={columns}><span>Сессия, часов</span><span>{sessionHours}</span></DeskRow>
-    </DeskTable>
+    <SummaryGrid items={[
+      { label: 'Минимальная длина пароля', value: `${passwordMin} символов` },
+      { label: 'Время действия сессии', value: `${sessionHours} часов` },
+    ]} />
     {error && !open && <div className={deskError} role="alert">{error}</div>}
-    {open && <ModalForm label="Политика доступа">
+    {open && <ModalForm label="Политика доступа" onClose={() => setOpen(false)}>
 <FormCard title="Политика доступа" submitLabel="Сохранить" busy={busy} error={error} onClose={() => setOpen(false)} onSubmit={() => {
       setBusy(true); setError('');
       void api('admin/settings', { password_min_length: passwordMin, session_hours: sessionHours })

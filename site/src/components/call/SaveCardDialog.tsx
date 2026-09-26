@@ -1,3 +1,4 @@
+import { ModalForm } from '../ModalForm';
 import styles from './SaveCardDialog.module.css';
 
 export function SaveCardDialog({ services, warnings, error, saving, specialReason, onConfirm, onReturn }: {
@@ -9,9 +10,7 @@ export function SaveCardDialog({ services, warnings, error, saving, specialReaso
   onConfirm: () => void;
   onReturn: () => void;
 }) {
-  return <div className={styles.overlay} role="presentation" onMouseDown={(event) => {
-    if (event.target === event.currentTarget && !saving) onReturn();
-  }}>
+  return <ModalForm label="Подтверждение сохранения карточки" onClose={() => { if (!saving) onReturn(); }}>
     <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="save-card-title">
       <div id="save-card-title" className={styles.title}>
         {specialReason ? 'Сохранить карточку без контакта?' : 'Сохранить карточку происшествия?'}
@@ -32,5 +31,5 @@ export function SaveCardDialog({ services, warnings, error, saving, specialReaso
         </button>
       </div>
     </div>
-  </div>;
+  </ModalForm>;
 }

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from importlib.resources import files
 from io import BytesIO
 from pathlib import Path
@@ -12,10 +13,21 @@ import onnxruntime as ort
 from speech112.runtime.context_input import (
     ContextTokenizer,
     OperatorUtteranceTooLong,
+    operator_text,
+    question_parts,
+    starts_question,
 )
 from speech112.runtime.learned import file_digest
 from speech112.runtime.scheduler import InferenceScheduler
 from speech112.runtime.semantic_frame import ACTIONS, FRAME_SCHEMA, SemanticFrame, decode_frame
+
+_INFORMED_INTENTS = frozenset(
+    ("dismissal", "goodbye", "help_sent", "hold", "not_sent", "reassure")
+)
+_NO_DISPATCH_COMMAND = re.compile(
+    r"\bне (?:отправляйте|посылайте|высылайте|присылайте|вызывайте)\b"
+    r"|\bне надо (?:отправлять|посылать|высылать|присылать|вызывать)\b"
+)
 
 
 class ContextualUnderstanding:
@@ -96,11 +108,42 @@ class ContextualUnderstanding:
         return 1 / (1 + np.exp(-np.clip(self.logits(rows), -60, 60)))
 
     def predict(self, text, history=()):
+        if _NO_DISPATCH_COMMAND.search(operator_text(text)):
+            return SemanticFrame("reject", (), 1.0)
+        parts = question_parts(text)
+        if not parts or len(parts) > 8:
+            return SemanticFrame("reject", (), 0.0)
         try:
-            logits = self.logits([{"text": text, "history": history}])[0]
+            whole = decode_frame(self.logits([{"text": text, "history": history}])[0], self.targets)
+        except OperatorUtteranceTooLong:
+            whole = None
+        if len(parts) == 1 or (
+            whole is not None
+            and whole.action in ("inform", "end")
+            and "?" not in text
+            and not any(starts_question(part) for part in parts[1:])
+        ):
+            return whole or SemanticFrame("reject", (), 0.0)
+        try:
+            logits = self.logits([{"text": part, "history": history} for part in parts])
         except OperatorUtteranceTooLong:
             return SemanticFrame("reject", (), 0.0)
-        return decode_frame(logits, self.targets)
+        frames = [decode_frame(row, self.targets) for row in logits]
+        targets = []
+        for frame in frames:
+            if frame.action == "request":
+                eligible = frame.targets
+            elif frame.action in ("inform", "end"):
+                eligible = (target for target in frame.targets if target in _INFORMED_INTENTS)
+            else:
+                continue
+            for target in eligible:
+                if target not in targets:
+                    targets.append(target)
+        if not targets or len(targets) > 6:
+            return whole or SemanticFrame("reject", (), 0.0)
+        action = "inform" if all(frame.action in ("inform", "end") for frame in frames) else "request"
+        return SemanticFrame(action, tuple(targets), min(frame.confidence for frame in frames))
 
     async def understand(self, text, history):
         return await self.scheduler.run(self.predict, text, history)

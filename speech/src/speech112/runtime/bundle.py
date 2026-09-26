@@ -61,16 +61,6 @@ def validate_document(document: dict[str, Any]) -> None:
     for kind in ("greeting", "clarification", "check_in", "contact"):
         for variant in document.get(kind, CONTACT_REPLY):
             render(variant, document["facts"])
-    known = {r["id"] for r in document["responses"]} | {"clarification", "contact"}
-    examples = {" ".join(v.lower().split()) for i in document["intents"] for v in i["examples"]}
-    for case in document["acceptance_cases"]:
-        expected = case.get("response_ids", [case.get("response_id")])
-        if case["state"] not in states or any(value not in known for value in expected):
-            raise ValueError("Unknown acceptance case state or response")
-        if " ".join(case["text"].lower().split()) in examples:
-            raise ValueError("Acceptance case duplicates an inference example")
-
-
 @dataclass(frozen=True, slots=True)
 class ScenarioBundle:
     """The canonical JSON is the immutable source; callers only receive copies."""

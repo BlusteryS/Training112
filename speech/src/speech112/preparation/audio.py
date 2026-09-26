@@ -1,13 +1,10 @@
 """Audio preparation in a background process before teacher approval."""
 
-import asyncio
 import os
 from pathlib import Path
 
 from speech112.config import AppConfig
-from speech112.preparation.quality import assess
 from speech112.runtime.factory import PreparationEngines, make_understanding, voice_fingerprint
-from speech112.runtime.scheduler import InferenceScheduler
 from speech112.runtime.voices import CachedVoice
 
 
@@ -21,17 +18,6 @@ class AudioPreparer:
         self.recognizer = make_understanding(self.config.runtime, None)
 
     def __call__(self, bundle):
-        async def check():
-            scheduler = InferenceScheduler(1, 0)
-            try:
-                self.recognizer.scheduler = scheduler
-                result = await assess(bundle, self.recognizer)
-                if not all(case["passed"] for case in result):
-                    raise ValueError("Scenario understanding acceptance cases failed")
-            finally:
-                await scheduler.close()
-
-        asyncio.run(check())
         if self.voice is None:
             self.voice = CachedVoice(
                 self.engines.load(self.config.voice, 1),

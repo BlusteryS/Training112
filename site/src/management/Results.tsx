@@ -22,7 +22,7 @@ export function Results() {
 
   useEffect(() => {
     void api<Assignment[]>('training/assignments')
-      .then((items) => setRows(items.filter((item) => item.mode === 'call' && item.attempt_id
+      .then((items) => setRows(items.filter((item) => item.attempt_id
         && ['completed', 'failed'].includes(item.attempt_status ?? ''))))
       .catch((cause: Error) => setError(cause.message));
   }, []);
@@ -34,7 +34,7 @@ export function Results() {
   }
 
   return <Desk title="Результаты">
-    {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Обучающийся</span><span>Сценарий</span><span>Статус</span><span /></>}>
+    {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Обучающийся</span><span>Занятие</span><span>Статус</span><span /></>}>
       {rows.map((row) => <DeskRow key={row.attempt_id} columns={columns}>
         <span>{row.learner_login}</span>
         <span>{row.title}</span>
@@ -43,7 +43,7 @@ export function Results() {
       </DeskRow>)}
     </DeskTable>}
     {error && !opened && <div className={deskError} role="alert">{error}</div>}
-    {opened && <ModalForm label={`${opened.learner_login}`}>
+    {opened && <ModalForm label={`${opened.learner_login}`} onClose={() => setOpened(null)}>
 <FormCard title={`${opened.learner_login}`} submitLabel="Записать оценку" busy={busy || reason.trim().length < 1}
       error={error} onClose={() => setOpened(null)} onSubmit={() => {
         const expert = Number(score);

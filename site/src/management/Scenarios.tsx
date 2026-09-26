@@ -12,7 +12,7 @@ import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './D
 
 type SavedScenario = Scenario & { document: ScenarioDocument };
 type Editor = { document: ScenarioDocument; scenarioId?: string };
-const columns = 'minmax(200px, 1.6fr) 180px minmax(280px, auto)';
+const columns = 'minmax(180px, 1fr) 190px minmax(400px, max-content)';
 
 export function Scenarios() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -47,7 +47,7 @@ export function Scenarios() {
     <button type="button" disabled={busy} onClick={() => setCreating(true)}>Создать</button>
     <button type="button" disabled={busy} onClick={() => setImporting(true)}>Импорт</button>
   </>}>
-    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Название</span><span>Статус</span><span /></>}>
+    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable columns={columns} minWidth={850} head={<><span>Название</span><span>Статус</span><span /></>}>
       {scenarios.map((item) => <DeskRow key={item.id} columns={columns}>
         <span>{item.title}</span>
         <span>{scenarioNames[item.status] ?? item.status}</span>
@@ -111,7 +111,7 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   const [seconds, setSeconds] = useState('30');
   const [origin, setOrigin] = useState('Служба 112');
   const [caller, setCaller] = useState('Алексей');
-  return <ModalForm label="Создать сценарий">
+  return <ModalForm label="Создать сценарий" onClose={onClose}>
 <FormCard title="Сведения для сценария" submitLabel="Продолжить" busy={busy} error={error} onClose={onClose} onSubmit={() => onSubmit({
     incident, location, difficulty, seconds: Number(seconds), origin, caller_name: caller,
   })}>
@@ -123,7 +123,7 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
       <SelectField label="Сложность" value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </SelectField>
-      <InputField label="Сохранение карточки, секунд" inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} />
+      <InputField label="Норматив заполнения карточки оператора 112, секунд" inputMode="numeric" value={seconds} onChange={(event) => setSeconds(event.target.value.replace(/\D/g, '').slice(0, 5))} />
       <SelectField label="Источник" value={origin} onChange={(event) => setOrigin(event.target.value)}>
         {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
       </SelectField>
@@ -137,7 +137,7 @@ function ImportDialog({ busy, error: externalError, onClose, onSubmit }: {
   busy: boolean; error: string; onClose: () => void; onSubmit: (document: unknown) => void;
 }) {
   const [error, setError] = useState('');
-  return <ModalForm label="Импорт сценария">
+  return <ModalForm label="Импорт сценария" onClose={onClose}>
 <FormCard title="Импорт сценария" error={error || externalError} busy={busy} onClose={onClose}>
     <InputField label="JSON" type="file" accept="application/json,.json" onChange={(event) => {
       const file = event.target.files?.[0];

@@ -27,6 +27,18 @@ function assignmentStatus(assignment: Assignment) {
   return assignment.status === 'active' ? 'В очереди' : 'Закрыта';
 }
 
+const cardStatusNames: Record<string, string> = {
+  added: 'Добавлена', received: 'Получена', accepted: 'Принята', rejected: 'Не принята',
+  dispatched: 'Начало реагирования', arrived: 'Прибытие', working: 'Проведение работ',
+};
+
+function rowStatus(assignment: Assignment) {
+  if (assignment.mode !== 'card' || assignment.attempt_status !== 'active') return assignmentStatus(assignment);
+  if (['added', 'received'].includes(assignment.card_status ?? '') && assignment.attempt_started_at
+      && Date.now() - new Date(assignment.attempt_started_at).valueOf() > 30_000) return 'Не оповещено';
+  return cardStatusNames[assignment.card_status ?? ''] ?? 'В работе';
+}
+
 function incidentType(assignment: Assignment) {
   return assignment.card?.incident_code?.trim() || assignment.title;
 }
@@ -78,9 +90,9 @@ function IncidentRow({ assignment, onViewResult }: { assignment: Assignment; onV
       <div className={`${styles.cell} ${styles.darkCell}`}>{created.time}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{incidentType(assignment)}</div>
       <div className={styles.cell}>{assignment.card?.victims ?? ''}</div>
-      <div className={`${styles.cell} ${styles.statusCell}`}>{status}</div>
+      <div className={`${styles.cell} ${styles.statusCell}`}>{rowStatus(assignment)}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{assignment.card?.address ?? ''}</div>
-      {assignment.mode === 'call' && assignment.attempt_id && ['completed', 'failed'].includes(assignment.attempt_status ?? '')
+      {assignment.attempt_id && ['completed', 'failed'].includes(assignment.attempt_status ?? '')
         ? <button type="button" className={styles.cellButton} title="Посмотреть результат"
           onClick={() => onViewResult(assignment)}><img src={detailsIcon} alt="" /></button>
         : <div className={styles.iconCell}><img src={detailsIcon} alt="" /></div>}
@@ -88,7 +100,7 @@ function IncidentRow({ assignment, onViewResult }: { assignment: Assignment; onV
     </div>
     <div className={styles.description}>
       <span>Описание:</span>
-      <span className={styles.descriptionMeta}>{created.stamp} Опер. {operatorNumber(assignment.learner_login)}</span>
+      <span className={styles.descriptionMeta}>{created.stamp} {assignment.mode === 'card' ? 'ДДС' : 'Опер.'} {operatorNumber(assignment.learner_login)}</span>
       <img src={separatorIcon} alt="" />
       <span>{description} /112</span>
     </div>
@@ -184,7 +196,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
     const searchable = [assignment.title, assignment.group_name, assignment.learner_login,
       card?.incident_code, card?.address, card?.description, assignment.instructions]
       .filter(Boolean).join(' ').toLocaleLowerCase('ru');
-    return Boolean(assignment.attempt_status) || (assignment.mode === 'card' && assignment.status === 'active')
+    return (Boolean(assignment.attempt_status) || (assignment.mode === 'card' && assignment.status === 'active'))
       && (!needle || searchable.includes(needle))
       && (search.from === null || (!Number.isNaN(search.from) && !Number.isNaN(created) && created >= search.from))
       && (search.to === null || (!Number.isNaN(search.to) && !Number.isNaN(created) && created <= search.to))
@@ -289,7 +301,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
       </div>
     </div>
     </>}
-    {resultAssignment && <ModalForm label="Результат занятия">
+    {resultAssignment && <ModalForm label="Результат занятия" onClose={() => setResultAssignment(null)}>
       <div className={styles.resultPanel}>
         <div className={styles.resultHeading}>
           <span>Результат: {resultAssignment.title}</span>

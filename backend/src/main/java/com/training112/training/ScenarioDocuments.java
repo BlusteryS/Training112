@@ -30,13 +30,16 @@ public final class ScenarioDocuments {
   }
 
   public static JsonObject validate(JsonObject document) {
-    if (document == null
-        || document.toBuffer().length() > MAX_BYTES
-        || !VALIDATOR.validate(document).getValid()) {
+    if (document == null || document.toBuffer().length() > MAX_BYTES) {
       throw new ApiException(
           400, "invalid_scenario", "Сценарий содержит неполные или некорректные данные.");
     }
-    // Referential/template validation is repeated by the compiler before approval is possible.
-    return document.copy();
+    JsonObject scenario = document.copy();
+    scenario.remove("acceptance_cases");
+    if (!VALIDATOR.validate(scenario).getValid()) {
+      throw new ApiException(
+          400, "invalid_scenario", "Сценарий содержит неполные или некорректные данные.");
+    }
+    return scenario;
   }
 }

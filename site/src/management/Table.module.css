@@ -1,0 +1,70 @@
+.table {
+  display: grid;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.head,
+.row {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  width: 100%;
+  min-width: var(--table-min-width, 0px);
+  min-height: 42px;
+  column-gap: 0;
+}
+
+.head {
+  min-height: 32px;
+  color: rgba(255, 255, 255, .8);
+  font-size: 14px;
+}
+
+.row {
+  overflow: hidden;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+  background: #49555d;
+}
+
+.row > *,
+.head > * {
+  min-width: 0;
+  padding: 9px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row > * + * {
+  border-left: 1px solid #838f97;
+}
+
+.head > * {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 12px;
+  overflow: visible !important;
+}
+
+.row button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.row button:disabled {
+  opacity: .55;
+  cursor: default;
+}

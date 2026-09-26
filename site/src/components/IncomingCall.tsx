@@ -9,7 +9,7 @@ export function IncomingCall({ assignment, onAccept, onClose }: {
   onClose: () => void;
 }) {
   const phone = assignment.caller_phone?.trim();
-  return <ModalForm label="Входящий звонок">
+  return <ModalForm label="Входящий звонок" onClose={onClose}>
     <div className={styles.call}>
       <div className={styles.details}>
         <div className={styles.title}>Входящий звонок</div>

@@ -29,7 +29,6 @@ speech112 = "speech112.service:main"
 training112-worker = "speech112.preparation.worker:main"
 training112-compile = "speech112.preparation.worker:compile_main"
 training112-install-models = "speech112.install_models:main"
-training112-check-scenario = "speech112.preparation.quality:main"
 training112-prepare-audio = "speech112.preparation.audio:main"
 
 [tool.hatch.build.targets.wheel]

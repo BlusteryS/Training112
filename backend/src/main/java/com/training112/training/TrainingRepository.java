@@ -90,9 +90,9 @@ public final class TrainingRepository {
     teacher(actor);
     return list(pool, """
         SELECT to_jsonb(l) || jsonb_build_object('group_name',g.name,
-          'title',s.document->>'title') AS value
+          'title',COALESCE(l.card_template->>'title',s.document->>'title')) AS value
         FROM lesson l JOIN training_group g ON g.id=l.group_id
-        JOIN scenario s ON s.id=l.scenario_id
+        LEFT JOIN scenario s ON s.id=l.scenario_id
         WHERE g.teacher_id=$1 ORDER BY l.created_at DESC LIMIT 100
         """, Tuple.of(actor.id()));
   }
@@ -304,7 +304,7 @@ public final class TrainingRepository {
 
   public Future<JsonObject> createLesson(Account actor, UUID group, UUID scenario, String mode) {
     teacher(actor);
-    if (!Set.of("call", "card").contains(mode))
+    if (!"call".equals(mode))
       throw new ApiException(400, "invalid_mode", "Неизвестный режим занятия.");
     UUID id = UUID.randomUUID();
     return pool.withTransaction(
@@ -333,6 +333,52 @@ public final class TrainingRepository {
                             .map(row.getJsonObject("value"))));
   }
 
+  public Future<JsonArray> operatorCards(Account actor) {
+    teacher(actor);
+    return list(pool, """
+        SELECT jsonb_build_object('id',a.id,'incident_code',a.card->>'incident_code',
+          'address',a.card->>'address','services',a.card->>'services',
+          'created_at',a.created_at) AS value
+        FROM training_attempt a
+        JOIN lesson_assignment la ON la.id=a.assignment_id
+        JOIN lesson l ON l.id=la.lesson_id
+        JOIN training_group g ON g.id=l.group_id
+        WHERE g.teacher_id=$1 AND l.mode='call' AND a.status='completed'
+          AND a.card->>'description' IS NOT NULL
+        ORDER BY a.created_at DESC LIMIT 100
+        """, Tuple.of(actor.id()));
+  }
+
+  public Future<JsonObject> createCardLesson(Account actor, UUID group, JsonObject body) {
+    teacher(actor);
+    UUID id = UUID.randomUUID();
+    String source = body.getString("source_attempt_id", "");
+    return pool.withTransaction(db -> one(db,
+        "SELECT service_code FROM training_group WHERE id=$1 AND teacher_id=$2 FOR UPDATE",
+        Tuple.of(group, actor.id())).compose(groupRow -> {
+      String service = groupRow.getString("service_code");
+      if (source.isBlank()) return Future.succeededFuture(DdsCardTemplate.manual(body, service));
+      UUID sourceId;
+      try { sourceId = UUID.fromString(source); }
+      catch (IllegalArgumentException error) {
+        return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неизвестная карточка оператора."));
+      }
+      return one(db, """
+          SELECT a.card FROM training_attempt a
+          JOIN lesson_assignment la ON la.id=a.assignment_id
+          JOIN lesson l ON l.id=la.lesson_id
+          JOIN training_group g ON g.id=l.group_id
+          WHERE a.id=$1 AND g.teacher_id=$2 AND l.mode='call' AND a.status='completed'
+          """, Tuple.of(sourceId, actor.id()))
+          .map(row -> DdsCardTemplate.fromOperator(row.getJsonObject("card"), body, service, sourceId));
+    }).compose(template -> one(db,
+        "INSERT INTO lesson(id,group_id,scenario_id,card_template,mode) "
+            + "VALUES ($1,$2,NULL,$3,'card') RETURNING to_jsonb(lesson) AS value",
+        Tuple.of(id, group, template)).compose(row ->
+            audit(db, actor.id(), "lesson.created", id, new JsonObject())
+                .map(row.getJsonObject("value")))));
+  }
+
   public Future<Void> startLesson(Account actor, UUID id) {
     teacher(actor);
     return pool.withTransaction(
@@ -340,21 +386,23 @@ public final class TrainingRepository {
             one(
                     db,
                     "SELECT l.*,s.status AS scenario_status,s.document,g.service_code FROM lesson l"
-                        + " JOIN training_group g ON g.id=l.group_id JOIN scenario s ON"
-                        + " s.id=l.scenario_id WHERE l.id=$1 AND g.teacher_id=$2 FOR UPDATE OF l,s",
+                        + " JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON"
+                        + " s.id=l.scenario_id WHERE l.id=$1 AND g.teacher_id=$2 FOR UPDATE OF l",
                     Tuple.of(id, actor.id()))
                 .compose(
                     row -> {
                       if (!"planned".equals(row.getString("status")))
                         return Future.failedFuture(conflict("Занятие уже запущено или завершено."));
-                      if (!"approved".equals(row.getString("scenario_status")))
+                      if (row.getUUID("scenario_id") != null
+                          && !"approved".equals(row.getString("scenario_status")))
                         return Future.failedFuture(
                             conflict("Сценарий нужно повторно утвердить перед началом занятия."));
                       boolean card = "card".equals(row.getString("mode"));
-                      JsonObject snapshot =
-                          card
+                      JsonObject snapshot = card
+                          ? row.getJsonObject("card_template") == null
                               ? CardSnapshot.from(row.getJsonObject("document"), row.getString("service_code"))
-                              : null;
+                              : CardSnapshot.fromTemplate(row.getJsonObject("card_template"), row.getString("service_code"))
+                          : null;
                       return db.preparedQuery(
                               "INSERT INTO lesson_assignment(id,lesson_id,learner_id) SELECT"
                                   + " gen_random_uuid(),$1,m.user_id FROM training_group_member m"
@@ -392,23 +440,26 @@ public final class TrainingRepository {
         pool,
         """
         SELECT jsonb_build_object('id',a.id,'lesson_id',l.id,'learner_id',a.learner_id,'mode',l.mode,
-           'status',l.status,'title',s.document->>'title','scenario_id',s.id,
+           'status',l.status,'title',COALESCE(l.card_template->>'title',s.document->>'title'),
+           'scenario_id',s.id,
            'group_name',g.name,'learner_login',u.login,
            'instructions',s.document->>'instructions','difficulty',s.document->>'difficulty',
-           'caller_phone',s.document#>>'{facts,phone}',
-           'service',g.service_code,'origin',s.document->>'origin','facts',COALESCE(s.document->'facts','{}'::jsonb),
+           'caller_phone',COALESCE(l.card_template#>>'{facts,phone}',s.document#>>'{facts,phone}'),
+           'service',g.service_code,'origin',COALESCE(l.card_template->>'origin',s.document->>'origin'),
+           'facts',COALESCE(l.card_template->'facts',s.document->'facts','{}'::jsonb),
            'card',latest.card,'card_deadline_seconds',deadline.seconds,'created_at',latest.created_at,
+           'attempt_started_at',latest.started_at,'card_status',latest.card_status,
            'workstation',latest.workstation,'incident_source',latest.incident_source,
            'vis_operator',latest.vis_operator,
            'attempt_id',latest.id,'attempt_status',latest.status) AS value
         FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
-        JOIN training_group g ON g.id=l.group_id JOIN scenario s ON s.id=l.scenario_id
+        JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON s.id=l.scenario_id
         JOIN app_user u ON u.id=a.learner_id
-        LEFT JOIN LATERAL (SELECT t.id,t.status,t.card,t.created_at,t.workstation,
+        LEFT JOIN LATERAL (SELECT t.id,t.status,t.card,t.created_at,t.started_at,t.card_status,t.workstation,
           t.incident_source,t.vis_operator FROM training_attempt t
           WHERE t.assignment_id=a.id ORDER BY t.created_at DESC LIMIT 1) latest ON true
         LEFT JOIN LATERAL (SELECT min((criterion->>'seconds')::integer) AS seconds
-          FROM jsonb_array_elements(s.document->'rubric') criterion
+          FROM jsonb_array_elements(COALESCE(s.document->'rubric','[]'::jsonb)) criterion
           WHERE criterion->>'kind'='deadline' AND criterion->>'action'='saved') deadline ON true
         WHERE a.learner_id=$1 OR g.teacher_id=$1 ORDER BY latest.created_at DESC NULLS LAST,u.login LIMIT 1000
         """,
@@ -422,9 +473,10 @@ public final class TrainingRepository {
                 one(
                         db,
                         """
-                        SELECT la.id,l.mode,l.status,s.document,s.document->>'origin' AS origin,g.service_code
+                        SELECT la.id,l.mode,l.status,s.document,l.card_template,
+                          s.document->>'origin' AS origin,g.service_code
                         FROM lesson_assignment la JOIN lesson l ON l.id=la.lesson_id
-                        JOIN scenario s ON s.id=l.scenario_id
+                        LEFT JOIN scenario s ON s.id=l.scenario_id
                         JOIN training_group g ON g.id=l.group_id
                         WHERE la.id=$1 AND la.learner_id=$2 FOR UPDATE OF l,la
                         """,
@@ -448,7 +500,9 @@ public final class TrainingRepository {
                                     400, "invalid_scenario", "У сценария не задан источник происшествия."));
                           JsonObject snapshot =
                               card
-                                  ? CardSnapshot.from(row.getJsonObject("document"), row.getString("service_code"))
+                                  ? row.getJsonObject("card_template") == null
+                                      ? CardSnapshot.from(row.getJsonObject("document"), row.getString("service_code"))
+                                      : CardSnapshot.fromTemplate(row.getJsonObject("card_template"), row.getString("service_code"))
                                   : new JsonObject();
                           return db.preparedQuery(
                                   """
@@ -490,7 +544,7 @@ public final class TrainingRepository {
     return one(
         db,
         """
-        SELECT a.*,la.learner_id,l.id AS lesson_id,l.scenario_id,l.mode,
+        SELECT a.*,la.learner_id,l.id AS lesson_id,l.scenario_id,l.card_template,l.mode,
           l.status AS lesson_status,g.teacher_id
         FROM training_attempt a JOIN lesson_assignment la ON la.id=a.assignment_id
         JOIN lesson l ON l.id=la.lesson_id JOIN training_group g ON g.id=l.group_id
@@ -550,6 +604,48 @@ public final class TrainingRepository {
                     Tuple.of(id, after)));
   }
 
+  public Future<JsonArray> ddsServices(Account actor, UUID id) {
+    return accessibleAttempt(pool, actor, id, false).compose(row -> {
+      if (!"card".equals(row.getString("mode"))) return Future.failedFuture(forbidden());
+      JsonObject template = row.getJsonObject("card_template");
+      String caseId = template == null ? null : template.getString("case_id");
+      if (caseId == null) return Future.succeededFuture(new JsonArray());
+      return list(pool, """
+          SELECT jsonb_build_object('service', service_code, 'status', card_status,
+            'started_at', started_at,
+            'history', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+              'status', ev.payload->>'status', 'comment', ev.payload->>'comment',
+              'created_at', ev.created_at, 'actor', COALESCE(u.login,'Система')) ORDER BY ev.sequence)
+              FROM attempt_event ev LEFT JOIN app_user u ON u.id=ev.actor_id
+              WHERE ev.attempt_id=service_state.id AND ev.type='card.status'), '[]'::jsonb)) AS value
+          FROM (
+            SELECT DISTINCT ON (g.service_code) g.service_code, a.id, a.card_status,
+              a.started_at
+            FROM training_attempt a
+            JOIN lesson_assignment la ON la.id=a.assignment_id
+            JOIN lesson l ON l.id=la.lesson_id
+            JOIN training_group g ON g.id=l.group_id
+            WHERE l.mode='card' AND l.card_template->>'case_id'=$1
+              AND g.teacher_id=$2
+            ORDER BY g.service_code,a.created_at DESC
+          ) service_state ORDER BY service_code
+          """, Tuple.of(caseId, row.getUUID("teacher_id")));
+    });
+  }
+
+  public Future<JsonObject> phonePreview(Account actor, UUID id, JsonObject request) {
+    return accessibleAttempt(pool, actor, id, false).map(row -> {
+      if (!"user".equals(actor.role()) || !actor.id().equals(row.getUUID("learner_id"))
+          || !"card".equals(row.getString("mode"))
+          || !"active".equals(row.getString("status"))) throw forbidden();
+      JsonObject card = row.getJsonObject("card");
+      if ("caller".equals(request.getString("party")) && card.getString("phone", "").isBlank())
+        throw conflict("В карточке нет номера заявителя.");
+      return DdsPhone.report(row.getString("card_status"), row.getString("dds_crew"),
+          row.getJsonObject("card_template"), request);
+    });
+  }
+
   public Future<JsonObject> command(
       Account actor, UUID id, UUID eventId, long expected, String type, JsonObject payload) {
     return pool.withTransaction(
@@ -568,8 +664,11 @@ public final class TrainingRepository {
                                 if (existing.size() > 0) {
                                   JsonObject saved =
                                       existing.iterator().next().getJsonObject("value");
+                                  JsonObject original = "dds.phone.report".equals(type)
+                                      ? saved.getJsonObject("payload").getJsonObject("request")
+                                      : saved.getJsonObject("payload");
                                   if (!type.equals(saved.getString("type"))
-                                      || !payload.equals(saved.getJsonObject("payload"))
+                                      || !payload.equals(original)
                                       || !"operator".equals(saved.getString("source")))
                                     return Future.failedFuture(
                                         conflict("Идентификатор команды уже использован."));
@@ -585,13 +684,23 @@ public final class TrainingRepository {
                                   return Future.failedFuture(
                                       new ApiException(
                                           400, "invalid_card_command", "Диспетчер не изменяет карточку."));
+                                if (type.startsWith("dds.")) {
+                                  if (!"card".equals(row.getString("mode")))
+                                    return Future.failedFuture(forbidden());
+                                  return ddsCommand(db, row, actor, id, eventId, type, payload);
+                                }
                                 CardCommands.Applied applied =
                                     CardCommands.apply(
                                         row.getJsonObject("card"),
                                         row.getString("card_status"),
                                         type,
                                         payload);
-                                return db.preparedQuery(
+                                Future<Void> evidence = "card".equals(row.getString("mode"))
+                                    && "card.status".equals(type)
+                                    && !Set.of("accepted", "rejected").contains(applied.status())
+                                    ? requirePhoneReport(db, id, applied.status())
+                                    : Future.succeededFuture();
+                                return evidence.compose(checked -> db.preparedQuery(
                                         "UPDATE training_attempt SET card=$2,card_status=$3 WHERE"
                                             + " id=$1")
                                     .execute(Tuple.of(id, applied.card(), applied.status()))
@@ -604,9 +713,55 @@ public final class TrainingRepository {
                                                 actor.id(),
                                                 "operator",
                                                 type,
-                                                payload));
+                                                payload))
+                                    .compose(saved -> "card".equals(row.getString("mode"))
+                                        && Set.of("completed", "refused").contains(applied.status())
+                                            ? finish(db, id, actor.id(), false).map(saved)
+                                            : Future.succeededFuture(saved)));
                               });
                     }));
+  }
+
+  private Future<Void> requirePhoneReport(SqlClient db, UUID attempt, String status) {
+    return one(db, """
+        SELECT EXISTS (
+          SELECT 1 FROM attempt_event e WHERE e.attempt_id=$1
+            AND e.type='dds.phone.report' AND e.payload->>'report_status'=$2
+            AND e.sequence > COALESCE((SELECT max(sequence) FROM attempt_event
+              WHERE attempt_id=$1 AND type='card.status'),0)
+        ) AS reported
+        """, Tuple.of(attempt, status)).compose(row -> row.getBoolean("reported")
+            ? Future.succeededFuture()
+            : Future.failedFuture(conflict("Сначала получите доклад старшего бригады по телефону.")));
+  }
+
+  private Future<JsonObject> ddsCommand(SqlClient db, Row row, Account actor, UUID attempt,
+      UUID eventId, String type, JsonObject payload) {
+    String status = row.getString("card_status");
+    if ("dds.crew.select".equals(type)) {
+      String crew = payload.getString("crew", "");
+      if (!"accepted".equals(status) || !payload.fieldNames().equals(Set.of("crew"))
+          || !DdsPhone.crewName(crew))
+        return Future.failedFuture(conflict("Выберите бригаду после принятия карточки."));
+      return one(db, "SELECT count(*) AS reports FROM attempt_event WHERE attempt_id=$1 "
+          + "AND type='dds.phone.report' AND payload->>'party'='crew'", Tuple.of(attempt))
+          .compose(count -> {
+            if (count.getLong("reports") > 0)
+              return Future.failedFuture(conflict("Бригада уже начала реагирование."));
+            return db.preparedQuery("UPDATE training_attempt SET dds_crew=$2 WHERE id=$1")
+                .execute(Tuple.of(attempt, crew))
+                .compose(ignored -> append(db, attempt, eventId, actor.id(), "operator", type, payload));
+          });
+    }
+    if ("dds.phone.report".equals(type)) {
+      JsonObject card = row.getJsonObject("card");
+      if ("caller".equals(payload.getString("party")) && card.getString("phone", "").isBlank())
+        return Future.failedFuture(conflict("В карточке нет номера заявителя."));
+      JsonObject report = DdsPhone.report(status, row.getString("dds_crew"),
+          row.getJsonObject("card_template"), payload);
+      return append(db, attempt, eventId, actor.id(), "operator", type, report);
+    }
+    return Future.failedFuture(new ApiException(400, "invalid_dds_command", "Неизвестное действие ДДС."));
   }
 
   private Future<JsonObject> append(
@@ -746,7 +901,7 @@ public final class TrainingRepository {
     return one(
             db,
             """
-            SELECT l.mode FROM training_attempt a
+            SELECT l.mode,l.scenario_id,l.card_template FROM training_attempt a
             JOIN lesson_assignment la ON la.id=a.assignment_id
             JOIN lesson l ON l.id=la.lesson_id WHERE a.id=$1
             """,
@@ -754,7 +909,7 @@ public final class TrainingRepository {
         .compose(
             mode -> {
               boolean card = "card".equals(mode.getString("mode"));
-              return db.preparedQuery("UPDATE training_attempt SET status=$2,finished_at=now() WHERE id=$1")
+                  return db.preparedQuery("UPDATE training_attempt SET status=$2,finished_at=now() WHERE id=$1")
                   .execute(Tuple.of(id, failed ? "failed" : "completed"))
                   .compose(
                       ignored ->
@@ -769,7 +924,8 @@ public final class TrainingRepository {
                   .compose(
                       ignored ->
                           card
-                              ? Future.succeededFuture()
+                              ? evaluateDds(db, id, mode.getJsonObject("card_template"),
+                                  failed ? "failed" : "completed")
                               : db.preparedQuery(
                                       "INSERT INTO background_job(id,kind,attempt_id) VALUES"
                                           + " ($1,'evaluate_attempt',$2) ON CONFLICT DO NOTHING")
@@ -784,6 +940,16 @@ public final class TrainingRepository {
                               id,
                               new JsonObject()));
             });
+  }
+
+  private Future<Void> evaluateDds(SqlClient db, UUID id, JsonObject template, String status) {
+    return list(db, "SELECT to_jsonb(e) AS value FROM attempt_event e WHERE attempt_id=$1"
+        + " ORDER BY sequence", Tuple.of(id))
+        .compose(events -> db.preparedQuery(
+            "INSERT INTO attempt_evaluation(attempt_id,scenario_id,result,evaluator_version)"
+                + " VALUES ($1,NULL,$2,'dds-v1') ON CONFLICT (attempt_id) DO NOTHING")
+            .execute(Tuple.of(id, DdsEvaluation.evaluate(template, events, status))))
+        .mapEmpty();
   }
 
   public Future<JsonArray> finishLesson(Account actor, UUID id) {
@@ -966,7 +1132,11 @@ public final class TrainingRepository {
             GREATEST(0, (EXTRACT(EPOCH FROM (a.finished_at - a.started_at)) * 1000)::bigint - a.paused_ms) END,
           'card', a.card,
           'evaluation', e.result,
-          'deadline_seconds', deadline.seconds,
+          'deadline_seconds', CASE WHEN l.mode='card' THEN 30 ELSE deadline.seconds END,
+          'primary_elapsed_ms', CASE WHEN l.mode='card' THEN (
+            SELECT min(ev.elapsed_ms) FROM attempt_event ev WHERE ev.attempt_id=a.id
+              AND ev.type='card.status' AND ev.payload->>'status' IN ('accepted','rejected'))
+            ELSE NULL END,
           'reviews', COALESCE((SELECT jsonb_agg(jsonb_build_object('reason', r.reason, 'result', r.result, 'created_at', r.created_at) ORDER BY r.created_at)
             FROM evaluation_review r WHERE r.attempt_id = a.id), '[]'::jsonb),
           'events', COALESCE((SELECT jsonb_agg(jsonb_build_object('type', ev.type, 'count', ev.n))
@@ -974,7 +1144,7 @@ public final class TrainingRepository {
         ) AS value
         FROM lesson l
         JOIN training_group g ON g.id = l.group_id
-        JOIN scenario s ON s.id = l.scenario_id
+        LEFT JOIN scenario s ON s.id = l.scenario_id
         JOIN lesson_assignment la ON la.lesson_id = l.id
         JOIN app_user u ON u.id = la.learner_id
         LEFT JOIN LATERAL (
@@ -983,7 +1153,7 @@ public final class TrainingRepository {
         LEFT JOIN attempt_evaluation e ON e.attempt_id = a.id
         LEFT JOIN LATERAL (
           SELECT min((criterion->>'seconds')::integer) AS seconds
-          FROM jsonb_array_elements(s.document->'rubric') criterion
+          FROM jsonb_array_elements(COALESCE(s.document->'rubric','[]'::jsonb)) criterion
           WHERE criterion->>'kind' = 'deadline' AND criterion->>'action' = 'saved'
         ) deadline ON true
         WHERE l.id = $1 AND g.teacher_id = $2
@@ -1000,7 +1170,8 @@ public final class TrainingRepository {
               }
             }
             row.put("grammar", grammar);
-            Long elapsed = row.getLong("elapsed_ms");
+            Long elapsed = "card".equals(row.getString("mode"))
+                ? row.getLong("primary_elapsed_ms") : row.getLong("elapsed_ms");
             Integer deadline = row.getInteger("deadline_seconds");
             if (elapsed != null && deadline != null) {
               row.put("delta_ms", elapsed - deadline * 1000L);

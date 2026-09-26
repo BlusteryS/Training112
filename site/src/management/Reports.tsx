@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { lessonNames, type Lesson } from './types';
 import { ChoiceSelect } from '../components/ChoiceSelect';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskError } from './Desk';
 
 type ReportRow = {
   learner_login: string;
+  mode: string;
   attempt_status: string | null;
   elapsed_ms: number | null;
+  primary_elapsed_ms: number | null;
   deadline_seconds: number | null;
   delta_ms: number | null;
   grammar: { field: string; message: string }[];
@@ -40,7 +42,7 @@ export function Reports() {
   function download() {
     const header = ['Обучающийся', 'Статус', 'Время, с', 'Норматив, с', 'Отклонение, с', 'Оценка', 'Ошибки', 'Грамматика', 'Действия', 'Замечания'];
     const lines = rows.map((row) => [
-      row.learner_login, row.attempt_status ?? '', seconds(row.elapsed_ms), row.deadline_seconds ?? '',
+      row.learner_login, row.attempt_status ?? '', seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms), row.deadline_seconds ?? '',
       row.delta_ms === null ? '' : Math.round(row.delta_ms / 1000), row.evaluation?.score ?? '',
       (row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; '),
       row.grammar.map((note) => `${note.field}: ${note.message}`).join('; '),
@@ -68,28 +70,28 @@ export function Reports() {
   </>}>
     {lessons.length === 0 && <DeskEmpty>Занятий нет</DeskEmpty>}
     {lesson && rows.length === 0 && <DeskEmpty>По занятию записей нет</DeskEmpty>}
-    {rows.length > 0 && <DeskTable columns={columns} head={<><span>Обучающийся</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
+    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable columns={columns} head={<><span>Обучающийся</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
       {rows.map((row) => <DeskRow key={row.learner_login} columns={columns}>
         <span>{row.learner_login}</span>
         <span>{row.attempt_status ?? ''}</span>
-        <span>{seconds(row.elapsed_ms)}</span>
+        <span>{seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms)}</span>
         <span>{row.deadline_seconds ?? ''}</span>
         <span>{row.delta_ms === null ? '' : Math.round(row.delta_ms / 1000)}</span>
         <span>{row.evaluation?.score ?? ''}</span>
         <span>{(row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; ')}</span>
         <span>{row.grammar.map((note) => note.message).join('; ')}</span>
       </DeskRow>)}
-    </DeskTable>}
-    {progress.length > 0 && <DeskTable columns="minmax(140px, 1fr) 100px 120px 100px 140px" head={<><span>Обучающийся</span><span>Попытки</span><span>Завершено</span><span>Прервано</span><span>Средняя оценка</span></>}>
+    </DeskTable></DeskSection>}
+    {progress.length > 0 && <DeskSection title="Динамика обучающихся"><DeskTable columns="minmax(140px, 1fr) 100px 120px 100px 140px" head={<><span>Обучающийся</span><span>Попытки</span><span>Завершено</span><span>Прервано</span><span>Средняя оценка</span></>}>
       {progress.map((row) => <DeskRow key={row.login} columns="minmax(140px, 1fr) 100px 120px 100px 140px">
         <span>{row.login}</span><span>{row.attempts}</span><span>{row.completed}</span><span>{row.failed}</span><span>{row.average_score ?? ''}</span>
       </DeskRow>)}
-    </DeskTable>}
-    {insights.length > 0 && <DeskTable columns="minmax(0, 1fr) 120px 100px" head={<><span>Критерий</span><span>Не выполнено</span><span>Всего</span></>}>
+    </DeskTable></DeskSection>}
+    {insights.length > 0 && <DeskSection title="Частые ошибки"><DeskTable columns="minmax(0, 1fr) 120px 100px" head={<><span>Критерий</span><span>Не выполнено</span><span>Всего</span></>}>
       {insights.map((item) => <DeskRow key={item.description} columns="minmax(0, 1fr) 120px 100px">
         <span>{item.description}</span><span>{item.failed}</span><span>{item.total}</span>
       </DeskRow>)}
-    </DeskTable>}
+    </DeskTable></DeskSection>}
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
 }

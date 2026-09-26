@@ -1,0 +1,33 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  min-height: 94px;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid #838f97;
+  border-radius: 6px;
+  background: #49555d;
+  gap: 12px;
+}
+
+.label {
+  color: rgba(255, 255, 255, .72);
+  font-size: 14px;
+}
+
+.value {
+  overflow-wrap: anywhere;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+@media (max-width: 1300px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

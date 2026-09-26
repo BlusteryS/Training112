@@ -1,0 +1,82 @@
+.phoneRow,
+.callerRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.callerRow {
+  grid-template-columns: 2fr 1fr 2fr;
+}
+
+.field,
+.block {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: #ebecec;
+  color: #000;
+}
+
+.field > span {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(0, 0, 0, .55);
+  font-size: 13px;
+}
+
+.field > div,
+.strong,
+.description {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.column {
+  display: grid;
+  gap: 8px;
+}
+
+.block {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.blockTitle {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, .16);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.strong {
+  font-weight: 500;
+}
+
+.addressFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.addressFields .field,
+.block > .field {
+  padding: 0;
+  background: transparent;
+}
+
+.description {
+  min-height: 180px;
+}
+
+@media (max-width: 1300px) {
+  .phoneRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

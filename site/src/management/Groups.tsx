@@ -74,7 +74,7 @@ export function Groups() {
         .catch((cause: Error) => setError(cause.message))
         .finally(() => setBusy(false));
     }} />}
-    {group && <ModalForm label={group.name}>
+    {group && <ModalForm label={group.name} onClose={() => setGroup(null)}>
       <FormCard title={group.name} error={error} onClose={() => setGroup(null)}>
         {people.length === 0 ? <div>Пользователей нет</div> : <div className={formGrid}>
           {people.map((learner) => <label className={formCheck} key={learner.id}>
@@ -90,7 +90,7 @@ export function Groups() {
 function GroupCreate({ busy, onClose, onSubmit }: { busy: boolean; onClose: () => void; onSubmit: (name: string, service: string) => void }) {
   const [name, setName] = useState('');
   const [service, setService] = useState('');
-  return <ModalForm label="Новая группа">
+  return <ModalForm label="Новая группа" onClose={onClose}>
 <FormCard title="Новая группа" submitLabel="Создать" busy={busy} onClose={onClose} onSubmit={() => onSubmit(name, service)}>
     <div className={formGrid}>
       <InputField label="Название" value={name} maxLength={200} onChange={(event) => setName(event.target.value)} />

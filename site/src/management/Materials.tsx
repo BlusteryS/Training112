@@ -85,7 +85,7 @@ export function MaterialsMenu() {
       setRows(null);
       void api<Material[]>('training/materials').then(setRows).catch((cause: Error) => setError(cause.message));
     }}>Учебные материалы</button>
-    {open && <ModalForm label="Материалы">
+    {open && <ModalForm label="Материалы" onClose={() => setOpen(false)}>
       <FormCard title="Материалы" onClose={() => setOpen(false)}>
         {error && <div role="alert">{error}</div>}
         {rows && rows.length === 0 && <div>Материалов нет</div>}
@@ -99,7 +99,7 @@ function UploadDialog({ busy, onClose, onSubmit }: { busy: boolean; onClose: () 
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
-  return <ModalForm label="Материал">
+  return <ModalForm label="Материал" onClose={onClose}>
 <FormCard title="Материал" submitLabel="Загрузить" busy={busy || !title.trim() || !file} error={error} onClose={onClose} onSubmit={() => {
     if (!file) return;
     void onSubmit(title.trim(), file).catch((cause: Error) => setError(cause.message));

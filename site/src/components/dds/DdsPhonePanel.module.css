@@ -1,0 +1,44 @@
+.panel {
+  display: grid;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ebecec;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.crewSelect,
+.incoming,
+.call,
+.caller {
+  display: grid;
+  gap: 10px;
+}
+
+.crewSelect label {
+  display: grid;
+  gap: 4px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.incoming,
+.report {
+  padding: 12px;
+  border-radius: 6px;
+  background: #fff6e8;
+}
+
+.call {
+  padding: 12px;
+  border-radius: 6px;
+  background: #fff;
+}

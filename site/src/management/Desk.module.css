@@ -3,21 +3,42 @@
   min-width: 0;
   flex-direction: column;
   color: #fff;
-  gap: 16px;
+  gap: 20px;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 41px;
+  min-height: 48px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, .3);
   gap: 16px;
 }
 
 .title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .controls {
@@ -44,9 +65,9 @@
 }
 
 .controls button {
-  height: 41px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, .24);
+  min-height: 41px;
+  padding: 0 16px;
+  border: 1px solid #ec653b;
   border-radius: 6px;
   background: transparent;
   color: #fff;
@@ -54,68 +75,19 @@
   cursor: pointer;
 }
 
-.row button {
-  padding: 0;
-  border: 0;
-  background: transparent;
+.controls button:hover:not(:disabled),
+.controls button:focus-visible {
+  background: #ec653b;
   color: #fff;
-  font: inherit;
-  cursor: pointer;
 }
 
-.controls button {
-  border-color: #ec653b;
-  color: #ec653b;
-}
-
-.controls button:disabled,
-.row button:disabled {
+.controls button:disabled {
   opacity: .55;
   cursor: default;
 }
 
-.table {
-  display: grid;
-  gap: 8px;
-}
-
-.head,
-.row {
-  display: grid;
-  grid-template-columns: var(--cols);
-  align-items: center;
-  min-height: 36px;
-  padding: 0 12px;
-  column-gap: 12px;
-}
-
-.head {
-  color: rgba(255, 255, 255, .8);
-  font-size: 14px;
-}
-
-.row {
-  border: 1px solid #838f97;
-  border-radius: 6px;
-  background: #49555d;
-}
-
-.row > span,
-.head > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  gap: 16px;
-}
-
 .empty {
+  padding: 20px 0;
   color: rgba(255, 255, 255, .8);
   font-size: 16px;
 }
