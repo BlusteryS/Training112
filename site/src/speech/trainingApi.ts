@@ -74,15 +74,6 @@ export async function attemptEvents(id: string) {
   return api<AttemptEvent[]>(`training/attempts/${id}/events?after=0`);
 }
 
-export type DdsServiceState = {
-  service: string; status: string; started_at: string | null;
-  history: { status: string; comment: string; created_at: string; actor: string }[];
-};
-
-export function ddsServiceStates(id: string) {
-  return api<DdsServiceState[]>(`training/attempts/${id}/services`);
-}
-
 export async function postCardStatus(id: string, status: string, comment: string) {
   await postDdsCommand(id, 'card.status', { status, comment });
   return api<CardAttempt>(`training/attempts/${id}`);

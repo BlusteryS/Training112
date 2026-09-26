@@ -9,8 +9,8 @@ import { DdsPhonePanel } from '../components/dds/DdsPhonePanel';
 import { DdsServiceBar } from '../components/dds/DdsServiceBar';
 import { DdsStatusEditor } from '../components/dds/DdsStatusEditor';
 import { sameService } from '../components/dds/serviceName';
-import { attemptEvents, ddsServiceStates, openCardAttempt, postCardStatus,
-  type AttemptEvent, type CardAttempt, type DdsServiceState } from '../speech/trainingApi';
+import { attemptEvents, openCardAttempt, postCardStatus,
+  type AttemptEvent, type CardAttempt } from '../speech/trainingApi';
 import type { Assignment } from '../management/types';
 import shell from '../App.module.css';
 import styles from './CardDesk.module.css';
@@ -23,7 +23,6 @@ export function CardDesk() {
   const [attempt, setAttempt] = useState<CardAttempt | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [events, setEvents] = useState<AttemptEvent[]>([]);
-  const [services, setServices] = useState<DdsServiceState[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [phoneEnabled, setPhoneEnabled] = useState(true);
@@ -43,23 +42,14 @@ export function CardDesk() {
   useEffect(() => {
     let cancelled = false;
     void openCardAttempt(user.id, assignmentId).then(async ({ assignment: next, attempt: opened }) => {
-      const [history, states] = await Promise.all([attemptEvents(opened.id), ddsServiceStates(opened.id)]);
+      const history = await attemptEvents(opened.id);
       if (cancelled) return;
       setAttempt(opened);
       setAssignment(next);
       setEvents(history);
-      setServices(states);
     }).catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     return () => { cancelled = true; };
   }, [assignmentId, user.id]);
-
-  useEffect(() => {
-    if (!attempt?.id) return undefined;
-    const timer = window.setInterval(() => {
-      void ddsServiceStates(attempt.id).then(setServices).catch(() => {});
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [attempt?.id]);
 
   if (!attempt || !assignment) {
     return <div className={shell.workspace}>
@@ -86,14 +76,12 @@ export function CardDesk() {
   }
 
   async function refresh() {
-    const [current, history, states] = await Promise.all([
+    const [current, history] = await Promise.all([
       api<CardAttempt>(`training/attempts/${attemptId}`),
       attemptEvents(attemptId),
-      ddsServiceStates(attemptId),
     ]);
     setAttempt(current);
     setEvents(history);
-    setServices(states);
   }
 
   async function move(next: string, comment: string) {
@@ -137,7 +125,7 @@ export function CardDesk() {
         pendingReport={pendingReport} busy={busy} onMove={move} />
       {error && <Notice error>{error}</Notice>}
       <DdsServiceBar services={notified} ownService={ownService} ownStatus={attempt.card_status}
-        serviceStates={services} events={events} login={user.login} now={now} startedAt={startedAt} />
+        events={events} login={user.login} now={now} startedAt={startedAt} />
     </div>
   </div>;
 }

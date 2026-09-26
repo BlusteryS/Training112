@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { api } from './api';
 import { ApiError, authApi, type User } from './auth/api';
 import { AuthContext, useAuth } from './auth/AuthContext';
-import { Management } from './management/Management';
 import type { Assignment } from './management/types';
 import { NotificationProvider, useNotification } from './components/Notifications';
 import { WorkspaceHeader } from './components/shell/WorkspaceHeader';
@@ -12,10 +11,7 @@ import { ActionButton, ActionRow } from './components/ui/ActionButton';
 import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';
 import { LoginPage } from './pages/LoginPage';
-import { CardDesk } from './pages/CardDesk';
-import { LearnerProgress } from './pages/LearnerProgress';
 import { MaterialsMenu } from './management/Materials';
-import { SpeechPage } from './pages/SpeechPage';
 import { readCooldown, readManualAvailability, writeManualAvailability } from './operatorAvailability';
 import chevronDarkIcon from './assets/workspace/chevron-dark.svg';
 import headsetIcon from './assets/workspace/headset.svg';
@@ -24,6 +20,11 @@ import searchClockIcon from './assets/workspace/search-clock.svg';
 import searchIcon from './assets/workspace/search.svg';
 import searchPlusIcon from './assets/workspace/search-plus.svg';
 import styles from './App.module.css';
+
+const Management = lazy(() => import('./management/Management').then((module) => ({ default: module.Management })));
+const CardDesk = lazy(() => import('./pages/CardDesk').then((module) => ({ default: module.CardDesk })));
+const LearnerProgress = lazy(() => import('./pages/LearnerProgress').then((module) => ({ default: module.LearnerProgress })));
+const SpeechPage = lazy(() => import('./pages/SpeechPage').then((module) => ({ default: module.SpeechPage })));
 
 type Session =
   | { status: 'loading' }
@@ -346,13 +347,15 @@ function StaffWorkspace() {
       <div className={styles.searchFooter}>Учебный комплекс</div>
     </div>} />
     <div className={styles.operatorContent}>
-      <Management />
+      <Suspense fallback={null}><Management /></Suspense>
     </div>
   </div>;
 }
 
 function Home() {
-  return useAuth().user.role === 'user' ? <OperatorWorkspace /> : <StaffWorkspace />;
+  const { user } = useAuth();
+  return user.role === 'user' ? <OperatorWorkspace />
+    : <Navigate replace to={user.role === 'admin' ? '/admin/users' : '/teacher/lessons'} />;
 }
 
 function Application() {
@@ -397,13 +400,15 @@ function Application() {
     </div>
       : session.status === 'anonymous' ? <LoginPage onLogin={handleLogin} />
         : <AuthContext.Provider value={{ user: session.user, logout }}>
-          <Routes>
+          <Suspense fallback={null}><Routes>
             <Route element={session.user.role === 'user' ? <SpeechPage /> : <Navigate replace to="/" />} path="/session" />
             <Route element={session.user.role === 'user' ? <CardDesk /> : <Navigate replace to="/" />} path="/card" />
             <Route element={session.user.role === 'user' ? <LearnerProgress /> : <Navigate replace to="/" />} path="/progress" />
+            <Route element={session.user.role === 'teacher' ? <StaffWorkspace /> : <Navigate replace to="/" />} path="/teacher/:section" />
+            <Route element={session.user.role === 'admin' ? <StaffWorkspace /> : <Navigate replace to="/" />} path="/admin/:section" />
             <Route element={<Home />} path="/" />
             <Route element={<Navigate replace to="/" />} path="*" />
-          </Routes>
+          </Routes></Suspense>
         </AuthContext.Provider>;
 }
 

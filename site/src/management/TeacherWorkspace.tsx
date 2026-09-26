@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import { SectionTabs } from '../components/ui/SectionTabs';
 import { Groups } from './Groups';
 import { Lessons } from './Lessons';
@@ -16,17 +16,15 @@ const sections = {
   reports: 'Отчёты',
 } as const;
 
-type Section = keyof typeof sections;
+const pages = { lessons: Lessons, scenarios: Scenarios, groups: Groups,
+  materials: Materials, results: Results, reports: Reports };
 
 export function TeacherWorkspace() {
-  const [section, setSection] = useState<Section>('lessons');
+  const { section } = useParams();
+  if (!section || !Object.hasOwn(pages, section)) return <Navigate replace to="/teacher/lessons" />;
+  const Page = pages[section as keyof typeof pages];
   return <div data-tab-workspace>
-    <SectionTabs value={section} options={sections} onChange={setSection} />
-    {section === 'lessons' && <Lessons />}
-    {section === 'scenarios' && <Scenarios />}
-    {section === 'groups' && <Groups />}
-    {section === 'materials' && <Materials />}
-    {section === 'results' && <Results />}
-    {section === 'reports' && <Reports />}
+    <SectionTabs value={section} options={sections} basePath="/teacher" />
+    <Page />
   </div>;
 }

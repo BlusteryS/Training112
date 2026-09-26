@@ -7,6 +7,7 @@ import java.util.Set;
 
 /** Fixed IP-phone reports for the universal DDS exercise. */
 public final class DdsPhone {
+  private static final Set<String> CREWS = Set.of("Бригада 1", "Бригада 2", "Бригада 3");
   private static final Map<String, String> NEXT = Map.of(
       "accepted", "dispatched", "dispatched", "arrived", "arrived", "working",
       "working", "completed");
@@ -32,7 +33,7 @@ public final class DdsPhone {
   private DdsPhone() {}
 
   public static boolean crewName(String name) {
-    return name != null && !name.isBlank() && name.length() <= 100;
+    return name != null && CREWS.contains(name);
   }
 
   public static JsonObject report(String status, String crew, JsonObject template, JsonObject request) {

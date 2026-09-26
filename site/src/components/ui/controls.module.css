@@ -50,26 +50,27 @@
   line-height: normal;
 }
 
-.tabs button {
+.tabs a {
   height: 41px;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
   padding: 0 16px;
-  border: 0;
   border-bottom: 3px solid transparent;
-  background: transparent;
   color: rgba(255, 255, 255, .78);
   font: inherit;
   font-size: 16px;
   line-height: 1;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.tabs button[aria-current='page'] {
+.tabs a[aria-current='page'] {
   border-bottom-color: #ec653b;
   color: #fff;
 }
 
-.tabs button:hover {
+.tabs a:hover {
   color: #fff;
 }
 

@@ -219,8 +219,6 @@ public final class TrainingRoutes {
         .handler(c -> empty(c, repository.cardLinks().detach(actor(c), id(c))));
     router.post("/api/training/attempts/:id/links/promote")
         .handler(c -> empty(c, repository.cardLinks().promote(actor(c), id(c))));
-    router.get("/api/training/attempts/:id/services")
-        .handler(c -> json(c, repository.ddsServices(actor(c), id(c))));
     router.get("/api/training/attempts/:id/phone")
         .handler(c -> {
           JsonObject request = new JsonObject()

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { previewDdsPhone, recordDdsPhone, selectDdsCrew, type PhoneReport } from '../../speech/trainingApi';
-import { InputField } from '../ui/InputField';
+import { SelectField } from '../ui/SelectField';
 import styles from './DdsPhonePanel.module.css';
 
 const reports = ['accepted', 'dispatched', 'arrived', 'working'];
+const crews = ['Бригада 1', 'Бригада 2', 'Бригада 3'];
 const reportNames: Record<string, string> = {
   dispatched: 'Начало реагирования', arrived: 'Прибытие',
   working: 'Проведение работ', completed: 'Работы завершены', refused: 'Отказ от выполнения работ',
@@ -19,7 +20,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   onChange: () => Promise<void>;
   onError: (message: string) => void;
 }) {
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState('Бригада 1');
   const [active, setActive] = useState<PhoneReport | null>(null);
   const [incoming, setIncoming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,11 +39,11 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   }, []);
 
   async function chooseCrew() {
-    if (!attemptId || busy || !selected.trim()) return;
+    if (!attemptId || busy) return;
     setBusy(true);
     onError('');
     try {
-      await selectDdsCrew(attemptId, selected.trim());
+      await selectDdsCrew(attemptId, selected);
       await onChange();
     } catch (cause) {
       onError(cause instanceof Error ? cause.message : 'Не удалось назначить бригаду.');
@@ -103,9 +104,10 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
     <div className={styles.title}>Учебный IP-телефон</div>
     {!enabled && <div>Телефон отключён администратором.</div>}
     {status === 'accepted' && !crew && <div className={styles.crewSelect}>
-      <InputField label="Номер наряда или название бригады" value={selected} maxLength={100}
-        onChange={(event) => setSelected(event.target.value)} />
-      <button type="button" disabled={busy || !selected.trim()} onClick={() => void chooseCrew()}>Назначить бригаду</button>
+      <SelectField label="Бригада" value={selected} onChange={(event) => setSelected(event.target.value)}>
+        {crews.map((name) => <option key={name} value={name}>{name}</option>)}
+      </SelectField>
+      <button type="button" disabled={busy} onClick={() => void chooseCrew()}>Назначить бригаду</button>
     </div>}
     {crew && <div>Бригада на вызове: {crew}</div>}
     {active ? <div className={styles.call}>

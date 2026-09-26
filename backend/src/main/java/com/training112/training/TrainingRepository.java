@@ -687,35 +687,6 @@ public final class TrainingRepository {
                     Tuple.of(id, after)));
   }
 
-  public Future<JsonArray> ddsServices(Account actor, UUID id) {
-    return accessibleAttempt(pool, actor, id, false).compose(row -> {
-      if (!"card".equals(row.getString("mode"))) return Future.failedFuture(forbidden());
-      JsonObject template = row.getJsonObject("card_template");
-      String caseId = template == null ? null : template.getString("case_id");
-      if (caseId == null) return Future.succeededFuture(new JsonArray());
-      return list(pool, """
-          SELECT jsonb_build_object('service', service_code, 'status', card_status,
-            'started_at', started_at,
-            'history', COALESCE((SELECT jsonb_agg(jsonb_build_object(
-              'status', ev.payload->>'status', 'comment', ev.payload->>'comment',
-              'created_at', ev.created_at, 'actor', COALESCE(u.login,'Система')) ORDER BY ev.sequence)
-              FROM attempt_event ev LEFT JOIN app_user u ON u.id=ev.actor_id
-              WHERE ev.attempt_id=service_state.id AND ev.type='card.status'), '[]'::jsonb)) AS value
-          FROM (
-            SELECT DISTINCT ON (g.service_code) g.service_code, a.id, a.card_status,
-              a.started_at
-            FROM training_attempt a
-            JOIN lesson_assignment la ON la.id=a.assignment_id
-            JOIN lesson l ON l.id=la.lesson_id
-            JOIN training_group g ON g.id=l.group_id
-            WHERE l.mode='card' AND COALESCE(a.card_template,l.card_template)->>'case_id'=$1
-              AND g.teacher_id=$2
-            ORDER BY g.service_code,a.created_at DESC
-          ) service_state ORDER BY service_code
-          """, Tuple.of(caseId, row.getUUID("teacher_id")));
-    });
-  }
-
   public Future<JsonObject> phonePreview(Account actor, UUID id, JsonObject request) {
     return PlatformSettings.enabled(pool, "dds_phone_enabled")
         .compose(enabled -> enabled ? accessibleAttempt(pool, actor, id, false)

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import type { User } from '../auth/api';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
@@ -21,7 +22,6 @@ const sections = {
   backups: 'Резервные копии',
 } as const;
 
-type Section = keyof typeof sections;
 const roleNames: Record<string, string> = { user: 'Обучающийся', teacher: 'Преподаватель', admin: 'Администратор' };
 const actionNames: Record<string, string> = {
   'user.created': 'Создана учётная запись',
@@ -51,16 +51,12 @@ const actionNames: Record<string, string> = {
 
 
 export function AdminDesk() {
-  const [section, setSection] = useState<Section>('users');
+  const { section } = useParams();
+  if (!section || !Object.hasOwn(pages, section)) return <Navigate replace to="/admin/users" />;
+  const Page = pages[section as keyof typeof pages];
   return <div data-tab-workspace>
-    <SectionTabs value={section} options={sections} onChange={setSection} />
-    {section === 'users' && <Accounts />}
-    {section === 'status' && <Status />}
-    {section === 'journal' && <Journal />}
-    {section === 'statistics' && <Statistics />}
-    {section === 'policy' && <Policy />}
-    {section === 'operations' && <Operations />}
-    {section === 'backups' && <Backups />}
+    <SectionTabs value={section} options={sections} basePath="/admin" />
+    <Page />
   </div>;
 }
 
@@ -291,3 +287,6 @@ function Backups() {
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
 }
+
+const pages = { users: Accounts, status: Status, journal: Journal,
+  statistics: Statistics, policy: Policy, operations: Operations, backups: Backups };

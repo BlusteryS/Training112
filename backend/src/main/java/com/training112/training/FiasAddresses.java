@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
@@ -17,6 +20,7 @@ final class FiasAddresses {
                          String search, String houseSearch) {}
 
   private static final List<Address> ADDRESSES = load();
+  private static final Map<Character, List<Address>> BY_INITIAL = index(ADDRESSES);
   private static final Set<String> IGNORED_WORDS = Set.of(
       "москва", "город", "улица", "дом", "район", "проспект", "переулок", "бульвар");
 
@@ -32,7 +36,14 @@ final class FiasAddresses {
     if (words.isEmpty()) return result;
     String house = words.getLast().matches("[0-9]+[а-яa-z]?") && words.size() > 1
         ? words.removeLast() : null;
-    for (Address address : ADDRESSES) {
+    List<Address> candidates = ADDRESSES;
+    for (String word : words) {
+      if (word.length() >= 3 && Character.isLetter(word.charAt(0))) {
+        candidates = BY_INITIAL.getOrDefault(word.charAt(0), List.of());
+        break;
+      }
+    }
+    for (Address address : candidates) {
       if (house != null && !houseMatches(address.houseSearch, house)) continue;
       boolean matches = true;
       for (String word : words) {
@@ -77,5 +88,17 @@ final class FiasAddresses {
       throw new IllegalStateException("Cannot read Moscow FIAS addresses", error);
     }
     return List.copyOf(addresses);
+  }
+
+  private static Map<Character, List<Address>> index(List<Address> addresses) {
+    Map<Character, List<Address>> indexed = new HashMap<>();
+    for (Address address : addresses) {
+      Set<Character> initials = new HashSet<>();
+      for (String word : address.search.split(" ")) {
+        if (!word.isEmpty() && Character.isLetter(word.charAt(0))) initials.add(word.charAt(0));
+      }
+      for (char initial : initials) indexed.computeIfAbsent(initial, key -> new ArrayList<>()).add(address);
+    }
+    return indexed;
   }
 }
