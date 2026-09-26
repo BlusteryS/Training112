@@ -54,7 +54,7 @@ public final class CardSnapshot {
   }
 
   static String descriptionForService(String description, String service) {
-    if (!"103".equals(service == null ? "" : service.trim().replaceFirst("^Служба\\s+", "")))
+    if (!"103".equals(service == null ? "" : service.trim().replaceFirst("(?iu)^служба\\s+", "")))
       return description;
     return description.codePointCount(0, description.length()) > 100
         ? description.substring(0, description.offsetByCodePoints(0, 100)) : description;
@@ -78,7 +78,11 @@ public final class CardSnapshot {
       if (!okrug.isEmpty() && survey.getBoolean(tinao ? "tinao_dds" : "okrug_dds", false))
         names.add("ДДС " + okrug);
     }
-    if (service != null && !service.isBlank()) names.add(service);
+    if (service != null && !service.isBlank()) {
+      String code = service.trim().replaceFirst("(?iu)^служба\\s+", "");
+      if (names.stream().noneMatch(name -> name.equalsIgnoreCase(service.trim())
+          || name.equalsIgnoreCase(code))) names.add(service.trim());
+    }
     StringJoiner result = new StringJoiner(", ");
     names.forEach(result::add);
     return result.toString();
