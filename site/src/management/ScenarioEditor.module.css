@@ -1,0 +1,20 @@
+.sections {
+  display: grid;
+  gap: 24px;
+}
+
+.section {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionTitle {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, .16);
+  font-size: 18px;
+}
+
+.criteria {
+  display: grid;
+  gap: 12px;
+}

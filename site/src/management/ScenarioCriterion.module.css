@@ -1,0 +1,70 @@
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.number {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  border-radius: 6px;
+  background: #f6e3dc;
+  color: #a73e1c;
+  font-size: 14px;
+}
+
+.title {
+  padding-top: 3px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.fieldName {
+  padding-left: 38px;
+  color: #596167;
+  font-size: 13px;
+}
+
+.controls {
+  display: grid;
+  gap: 12px;
+}
+
+.settings {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.settings > :first-child {
+  width: 110px;
+}
+
+.mandatory {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mandatory input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #ec653b;
+}
