@@ -42,7 +42,7 @@ public final class DdsPhone {
     if (!Set.of("incoming", "outgoing").contains(direction)) throw invalid("Неизвестный тип звонка.");
     if ("crew".equals(party)) {
       if (!NEXT.containsKey(status)) throw invalid("Сначала примите карточку службы.");
-      if (!crewName(crew)) throw invalid("Сначала выберите бригаду.");
+      if (crew == null || crew.isBlank()) throw invalid("Сначала выберите бригаду.");
       if (!request.fieldNames().equals(Set.of("party", "direction"))) throw invalid("Лишние поля звонка.");
       String next = template != null && "refused".equals(template.getString("outcome"))
           ? "refused" : NEXT.get(status);
