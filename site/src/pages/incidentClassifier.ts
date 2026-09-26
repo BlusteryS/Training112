@@ -11,6 +11,7 @@ export type ClassifierCard = {
   law_services: string[];
   district_dds: boolean;
   okrug_dds: boolean;
+  tinao_dds: boolean;
 };
 
 let catalogRequest: Promise<ClassifierCard[]> | undefined;
@@ -39,7 +40,9 @@ export function servicesForCard(card: ClassifierCard | undefined, address: strin
   const services = [...card.services];
   if (victims !== 'Нет') services.push(...card.victim_services);
   if (lawViolation) services.push(...card.law_services);
-  if (district.trim() && card.district_dds) services.push(`ДДС района ${district.trim()}`);
-  if (okrug.trim() && card.okrug_dds) services.push(`ДДС ${okrug.trim()}`);
+  const local = okrug === 'ТиНАО' ? card.tinao_dds : card.district_dds;
+  if (district.trim() && local) services.push(`ДДС района ${district.trim()}`);
+  if (okrug.trim() && (okrug === 'ТиНАО' ? card.tinao_dds : card.okrug_dds))
+    services.push(`ДДС ${okrug.trim()}`);
   return [...new Set(services)];
 }

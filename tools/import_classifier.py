@@ -83,7 +83,8 @@ def convert(source):
                 "victim_services": unique(victims),
                 "law_services": law,
                 "district_dds": bool(row.get("BW")),
-                "okrug_dds": bool(row.get("BX")),
+                "okrug_dds": bool(row.get("BW")),
+                "tinao_dds": bool(row.get("BX")),
             })
     return entries
 

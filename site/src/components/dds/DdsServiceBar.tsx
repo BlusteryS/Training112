@@ -39,7 +39,7 @@ export function DdsServiceBar({ services, ownService, ownStatus, serviceStates, 
   const history = events.filter((event) => ['card.status', 'dds.crew.select', 'dds.phone.report'].includes(event.type));
   return <div className={styles.dock}>
     <div className={styles.detail}>
-      <div className={styles.detailTitle}>{current} · {currentStatus(state, now, startedAt)}</div>
+      <div className={styles.detailTitle}>{current} · {currentStatus(state, now, own ? startedAt : null)}</div>
       {own ? <div className={styles.history}>
         {history.length === 0 ? <span>История статусов появится здесь после первого действия.</span> : history.map((event, index) =>
           <div key={`${event.created_at}-${index}`}>
@@ -66,7 +66,8 @@ export function DdsServiceBar({ services, ownService, ownStatus, serviceStates, 
           : serviceStates.find((item) => sameService(item.service, service));
         return <button type="button" key={service} className={sameService(service, current) ? styles.selected : ''}
           onClick={() => setSelected(service)} aria-current={sameService(service, current) ? 'true' : undefined}>
-          <span>{service}</span><small>{currentStatus(serviceState, now, startedAt)}</small>
+          <span>{service}</span><small>{currentStatus(serviceState, now,
+            sameService(service, ownService) ? startedAt : null)}</small>
         </button>;
       })}
     </div>
