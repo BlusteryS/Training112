@@ -69,8 +69,10 @@ def main():
     env_path.write_text(f"SERVER_IP={ip}\nDB_PASSWORD={password}\n")
     env_path.chmod(0o600)
     print(f"Адрес тренажёра: https://{ip}")
-    print("Установите deploy/tls/ca.crt в доверенные корневые сертификаты рабочих мест.")
-    print("Запуск: docker compose up -d --build")
+    print("Далее выполните:")
+    print("  1. docker compose up -d --build")
+    print("  2. docker compose exec backend create-admin (при первой установке)")
+    print("  3. Установите deploy/tls/ca.crt на рабочих местах (README.md, пункт 3.3).")
 
 
 if __name__ == "__main__":
