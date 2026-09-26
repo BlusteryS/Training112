@@ -26,6 +26,10 @@
       "minLength": 1,
       "maxLength": 200
     },
+    "classifier_code": {
+      "type": "string",
+      "pattern": "^[0-9]{6,10}$"
+    },
     "origin": {
       "type": "string",
       "enum": [

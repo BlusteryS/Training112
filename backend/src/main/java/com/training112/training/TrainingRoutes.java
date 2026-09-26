@@ -72,6 +72,8 @@ public final class TrainingRoutes {
                   .onFailure(ctx::fail);
             });
     router.get("/api/training/lessons").handler(c -> json(c, repository.lessons(actor(c))));
+    router.get("/api/training/classifier")
+        .handler(c -> json(c, Future.succeededFuture(IncidentClassifier.cards())));
     router.get("/api/training/operator-cards")
         .handler(c -> json(c, repository.operatorCards(actor(c))));
     router.get("/api/training/learners").handler(c -> json(c, repository.learners(actor(c))));
@@ -117,7 +119,7 @@ public final class TrainingRoutes {
             c.fail(error);
             return;
           }
-          JsonObject document = ScenarioDraft.build(demo, text(c, "incident", 200), text(c, "location", 1000),
+          JsonObject document = ScenarioDraft.build(demo, text(c, "classifier_code", 32), text(c, "location", 1000),
               text(c, "difficulty", 32), number.intValue(), text(c, "origin", 80), text(c, "caller_name", 200));
           json(c, Future.succeededFuture(document));
         });

@@ -1,6 +1,7 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
+import { IncidentSurvey, type SurveySelection } from '../components/call/IncidentSurvey';
 import { ToggleGroup } from '../components/call/ToggleGroup';
 import { ModalForm } from '../components/ModalForm';
 import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
@@ -11,7 +12,8 @@ import locationIcon from '../assets/call/location.svg';
 import helpIcon from '../assets/call/help.svg';
 import plusIcon from '../assets/workspace/plus.svg';
 import closeIcon from '../assets/workspace/close.svg';
-import { incidentTypes } from './callIncidentTypes';
+import { incidentClassifier, matchingCard, servicesForCard,
+  type ClassifierCard } from './incidentClassifier';
 import styles from './CallWorkspace.module.css';
 
 export type IncidentDraft = {
@@ -24,6 +26,8 @@ export type IncidentDraft = {
   caller_status: string;
   foreign_language: string;
   incident_code: string;
+  classifier_code: string;
+  incident_types: string;
   incident_sign_2: string;
   incident_sign_3: string;
   incident_details: string;
@@ -43,13 +47,12 @@ export type IncidentDraft = {
   comment: string;
 };
 
-const serviceOptions = ['101', '102', '103', '104', 'ДДС района'];
-
 function initialDraft(phone: string, card?: Record<string, string> | null): IncidentDraft {
   return {
     phone, provided_phone: '', scene_phone: '', communication_channel: 'Мобильный телефон',
     foreign_phone: 'false', caller_name: '', caller_status: '', foreign_language: 'false',
-    incident_code: '', incident_sign_2: '', incident_sign_3: '', incident_details: '',
+    incident_code: '', classifier_code: '', incident_types: '[]',
+    incident_sign_2: '', incident_sign_3: '', incident_details: '',
     address: '', address_description: '', country: 'Россия', city: 'Москва', okrug: '',
     district: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Нет',
     services: '', comment: '', ...card,
@@ -58,6 +61,18 @@ function initialDraft(phone: string, card?: Record<string, string> | null): Inci
 
 function splitServices(value: string) {
   return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function additionalIncidents(card?: Record<string, string> | null): SurveySelection[] {
+  try {
+    const values: unknown = JSON.parse(card?.incident_types ?? '[]');
+    if (!Array.isArray(values)) return [];
+    return values.slice(1).filter((item): item is SurveySelection => item !== null
+      && typeof item === 'object' && typeof item.type === 'string'
+      && typeof item.sign2 === 'string' && typeof item.sign3 === 'string');
+  } catch {
+    return [];
+  }
 }
 
 function elapsedParts(seconds: number) {
@@ -87,23 +102,61 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   const [confirm, setConfirm] = useState<'save' | 'no-contact' | 'dropped' | null>(null);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [error, setError] = useState('');
+  const [classifier, setClassifier] = useState<ClassifierCard[]>([]);
+  const [classifierError, setClassifierError] = useState('');
+  const [manualServices, setManualServices] = useState(() => splitServices(initialCard?.services ?? ''));
+  const [excludedServices, setExcludedServices] = useState<string[]>([]);
+  const [extraIncidents, setExtraIncidents] = useState(() => additionalIncidents(initialCard));
   const services = useMemo(() => splitServices(draft.services), [draft.services]);
+  const types = useMemo(() => [...new Set(classifier.map((card) => card.type))].sort((a, b) => a.localeCompare(b, 'ru')),
+    [classifier]);
+  const selectedCard = useMemo(() => matchingCard(classifier, draft.incident_code,
+    draft.incident_sign_2, draft.incident_sign_3),
+  [classifier, draft.incident_code, draft.incident_sign_2, draft.incident_sign_3]);
+  const selectedCards = useMemo(() => [selectedCard, ...extraIncidents.map((item) =>
+    matchingCard(classifier, item.type, item.sign2, item.sign3))], [selectedCard, extraIncidents, classifier]);
+  const suggestedServices = useMemo(() => [...new Set(selectedCards.flatMap((card) =>
+    servicesForCard(card, draft.address, draft.district, draft.okrug, draft.victims)))],
+  [selectedCards, draft.address, draft.district, draft.okrug, draft.victims]);
+  const serviceOptions = useMemo(() => [...new Set(['101', '102', '103', '104',
+    ...classifier.flatMap((card) => card.services), ...classifier.flatMap((card) => card.victim_services),
+    ...suggestedServices, ...services])].sort((a, b) => a.localeCompare(b, 'ru')),
+  [classifier, suggestedServices, services]);
   const time = elapsedParts(elapsed);
+
+  useEffect(() => {
+    let active = true;
+    void incidentClassifier().then((cards) => { if (active) setClassifier(cards); })
+      .catch(() => { if (active) setClassifierError('Не удалось открыть классификатор происшествий.'); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const next = [...new Set([...suggestedServices.filter((service) => !excludedServices.includes(service)),
+      ...manualServices])].join(', ');
+    const all = JSON.stringify([{ type: draft.incident_code, sign2: draft.incident_sign_2,
+      sign3: draft.incident_sign_3 }, ...extraIncidents]);
+    setDraft((current) => current.services === next && current.classifier_code === (selectedCard?.code ?? '')
+      && current.incident_types === all ? current : { ...current, services: next,
+        classifier_code: selectedCard?.code ?? '', incident_types: all });
+  }, [suggestedServices, manualServices, excludedServices, selectedCard,
+    draft.incident_code, draft.incident_sign_2, draft.incident_sign_3, extraIncidents]);
 
   function change<K extends keyof IncidentDraft>(key: K, value: IncidentDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function selectIncident(value: string) {
-    const matched = incidentTypes.find((item) => item.name === value);
-    setDraft((current) => ({ ...current, incident_code: value,
-      incident_sign_2: '', incident_sign_3: '',
-      services: matched ? matched.services.join(', ') : current.services,
-    }));
-  }
-
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (selectedCards.some((card) => !card)
+      || new Set(selectedCards.map((card) => card?.code)).size !== selectedCards.length) {
+      setError('Выберите тип происшествия и все признаки из классификатора.');
+      return;
+    }
+    if (services.length === 0) {
+      setError('Добавьте хотя бы одну службу для оповещения.');
+      return;
+    }
     setError('');
     setConfirm('save');
   }
@@ -112,8 +165,9 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
     setError('');
     const reason = confirm === 'no-contact' ? 'Нет контакта с заявителем'
       : confirm === 'dropped' ? 'Срыв звонка' : '';
-    const value = reason ? { ...draft, comment: reason, incident_code: draft.incident_code || reason,
-      description: draft.description || reason } : draft;
+    const value = reason ? { ...draft, comment: reason, incident_code: reason,
+      classifier_code: '', incident_types: '[]', incident_sign_2: '', incident_sign_3: '',
+      services: '', description: reason } : draft;
     try {
       await onSave(value);
     } catch (cause) {
@@ -122,8 +176,13 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   }
 
   function toggleService(service: string) {
-    const next = services.includes(service) ? services.filter((item) => item !== service) : [...services, service];
-    change('services', next.join(', '));
+    if (services.includes(service)) {
+      setManualServices((current) => current.filter((item) => item !== service));
+      if (suggestedServices.includes(service)) setExcludedServices((current) => [...new Set([...current, service])]);
+    } else {
+      setExcludedServices((current) => current.filter((item) => item !== service));
+      if (!suggestedServices.includes(service)) setManualServices((current) => [...new Set([...current, service])]);
+    }
   }
 
   const arm = (user.workstation ?? '000').padStart(3, '0');
@@ -227,19 +286,20 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
 
       <div className={styles.incidentPanel}>
         <div className={styles.panelTitle}>Что случилось?</div>
-        <input required list="incident-types" value={draft.incident_code}
-          onChange={(event) => selectIncident(event.target.value)} placeholder="Добавить тип происшествия" />
-        <datalist id="incident-types">{incidentTypes.map(({ name }) => <option key={name} value={name} />)}</datalist>
-        {draft.incident_code && <div className={styles.chips}><button type="button"
-          onClick={() => selectIncident('')}>{draft.incident_code} ×</button></div>}
-        {incidentTypes.find((item) => item.name === draft.incident_code)?.questions.map((question) =>
-          <label key={question.field} className={styles.details}>{question.label}
-            <select required value={draft[question.field]}
-              onChange={(event) => change(question.field, event.target.value)}>
-              <option value=""></option>
-              {question.options.map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </label>)}
+        <IncidentSurvey cards={classifier} types={types} listId="incident-types" value={{
+          type: draft.incident_code, sign2: draft.incident_sign_2, sign3: draft.incident_sign_3,
+        }} onChange={(value) => setDraft((current) => ({ ...current,
+          incident_code: value.type, incident_sign_2: value.sign2, incident_sign_3: value.sign3,
+        }))} />
+        {extraIncidents.map((item, index) => <IncidentSurvey key={index} cards={classifier}
+          types={types} listId={`incident-type-${index}`} value={item}
+          onChange={(value) => setExtraIncidents((current) => current.map((row, rowIndex) =>
+            rowIndex === index ? value : row))}
+          onRemove={() => setExtraIncidents((current) => current.filter((_, rowIndex) => rowIndex !== index))} />)}
+        <button className={styles.addIncident} type="button" onClick={() => setExtraIncidents((current) =>
+          [...current, { type: '', sign2: '', sign3: '' }])}>Добавить ещё тип происшествия</button>
+        {classifierError && <div className={styles.modalError} role="alert">{classifierError}</div>}
+        {error && !confirm && <div className={styles.modalError} role="alert">{error}</div>}
         <label className={styles.details}>Подробности происшествия
           <AutosizeTextarea required value={draft.incident_details}
             onChange={(event) => change('incident_details', event.target.value)}

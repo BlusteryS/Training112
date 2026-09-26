@@ -17,6 +17,7 @@ const factNames: Record<string, string> = {
   danger: 'Опасность для заявителя', fire: 'Место горения', weapon: 'Оружие',
   description_details: 'Приметы и дополнительные подробности', vehicle: 'Транспорт',
   incident_code: 'Тип происшествия', description: 'Описание происшествия',
+  district: 'Район происшествия', okrug: 'Округ происшествия',
 };
 
 export function exportScenario(document: ScenarioDocument) {
@@ -36,7 +37,8 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
   const [error, setError] = useState('');
   function fact(key: string, value: string) {
     setDocument((previous) => ({ ...previous, facts: { ...previous.facts, [key]: value },
-      rubric: previous.rubric.map((rule) => rule.field === key && rule.expected === previous.facts[key]
+      rubric: previous.rubric.map((rule) => (rule.field === key || key === 'incident' && rule.field === 'description')
+        && rule.expected === previous.facts[key]
         ? { ...rule, expected: value } : rule),
     }));
   }
@@ -45,14 +47,24 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       rubric: previous.rubric.map((rule) => rule.id === id ? { ...rule, ...changes } : rule),
     }));
   }
+  function save() {
+    const missing = Object.entries(document.facts).find(([, value]) => !value.trim());
+    if (missing) {
+      setError(`Заполните поле «${factNames[missing[0]] ?? missing[0]}».`);
+      return;
+    }
+    setError('');
+    void onSave(document).catch((cause: Error) => setError(cause.message));
+  }
   return <ModalForm label={editing ? 'Сценарий' : 'Новый сценарий'} onClose={onCancel}>
 <FormCard title={editing ? 'Сценарий' : 'Новый сценарий'} submitLabel="Сохранить" busy={busy} error={error} onClose={onCancel}
-    onSubmit={() => { setError(''); void onSave(document).catch((cause: Error) => setError(cause.message)); }}>
+    onSubmit={save}>
   <div className={styles.sections}>
     <div className={styles.section}>
       <div className={styles.sectionTitle}>Общие сведения</div>
       <div className={formGrid}>
         <InputField label="Название" required maxLength={200} value={document.title} onChange={(event) => setDocument({ ...document, title: event.target.value })} />
+        {document.classifier_code && <InputField label="Код сценария реагирования" value={document.classifier_code} readOnly />}
         <SelectField label="Источник" required value={document.origin ?? ''} onChange={(event) => setDocument({ ...document, origin: event.target.value })}>
           <option value=""></option>
           {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}

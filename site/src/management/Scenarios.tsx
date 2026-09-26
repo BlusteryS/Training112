@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
+import { IncidentSurvey, type SurveySelection } from '../components/call/IncidentSurvey';
 import { FormCard, formGrid } from './FormCard';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
 import { incidentSources } from '../incidentSources';
-import { incidentTypes } from '../pages/callIncidentTypes';
+import { incidentClassifier, matchingCard, type ClassifierCard } from '../pages/incidentClassifier';
 import { ScenarioEditor, exportScenario } from './ScenarioEditor';
 import { difficultyNames, scenarioNames, type Scenario, type ScenarioDocument } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
@@ -105,20 +106,33 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   onClose: () => void;
   onSubmit: (body: Record<string, string | number>) => void;
 }) {
-  const [incident, setIncident] = useState(incidentTypes[0]?.name ?? '');
+  const [classifier, setClassifier] = useState<ClassifierCard[]>([]);
+  const [incident, setIncident] = useState<SurveySelection>({ type: '', sign2: '', sign3: '' });
+  const [localError, setLocalError] = useState('');
   const [location, setLocation] = useState('Москва, учебная улица, дом 10');
   const [difficulty, setDifficulty] = useState('basic');
   const [seconds, setSeconds] = useState('30');
   const [origin, setOrigin] = useState('Служба 112');
   const [caller, setCaller] = useState('Алексей');
+  useEffect(() => {
+    let active = true;
+    void incidentClassifier().then((cards) => { if (active) setClassifier(cards); })
+      .catch(() => { if (active) setLocalError('Не удалось открыть классификатор происшествий.'); });
+    return () => { active = false; };
+  }, []);
+  const types = [...new Set(classifier.map((card) => card.type))].sort((a, b) => a.localeCompare(b, 'ru'));
   return <ModalForm label="Создать сценарий" onClose={onClose}>
-<FormCard title="Сведения для сценария" submitLabel="Продолжить" busy={busy} error={error} onClose={onClose} onSubmit={() => onSubmit({
-    incident, location, difficulty, seconds: Number(seconds), origin, caller_name: caller,
-  })}>
+<FormCard title="Сведения для сценария" submitLabel="Продолжить" busy={busy} error={localError || error}
+  onClose={onClose} onSubmit={() => {
+    const card = matchingCard(classifier, incident.type, incident.sign2, incident.sign3);
+    if (!card) { setLocalError('Выберите тип происшествия и его признаки.'); return; }
+    setLocalError('');
+    onSubmit({ classifier_code: card.code, location, difficulty, seconds: Number(seconds),
+      origin, caller_name: caller });
+  }}>
+    <IncidentSurvey cards={classifier} types={types} listId="scenario-incident-types"
+      value={incident} onChange={(value) => { setIncident(value); setLocalError(''); }} />
     <div className={formGrid}>
-      <SelectField label="Тип происшествия" value={incident} onChange={(event) => setIncident(event.target.value)}>
-        {incidentTypes.map((type) => <option key={type.name} value={type.name}>{type.name}</option>)}
-      </SelectField>
       <InputField label="Место" maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} />
       <SelectField label="Сложность" value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}

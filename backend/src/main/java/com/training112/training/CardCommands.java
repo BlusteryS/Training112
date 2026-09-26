@@ -1,6 +1,7 @@
 package com.training112.training;
 
 import com.training112.auth.ApiException;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.util.Map;
 import java.util.Set;
@@ -10,7 +11,7 @@ public final class CardCommands {
       Set.of(
           "address", "address_description", "landmark", "caller_name", "caller_status", "city", "comment",
           "communication_channel", "country", "description", "district", "entrance", "floor",
-          "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code",
+          "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code", "incident_types",
           "incident_sign_2", "incident_sign_3", "incident_details",
           "okrug", "phone", "provided_phone", "scene_phone", "services", "street", "victims");
   private static final Set<String> OKRUGS =
@@ -56,7 +57,16 @@ public final class CardCommands {
       }
       String okrug = copy.getString("okrug", "");
       if (!okrug.isEmpty() && !OKRUGS.contains(okrug)) throw invalid("Неизвестный округ.");
-      if (!allowed(copy.getString("incident_sign_2", ""), SIGN_2)
+      String classifierCode = copy.getString("classifier_code", "");
+      if (!classifierCode.isEmpty()) {
+        JsonObject survey = IncidentClassifier.card(classifierCode);
+        if (survey == null || !survey.getString("type").equals(copy.getString("incident_code", ""))
+            || !survey.getString("sign2").equals(copy.getString("incident_sign_2", ""))
+            || !survey.getString("sign3").equals(copy.getString("incident_sign_3", ""))) {
+          throw invalid("Код и признаки происшествия не совпадают с классификатором.");
+        }
+        validateIncidentTypes(copy);
+      } else if (!allowed(copy.getString("incident_sign_2", ""), SIGN_2)
           || !allowed(copy.getString("incident_sign_3", ""), SIGN_3)) {
         throw invalid("Неизвестный признак происшествия.");
       }
@@ -77,6 +87,34 @@ public final class CardCommands {
 
   private static boolean allowed(String value, Set<String> options) {
     return value.isEmpty() || options.contains(value);
+  }
+
+  private static void validateIncidentTypes(JsonObject card) {
+    String value = card.getString("incident_types", "");
+    if (value.isBlank()) return;
+    JsonArray incidents;
+    try {
+      incidents = new JsonArray(value);
+    } catch (RuntimeException error) {
+      throw invalid("Неверные типы происшествия.");
+    }
+    if (incidents.isEmpty() || incidents.size() > 30) throw invalid("Неверные типы происшествия.");
+    Set<String> seen = new java.util.HashSet<>();
+    for (Object item : incidents) {
+      if (!(item instanceof JsonObject selected)) throw invalid("Неверные типы происшествия.");
+      String type = selected.getString("type", "");
+      String second = selected.getString("sign2", "");
+      String third = selected.getString("sign3", "");
+      JsonObject row = IncidentClassifier.card(type, second, third);
+      if (row == null) throw invalid("Неизвестный тип или признак происшествия.");
+      if (!seen.add(row.getString("code"))) throw invalid("Тип происшествия выбран повторно.");
+    }
+    JsonObject first = incidents.getJsonObject(0);
+    if (!first.getString("type").equals(card.getString("incident_code"))
+        || !first.getString("sign2").equals(card.getString("incident_sign_2"))
+        || !first.getString("sign3").equals(card.getString("incident_sign_3"))) {
+      throw invalid("Основной тип происшествия не совпадает с карточкой.");
+    }
   }
 
   private static ApiException invalid(String message) {

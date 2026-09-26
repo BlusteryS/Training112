@@ -21,6 +21,7 @@ export type Assignment = {
 };
 export type ScenarioDocument = {
   schema_version: number; title: string; origin: string;
+  classifier_code?: string;
   difficulty?: string; instructions?: string;
   pass_score?: number; max_errors?: number;
   facts: Record<string, string>;
