@@ -25,6 +25,7 @@ public final class DdsCardTemplate {
   public static JsonObject fromOperator(JsonObject card, JsonObject options, String service,
       java.util.UUID source) {
     JsonObject input = card.copy();
+    input.put("description", CardSnapshot.descriptionForService(input.getString("description", ""), service));
     input.put("expected_primary", options.getString("expected_primary", "accepted"));
     input.put("outcome", options.getString("outcome", "completed"));
     return build(input, service, true).put("case_id", source.toString());

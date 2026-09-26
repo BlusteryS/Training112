@@ -12,6 +12,7 @@ public final class DdsEvaluation {
     String outcome = template == null ? "completed" : template.getString("outcome", "completed");
     JsonObject first = null;
     boolean crew = false;
+    boolean accepted = false;
     boolean dispatched = false;
     boolean arrived = false;
     boolean working = false;
@@ -24,6 +25,7 @@ public final class DdsEvaluation {
       if (!"card.status".equals(type)) continue;
       String status = payload.getString("status", "");
       if (first == null && ("accepted".equals(status) || "rejected".equals(status))) first = event;
+      if ("accepted".equals(status)) accepted = true;
       if ("dispatched".equals(status)) dispatched = true;
       if ("arrived".equals(status)) arrived = true;
       if ("working".equals(status)) working = true;
@@ -39,7 +41,7 @@ public final class DdsEvaluation {
           first != null && "rejected".equals(first.getJsonObject("payload").getString("status"))
               && !first.getJsonObject("payload").getString("comment", "").isBlank());
     } else {
-      add(checks, "acceptance", "Карточка принята службой", 10, first != null);
+      add(checks, "acceptance", "Карточка принята службой", 10, accepted);
     }
     add(checks, "crew", "Бригада выбрана диспетчером", 10, crew);
     if ("refused".equals(outcome)) {
