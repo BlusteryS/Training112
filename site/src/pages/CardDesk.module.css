@@ -50,14 +50,14 @@
   color: #c1392b;
 }
 
-.workflow {
+.contactRow {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 4fr);
   align-items: start;
   gap: 8px;
 }
 
-.workflow button {
+.contactRow button {
   padding: 8px 12px;
   border: 1px solid #ec653b;
   border-radius: 6px;
@@ -66,11 +66,15 @@
   cursor: pointer;
 }
 
-.workflow button:disabled {
+.contactRow button:disabled {
   opacity: .55;
   cursor: default;
 }
 
 .startError {
   padding: 20px;
+}
+
+@media (max-width: 1200px) {
+  .contactRow { grid-template-columns: 1fr; }
 }

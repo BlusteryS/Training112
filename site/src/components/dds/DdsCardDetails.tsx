@@ -9,18 +9,25 @@ function Field({ label, text }: { label: string; text?: string | null }) {
   return <div className={styles.field}><span>{label}</span><div>{value(text)}</div></div>;
 }
 
+export function DdsCardContacts({ card, assignment }: {
+  card: Record<string, string>;
+  assignment: Assignment | null;
+}) {
+  const facts = assignment?.facts;
+  return <div className={styles.phoneRow}>
+      <Field label="АОН" text={card.phone || facts?.phone} />
+      <Field label="Предоставленный номер" text={card.provided_phone} />
+      <Field label="Телефон на месте происшествия" text={card.scene_phone} />
+      <Field label="Канал связи" text={card.communication_channel} />
+    </div>;
+}
+
 export function DdsCardDetails({ card, assignment }: {
   card: Record<string, string>;
   assignment: Assignment | null;
 }) {
   const facts = assignment?.facts;
   return <>
-    <div className={styles.phoneRow}>
-      <Field label="АОН" text={card.phone || facts?.phone} />
-      <Field label="Предоставленный номер" text={card.provided_phone} />
-      <Field label="Телефон на месте происшествия" text={card.scene_phone} />
-      <Field label="Канал связи" text={card.communication_channel} />
-    </div>
     <div className={styles.callerRow}>
       <Field label="Заявитель" text={card.caller_name || facts?.caller_name} />
       <Field label="Статус заявителя" text={card.caller_status} />

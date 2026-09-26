@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
 import { WorkspaceHeader } from '../components/shell/WorkspaceHeader';
 import { Notice } from '../components/ui/Notice';
-import { DdsCardDetails } from '../components/dds/DdsCardDetails';
+import { DdsCardContacts, DdsCardDetails } from '../components/dds/DdsCardDetails';
 import { DdsPhonePanel } from '../components/dds/DdsPhonePanel';
 import { DdsServiceBar } from '../components/dds/DdsServiceBar';
 import { DdsStatusEditor } from '../components/dds/DdsStatusEditor';
@@ -119,14 +119,15 @@ export function CardDesk() {
         </div>
         <button type="button" onClick={() => navigate('/')}>К списку происшествий</button>
       </div>
-      <DdsCardDetails card={card} assignment={assignment} />
-      <div className={styles.workflow}>
+      <div className={styles.contactRow}>
         <DdsPhonePanel attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
           callerPhone={card.phone ?? ''} pendingReport={pendingReport || null}
           onChange={refresh} onError={setError} />
-        <DdsStatusEditor status={attempt.card_status} crew={attempt.dds_crew}
-          pendingReport={pendingReport} busy={busy} onMove={move} />
+        <DdsCardContacts card={card} assignment={assignment} />
       </div>
+      <DdsCardDetails card={card} assignment={assignment} />
+      <DdsStatusEditor status={attempt.card_status} crew={attempt.dds_crew}
+        pendingReport={pendingReport} busy={busy} onMove={move} />
       {error && <Notice error>{error}</Notice>}
       <DdsServiceBar services={notified} ownService={ownService} ownStatus={attempt.card_status}
         serviceStates={services} events={events} login={user.login} now={now} startedAt={startedAt} />
