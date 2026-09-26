@@ -8,6 +8,8 @@
 }
 
 .title {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, .16);
   font-size: 18px;
   font-weight: 500;
 }

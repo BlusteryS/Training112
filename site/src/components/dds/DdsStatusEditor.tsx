@@ -46,7 +46,7 @@ export function DdsStatusEditor({ status, crew, pendingReport, busy, onMove }: {
         onChange={(event) => setComment(event.target.value)} />
       <button type="button" disabled={!ready} onClick={() => void onMove(next, comment.trim()).then((saved) => {
         if (saved) setComment('');
-      })}>Сохранить статус</button>
+      })}>Сохранить</button>
     </div>
     {needsReport && pendingReport !== next && <div className={styles.hint}>
       Для этого статуса сначала нужен соответствующий доклад старшего бригады.
