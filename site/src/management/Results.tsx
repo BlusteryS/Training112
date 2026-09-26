@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
@@ -18,6 +18,9 @@ export function Results() {
   const [recommendation, setRecommendation] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const resultRequest = useRef<AbortController | null>(null);
+
+  useEffect(() => () => resultRequest.current?.abort(), []);
 
   useEffect(() => {
     void api<Assignment[]>('training/results')
@@ -26,9 +29,21 @@ export function Results() {
   }, []);
 
   async function open(row: Assignment) {
+    resultRequest.current?.abort();
+    const controller = new AbortController();
+    resultRequest.current = controller;
     setOpened(row); setResult(null); setError(''); setReason(''); setScore(''); setRecommendation('');
-    try { setResult(await api<Evaluation>(`training/attempts/${row.attempt_id}/result`)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Оценка ещё не готова.'); }
+    try {
+      const evaluation = await api<Evaluation>(`training/attempts/${row.attempt_id}/result`, undefined, controller.signal);
+      if (!controller.signal.aborted) setResult(evaluation);
+    } catch (cause) {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Оценка ещё не готова.');
+    }
+  }
+
+  function close() {
+    resultRequest.current?.abort();
+    setOpened(null);
   }
 
   return <Desk>
@@ -41,9 +56,9 @@ export function Results() {
       </DeskRow>)}
     </DeskTable>}
     {error && !opened && <div className={deskError} role="alert">{error}</div>}
-    {opened && <ModalForm label={`${opened.learner_login}`} onClose={() => setOpened(null)}>
+    {opened && <ModalForm label={`${opened.learner_login}`} onClose={close}>
 <FormCard title={`${opened.learner_login}`} submitLabel="Записать оценку" busy={busy || reason.trim().length < 1}
-      error={error} onClose={() => setOpened(null)} onSubmit={() => {
+      error={error} onClose={close} onSubmit={() => {
         const expert = Number(score);
         if (!Number.isInteger(expert) || expert < 0 || expert > 100) { setError('Экспертная оценка — целое число от 0 до 100.'); return; }
         setBusy(true); setError('');

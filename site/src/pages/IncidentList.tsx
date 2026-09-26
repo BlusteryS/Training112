@@ -6,6 +6,7 @@ import { ModalForm } from '../components/ModalForm';
 import { WorkspaceSwitch } from '../components/WorkspaceSwitch';
 import { api } from '../api';
 import type { Assignment } from '../management/types';
+import type { IncidentSearch } from './IncidentSearch';
 import boltIcon from '../assets/workspace/bolt.svg';
 import bookmarkIcon from '../assets/workspace/bookmark.svg';
 import checkedIcon from '../assets/workspace/checked.svg';
@@ -115,28 +116,6 @@ function IncidentRow({ assignment, onViewResult, onViewLinks }: {
     </div>
   </div>;
 }
-
-export type IncidentSearch = {
-  from: number | null;
-  to: number | null;
-  incident: string;
-  signs: string;
-  address: string;
-  okrug: string;
-  district: string;
-  region: string;
-  caller: string;
-  operator: string;
-  arm: string;
-  descriptiveAddress: string;
-  service: string;
-  description: string;
-  channel: string;
-  source: string;
-  status: string;
-  cardNumber: string;
-  visOperator: string;
-};
 
 type LinkedCard = {
   id: string;

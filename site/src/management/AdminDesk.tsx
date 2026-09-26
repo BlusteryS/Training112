@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import type { User } from '../auth/api';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
+import { downloadFile } from '../download';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
 import { SectionTabs } from '../components/ui/SectionTabs';
@@ -263,12 +264,8 @@ function Backups() {
     setBusy(true); setError('');
     void api<Record<string, unknown>>('admin/backups', {})
       .then((payload) => {
-        const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `training112-${String(payload.backup_id)}.json`;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        downloadFile(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+          `training112-${String(payload.backup_id)}.json`);
         return refresh();
       })
       .catch((cause: Error) => setError(cause.message))

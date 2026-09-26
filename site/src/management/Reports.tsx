@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
+import { downloadFile } from '../download';
 import { lessonNames, type Lesson } from './types';
 import { ChoiceSelect } from '../components/ChoiceSelect';
 import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskError } from './Desk';
@@ -39,9 +40,13 @@ export function Reports() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lesson, setLesson] = useState('');
   const [rows, setRows] = useState<ReportRow[]>([]);
+  const [reportReady, setReportReady] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [progress, setProgress] = useState<Progress[]>([]);
   const [error, setError] = useState('');
+  const reportRequest = useRef<AbortController | null>(null);
+
+  useEffect(() => () => reportRequest.current?.abort(), []);
 
   useEffect(() => {
     void Promise.all([api<Lesson[]>('training/lessons'), api<Insight[]>('training/insights'), api<Progress[]>('training/progress')])
@@ -59,19 +64,20 @@ export function Reports() {
       row.events.map((event) => `${event.type}×${event.count}`).join('; '),
       row.reviews.map((review) => review.reason).join('; '),
     ].map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','));
-    const url = URL.createObjectURL(new Blob([[header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'lesson-report.csv';
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadFile(new Blob(['\uFEFF', [header.join(','), ...lines].join('\n')],
+      { type: 'text/csv;charset=utf-8' }), 'lesson-report.csv');
   }
 
   return <Desk actions={<>
     <ChoiceSelect label="Занятие" value={lesson} onChange={(id) => {
-      setLesson(id); setError('');
-      if (!id) { setRows([]); return; }
-      void api<ReportRow[]>(`training/lessons/${id}/report`).then(setRows).catch((cause: Error) => setError(cause.message));
+      reportRequest.current?.abort();
+      setLesson(id); setRows([]); setReportReady(false); setError('');
+      if (!id) return;
+      const controller = new AbortController();
+      reportRequest.current = controller;
+      void api<ReportRow[]>(`training/lessons/${id}/report`, undefined, controller.signal)
+        .then((result) => { if (!controller.signal.aborted) { setRows(result); setReportReady(true); } })
+        .catch((cause: Error) => { if (!controller.signal.aborted) setError(cause.message); });
     }}>
       <option value="">Выберите занятие</option>
       {lessons.map((item) => <option key={item.id} value={item.id}>{item.title} — {lessonNames[item.status]}</option>)}
@@ -79,7 +85,7 @@ export function Reports() {
     {rows.length > 0 && <button type="button" onClick={download}>CSV</button>}
   </>}>
     {lessons.length === 0 && <DeskEmpty>Занятий нет</DeskEmpty>}
-    {lesson && rows.length === 0 && <DeskEmpty>По занятию записей нет</DeskEmpty>}
+    {lesson && reportReady && rows.length === 0 && <DeskEmpty>По занятию записей нет</DeskEmpty>}
     {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable head={<><span>Обучающийся</span><span>Карточка</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
       {rows.map((row) => <DeskRow key={row.attempt_id ?? row.learner_login}>
         <span>{row.learner_login}</span>

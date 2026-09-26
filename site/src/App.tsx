@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { api } from './api';
 import { ApiError, authApi, type User } from './auth/api';
@@ -6,19 +6,17 @@ import { AuthContext, useAuth } from './auth/AuthContext';
 import type { Assignment } from './management/types';
 import { NotificationProvider, useNotification } from './components/Notifications';
 import { WorkspaceHeader } from './components/shell/WorkspaceHeader';
-import { TextField } from './components/ui/TextField';
-import { ActionButton, ActionRow } from './components/ui/ActionButton';
+import { ActionButton } from './components/ui/ActionButton';
 import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';
+import { AdvancedIncidentSearch, blankSearch, searchFilter, type SearchDraft } from './pages/IncidentSearch';
 import { LoginPage } from './pages/LoginPage';
 import { MaterialsMenu } from './management/MaterialsMenu';
 import { readCooldown, readManualAvailability, writeManualAvailability } from './operatorAvailability';
 import chevronDarkIcon from './assets/workspace/chevron-dark.svg';
 import headsetIcon from './assets/workspace/headset.svg';
 import resetIcon from './assets/workspace/reset.svg';
-import searchClockIcon from './assets/workspace/search-clock.svg';
 import searchIcon from './assets/workspace/search.svg';
-import searchPlusIcon from './assets/workspace/search-plus.svg';
 import styles from './App.module.css';
 
 const AdminDesk = lazy(() => import('./management/AdminDesk').then((module) => ({ default: module.AdminDesk })));
@@ -32,83 +30,6 @@ type Session =
   | { status: 'anonymous' }
   | { status: 'authenticated'; user: User }
   | { status: 'error'; message: string };
-
-type DateParts = { hh: string; mm: string; dd: string; mo: string; yyyy: string };
-
-type AdvancedDraft = {
-  from: DateParts;
-  to: DateParts;
-  incident: string;
-  signs: string;
-  address: string;
-  okrug: string;
-  district: string;
-  region: string;
-  caller: string;
-  operator: string;
-  arm: string;
-  descriptiveAddress: string;
-  service: string;
-  description: string;
-  channel: string;
-  source: string;
-  status: string;
-  cardNumber: string;
-  visOperator: string;
-};
-
-const blankDate = (): DateParts => ({ hh: '', mm: '', dd: '', mo: '', yyyy: '' });
-
-const blankAdvanced = (): AdvancedDraft => ({
-  from: blankDate(), to: blankDate(),
-  incident: '', signs: '', address: '', okrug: '', district: '', region: '',
-  caller: '', operator: '', arm: '', descriptiveAddress: '', service: '',
-  description: '', channel: '', source: '', status: '', cardNumber: '', visOperator: '',
-});
-
-function dateBound(parts: DateParts, end: boolean) {
-  if (!Object.values(parts).some(Boolean)) return null;
-  const year = Number(parts.yyyy);
-  const month = Number(parts.mo);
-  const day = Number(parts.dd);
-  const hours = parts.hh === '' ? (end ? 23 : 0) : Number(parts.hh);
-  const minutes = parts.mm === '' ? (end ? 59 : 0) : Number(parts.mm);
-  if (![year, month, day, hours, minutes].every(Number.isInteger)) return Number.NaN;
-  if (month < 1 || month > 12 || day < 1 || day > 31 || hours > 23 || minutes > 59 || year < 1) return Number.NaN;
-  const date = new Date(year, month - 1, day, hours, minutes, end ? 59 : 0, end ? 999 : 0);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return Number.NaN;
-  return date.valueOf();
-}
-
-function setDigits(value: string, max: number) {
-  return value.replace(/\D/g, '').slice(0, max);
-}
-
-function DateBound({ label, value, onChange }: {
-  label: string;
-  value: DateParts;
-  onChange: (next: DateParts) => void;
-}) {
-  const change = (key: keyof DateParts, max: number) => (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...value, [key]: setDigits(event.target.value, max) });
-  };
-  return <div className={styles.dateBound}>
-    <div className={styles.dateCluster}>
-      <input aria-label={`${label}, часы`} className={styles.digit2} inputMode="numeric" value={value.hh} onChange={change('hh', 2)} />
-      <span className={styles.dateSep}>:</span>
-      <input aria-label={`${label}, минуты`} className={styles.digit2} inputMode="numeric" value={value.mm} onChange={change('mm', 2)} />
-      <img src={searchClockIcon} alt="" />
-    </div>
-    <div className={styles.dateCluster}>
-      <input aria-label={`${label}, день`} className={styles.digit2} inputMode="numeric" value={value.dd} onChange={change('dd', 2)} />
-      <span className={styles.dateSep}>.</span>
-      <input aria-label={`${label}, месяц`} className={styles.digit2} inputMode="numeric" value={value.mo} onChange={change('mo', 2)} />
-      <span className={styles.dateSep}>.</span>
-      <input aria-label={`${label}, год`} className={styles.digit4} inputMode="numeric" value={value.yyyy} onChange={change('yyyy', 4)} />
-      <img src={searchClockIcon} alt="" />
-    </div>
-  </div>;
-}
 
 function OperatorWorkspace() {
   const { user } = useAuth();
@@ -124,8 +45,8 @@ function OperatorWorkspace() {
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const advancedSearchRef = useRef<HTMLFormElement>(null);
 
-  const [draft, setDraft] = useState(blankAdvanced);
-  const [applied, setApplied] = useState(blankAdvanced);
+  const [draft, setDraft] = useState(blankSearch);
+  const [applied, setApplied] = useState(blankSearch);
   const [query, setQuery] = useState('');
   const [now, setNow] = useState(Date.now);
   const [manuallyAvailable, setManuallyAvailable] = useState(() => readManualAvailability(user.id));
@@ -215,37 +136,17 @@ function OperatorWorkspace() {
     setManuallyAvailable(false);
   };
 
-  const patchDraft = (patch: Partial<AdvancedDraft>) => setDraft((current) => ({ ...current, ...patch }));
+  const patchDraft = (patch: Partial<SearchDraft>) => setDraft((current) => ({ ...current, ...patch }));
   const resetAdvanced = () => {
-    setDraft(blankAdvanced());
-    setApplied(blankAdvanced());
+    setDraft(blankSearch());
+    setApplied(blankSearch());
   };
   const resetSearch = () => {
     setQuery('');
     resetAdvanced();
   };
   const applySearch = () => setApplied(draft);
-  const search = useMemo(() => ({
-    from: dateBound(applied.from, false),
-    to: dateBound(applied.to, true),
-    incident: applied.incident,
-    signs: applied.signs,
-    address: applied.address,
-    okrug: applied.okrug,
-    district: applied.district,
-    region: applied.region,
-    caller: applied.caller,
-    operator: applied.operator,
-    arm: applied.arm,
-    descriptiveAddress: applied.descriptiveAddress,
-    service: applied.service,
-    description: applied.description,
-    channel: applied.channel,
-    source: applied.source,
-    status: applied.status,
-    cardNumber: applied.cardNumber,
-    visOperator: applied.visOperator,
-  }), [applied]);
+  const search = useMemo(() => searchFilter(applied), [applied]);
 
   return <div className={styles.workspace}>
     <WorkspaceHeader
@@ -274,57 +175,8 @@ function OperatorWorkspace() {
         <span>{availabilityLabel}</span>
       </button>}
     />
-    {advancedOpen && <form ref={advancedSearchRef} className={styles.advancedSearch}
-      onSubmit={(event) => { event.preventDefault(); applySearch(); }}>
-      <div className={styles.dateRow}>
-        <div>Искать по времени и дате:</div>
-        <div className={styles.dateRange}>
-          <DateBound label="Начало" value={draft.from} onChange={(from) => patchDraft({ from })} />
-          <span className={styles.dateDash}>—</span>
-          <DateBound label="Конец" value={draft.to} onChange={(to) => patchDraft({ to })} />
-        </div>
-      </div>
-      <div className={styles.advancedGrid}>
-        <TextField label="Тип происшествия" placeholder="Тип происшествия" value={draft.incident}
-          onChange={(incident) => patchDraft({ incident })} />
-        <TextField label="Признаки происшествия:" value={draft.signs}
-          onChange={(signs) => patchDraft({ signs })} />
-        <TextField label="По адресу:" value={draft.address}
-          onChange={(address) => patchDraft({ address })} />
-        <TextField label="По округу:" value={draft.okrug}
-          onChange={(okrug) => patchDraft({ okrug })} />
-        <TextField label="По району:" value={draft.district}
-          onChange={(district) => patchDraft({ district })} />
-        <TextField label="По субъекту:" placeholder="По субъекту" value={draft.region}
-          onChange={(region) => patchDraft({ region })} />
-        <TextField label="По заявителю (ФИО/АОН):" value={draft.caller}
-          onChange={(caller) => patchDraft({ caller })} />
-        <TextField label="По оператору:" value={draft.operator}
-          onChange={(operator) => patchDraft({ operator })} />
-        <TextField label="По АРМу:" placeholder="По АРМу" value={draft.arm}
-          onChange={(arm) => patchDraft({ arm })} />
-        <TextField label="По описательному адресу:" value={draft.descriptiveAddress}
-          onChange={(descriptiveAddress) => patchDraft({ descriptiveAddress })} />
-        <TextField label="По службе:" placeholder="По службе" value={draft.service}
-          onChange={(service) => patchDraft({ service })} />
-        <TextField label="По описанию:" value={draft.description}
-          onChange={(description) => patchDraft({ description })} />
-        <TextField label="Канал связи:" placeholder="Канал связи" value={draft.channel}
-          onChange={(channel) => patchDraft({ channel })} />
-        <TextField label="Источник происшествия:" placeholder="Источник происшествия" value={draft.source}
-          onChange={(source) => patchDraft({ source })} />
-        <TextField label="Статус:" placeholder="Статус" value={draft.status}
-          onChange={(status) => patchDraft({ status })} />
-        <TextField label="По номеру карточки:" value={draft.cardNumber}
-          onChange={(cardNumber) => patchDraft({ cardNumber })} />
-        <TextField wide label="По оператору, работавшему с КП из ВИС:" value={draft.visOperator}
-          onChange={(visOperator) => patchDraft({ visOperator })} />
-      </div>
-      <ActionRow>
-        <ActionButton type="submit"><img src={searchPlusIcon} alt="" /> Искать по параметрам</ActionButton>
-        <ActionButton onClick={resetAdvanced}><img src={searchPlusIcon} alt="" /> Сбросить</ActionButton>
-      </ActionRow>
-    </form>}
+    {advancedOpen && <AdvancedIncidentSearch formRef={advancedSearchRef} draft={draft}
+      onChange={patchDraft} onApply={applySearch} onReset={resetAdvanced} />}
     {cardTask && <div className={styles.cardOffer}>
       <span>Назначена отработка карточки: {cardTask.title}</span>
       <ActionButton onClick={() => navigate(`/card?assignment_id=${encodeURIComponent(cardTask.id)}`)}>Открыть карточку</ActionButton>

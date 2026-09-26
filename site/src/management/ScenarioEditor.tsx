@@ -5,6 +5,7 @@ import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
 import { TextareaField } from '../components/ui/TextareaField';
 import { incidentSources, moscowOkrugs } from '../incidentSources';
+import { downloadFile } from '../download';
 import { ScenarioCriterion } from './ScenarioCriterion';
 import { difficultyNames, type ScenarioDocument } from './types';
 import styles from './ScenarioEditor.module.css';
@@ -23,12 +24,8 @@ const factNames: Record<string, string> = {
 };
 
 export function exportScenario(document: ScenarioDocument) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(document, null, 2)], { type: 'application/json' }));
-  const link = window.document.createElement('a');
-  link.href = url;
-  link.download = `${document.title.replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 80) || 'scenario'}.json`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  downloadFile(new Blob([JSON.stringify(document, null, 2)], { type: 'application/json' }),
+    `${document.title.replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 80) || 'scenario'}.json`);
 }
 
 export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
