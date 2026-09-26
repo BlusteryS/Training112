@@ -9,8 +9,13 @@
 
 .heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+}
+
+.headingText {
+  display: grid;
+  gap: 4px;
 }
 
 .number {
@@ -26,13 +31,11 @@
 }
 
 .title {
-  padding-top: 3px;
   font-size: 16px;
   line-height: 1.35;
 }
 
 .fieldName {
-  padding-left: 38px;
   color: #596167;
   font-size: 13px;
 }

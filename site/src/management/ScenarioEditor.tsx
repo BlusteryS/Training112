@@ -38,11 +38,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
   const [document, setDocument] = useState(() => ({ ...structuredClone(initial), difficulty: initial.difficulty ?? 'basic' }));
   const [error, setError] = useState('');
   function fact(key: string, value: string) {
-    setDocument((previous) => ({ ...previous, facts: { ...previous.facts, [key]: value },
-      rubric: previous.rubric.map((rule) => (rule.field === key || key === 'incident' && rule.field === 'description')
-        && rule.expected === previous.facts[key]
-        ? { ...rule, expected: value } : rule),
-    }));
+    setDocument((previous) => ({ ...previous, facts: { ...previous.facts, [key]: value } }));
   }
   function updateCriterion(id: string, changes: Partial<ScenarioDocument['rubric'][number]>) {
     setDocument((previous) => ({ ...previous,
@@ -59,7 +55,13 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       setError(`Заполните поле «${factNames[missing[0]] ?? missing[0]}».`);
       return;
     }
-    const missingRule = document.rubric.find((rule) => rule.expected !== undefined && !rule.expected.trim());
+    const rubric = document.rubric.map((rule) => {
+      if (rule.expected === undefined) return rule;
+      const factKey = rule.kind === 'semantic' && rule.field === 'description' ? 'incident' : rule.field;
+      const expected = factKey && document.facts[factKey];
+      return expected === undefined ? rule : { ...rule, expected };
+    });
+    const missingRule = rubric.find((rule) => rule.expected !== undefined && !rule.expected.trim());
     if (missingRule) {
       setError(`Заполните правильное значение критерия «${missingRule.description}».`);
       return;
@@ -77,7 +79,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       return;
     }
     setError('');
-    void onSave(document).catch((cause: Error) => setError(cause.message));
+    void onSave({ ...document, rubric }).catch((cause: Error) => setError(cause.message));
   }
   return <ModalForm label={editing ? 'Сценарий' : 'Новый сценарий'} onClose={onCancel}>
 <FormCard title={editing ? 'Сценарий' : 'Новый сценарий'} submitLabel="Сохранить" busy={busy} error={error} onClose={onCancel}
@@ -99,7 +101,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       </div>
     </div>
     <div className={styles.section}>
-      <div className={styles.sectionTitle}>Данные обращения</div>
+      <div className={styles.sectionTitle}>Ответы заявителя</div>
       <div className={formGrid}>
         {Object.entries(document.facts).map(([key, value]) => <TextareaField key={key} label={factNames[key] ?? key}
           required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />)}

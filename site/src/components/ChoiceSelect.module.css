@@ -1,7 +1,7 @@
 .control select {
   height: 41px;
   width: 229px;
-  padding: 0 28px 0 0;
+  padding: 0 28px 0 12px;
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 6px;
   outline: 0;

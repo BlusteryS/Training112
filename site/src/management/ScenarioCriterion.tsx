@@ -1,5 +1,4 @@
 import { InputField } from '../components/ui/InputField';
-import { TextareaField } from '../components/ui/TextareaField';
 import type { ScenarioDocument } from './types';
 import styles from './ScenarioCriterion.module.css';
 
@@ -14,15 +13,12 @@ export function ScenarioCriterion({ rule, number, fieldName, onChange }: {
   return <div className={styles.card}>
     <div className={styles.heading}>
       <span className={styles.number}>{number}</span>
-      <div className={styles.title}>{rule.description}</div>
+      <div className={styles.headingText}>
+        <div className={styles.title}>{rule.description}</div>
+        {fieldName && <div className={styles.fieldName}>Проверяемое поле: {fieldName}</div>}
+      </div>
     </div>
-    {fieldName && <div className={styles.fieldName}>Проверяемое поле: {fieldName}</div>}
     <div className={styles.controls}>
-      {rule.expected !== undefined && <TextareaField
-        label={rule.kind === 'semantic' ? 'Содержание правильного ответа' : 'Правильное значение'}
-        required maxLength={2000} value={rule.expected}
-        onChange={(event) => onChange({ expected: event.target.value })}
-      />}
       {rule.kind === 'deadline' && <InputField label="Время на сохранение карточки, секунд" required
         type="number" min={1} max={86400} value={rule.seconds ?? 30}
         onChange={(event) => {
