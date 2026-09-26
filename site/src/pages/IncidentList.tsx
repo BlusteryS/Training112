@@ -23,7 +23,7 @@ const pageSizes = [10, 20, 50];
 
 function assignmentStatus(assignment: Assignment) {
   if (assignment.attempt_status === 'completed') return 'Отработана';
-  if (assignment.attempt_status === 'failed') return 'Ошибка';
+  if (assignment.attempt_status === 'failed') return 'Прервано';
   if (assignment.attempt_status) return 'В работе';
   return assignment.status === 'active' ? 'В очереди' : 'Закрыта';
 }
@@ -280,7 +280,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
           <option value="">Выберите, что показать</option>
           <option value="В работе">В работе</option>
           <option value="Отработана">Отработанные</option>
-          <option value="Ошибка">С ошибкой</option>
+          <option value="Прервано">Прерванные</option>
         </ChoiceSelect>
       </div>
     </div>

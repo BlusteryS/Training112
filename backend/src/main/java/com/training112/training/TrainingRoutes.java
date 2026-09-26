@@ -8,6 +8,7 @@ import com.training112.auth.AuthSession;
 import com.training112.auth.RequestGuard;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -32,12 +33,17 @@ public final class TrainingRoutes {
   public void mount(Router router) {
     router.route("/api/training/*").handler(ctx -> RequestGuard.jsonWrites(ctx, config));
     // Subscribe to the body before asynchronous authentication can let the stream end.
-    router
-        .route("/api/training/*")
-        .handler(
-            BodyHandler.create()
-                .setBodyLimit(ScenarioDocuments.MAX_BYTES)
-                .setHandleFileUploads(false));
+    BodyHandler standardBody = BodyHandler.create()
+        .setBodyLimit(ScenarioDocuments.MAX_BYTES)
+        .setHandleFileUploads(false);
+    BodyHandler materialBody = BodyHandler.create()
+        .setBodyLimit(12L * 1024 * 1024)
+        .setHandleFileUploads(false);
+    router.route("/api/training/*").handler(ctx -> {
+      if (ctx.request().method() == HttpMethod.POST
+          && "/api/training/materials".equals(ctx.request().path())) materialBody.handle(ctx);
+      else standardBody.handle(ctx);
+    });
     router.route("/api/training/*").handler(ctx -> {
               auth.findSession(AuthSession.tokenHash(ctx))
                   .onSuccess(
@@ -114,7 +120,8 @@ public final class TrainingRoutes {
       JsonObject body = body(c);
       byte[] content;
       try {
-        content = java.util.Base64.getDecoder().decode(text(c, "content_base64", 140_000));
+        content = java.util.Base64.getDecoder().decode(text(c, "content_base64",
+            ((TrainingRepository.MAX_MATERIAL_BYTES + 2) / 3) * 4));
       } catch (IllegalArgumentException error) {
         throw invalid();
       }

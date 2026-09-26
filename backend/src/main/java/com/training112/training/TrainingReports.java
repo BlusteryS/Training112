@@ -35,7 +35,7 @@ final class TrainingReports {
           'elapsed_ms', CASE WHEN a.started_at IS NULL OR a.finished_at IS NULL THEN NULL ELSE
             GREATEST(0, (EXTRACT(EPOCH FROM (a.finished_at - a.started_at)) * 1000)::bigint - a.paused_ms) END,
           'card', a.card,
-          'evaluation', e.result,
+          'evaluation', CASE WHEN a.status='failed' THEN NULL ELSE e.result END,
           'deadline_seconds', CASE WHEN l.mode='card' THEN 30 ELSE deadline.seconds END,
           'primary_elapsed_ms', CASE WHEN l.mode='card' THEN (
             SELECT min(ev.elapsed_ms) FROM attempt_event ev WHERE ev.attempt_id=a.id
@@ -75,9 +75,8 @@ final class TrainingReports {
             Long elapsed = "card".equals(row.getString("mode"))
                 ? row.getLong("primary_elapsed_ms") : row.getLong("elapsed_ms");
             Integer deadline = row.getInteger("deadline_seconds");
-            if (elapsed != null && deadline != null) {
-              row.put("delta_ms", elapsed - deadline * 1000L);
-            }
+            row.put("delta_ms", elapsed != null && deadline != null
+                ? elapsed - deadline * 1000L : null);
           }
           return rows;
         });
@@ -100,7 +99,7 @@ final class TrainingReports {
           JOIN training_group g ON g.id = l.group_id
           CROSS JOIN LATERAL jsonb_to_recordset(e.result->'checks')
             AS check_row(id text, kind text, description text, status text)
-          WHERE g.instructor_id = $1
+          WHERE g.instructor_id = $1 AND a.status = 'completed'
           GROUP BY check_row.id,check_row.kind,check_row.description
         ) c
         WHERE c.failed > 0 OR c.review > 0
@@ -137,9 +136,9 @@ final class TrainingReports {
         SELECT jsonb_build_object(
           'attempt_id',a.id,'title',COALESCE(a.card_template->>'title',l.card_template->>'title',s.title),
           'mode',l.mode,'status',a.status,'finished_at',a.finished_at,
-          'score',e.result->'score',
-          'checks',COALESCE(e.result->'checks','[]'::jsonb),
-          'recommendations',COALESCE(e.result->'recommendations','[]'::jsonb)
+          'score',CASE WHEN a.status='failed' THEN NULL ELSE e.result->'score' END,
+          'checks',CASE WHEN a.status='failed' THEN '[]'::jsonb ELSE COALESCE(e.result->'checks','[]'::jsonb) END,
+          'recommendations',CASE WHEN a.status='failed' THEN '[]'::jsonb ELSE COALESCE(e.result->'recommendations','[]'::jsonb) END
         ) AS value
         FROM training_attempt a
         JOIN lesson_assignment la ON la.id=a.assignment_id

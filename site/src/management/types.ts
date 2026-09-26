@@ -40,6 +40,6 @@ export const scenarioNames: Record<string, string> = {
 export const lessonNames: Record<string, string> = { planned: 'Ожидает запуска', active: 'Идёт занятие', completed: 'Завершено' };
 export const attemptNames: Record<string, string> = {
   created: 'Подключается', active: 'Выполняет задание', suspended: 'Восстанавливает связь',
-  completed: 'Закончил', failed: 'Звонок прерван',
+  completed: 'Закончил', failed: 'Прервано',
 };
 export const difficultyNames: Record<string, string> = { basic: 'Базовый', intermediate: 'Средний', advanced: 'Сложный' };

@@ -17,11 +17,11 @@ function displayDate(value: Date) {
   return formatted.charAt(0).toLocaleUpperCase('ru') + formatted.slice(1);
 }
 
-function personLabel(role: string, login: string) {
+function personLabel(role: string, login: string, workstation: string) {
   if (role === 'admin') return 'Администратор';
   if (role === 'instructor') return 'Преподаватель';
-  const number = login.match(/\d+/)?.[0];
-  return number ? `оп. ${number}, ${login}` : 'Оператор';
+  const number = login.match(/\d+/)?.[0] ?? workstation;
+  return `оп. ${number}, ${login}`;
 }
 
 export function WorkspaceHeader({ leading, footer, menu, person }: {
@@ -64,7 +64,7 @@ export function WorkspaceHeader({ leading, footer, menu, person }: {
         <div className={styles.operatorInfo}>
           <div>{displayDate(currentTime)}</div>
           <div className={styles.operatorMeta}>
-            <span>{person ?? personLabel(user.role, user.login)}</span>
+            <span>{person ?? personLabel(user.role, user.login, workstation)}</span>
             <span><img src={workstationIcon} alt="" /> АРМ {workstation}</span>
             <div ref={menuRef} className={styles.helpMenu}>
               <button type="button" className={styles.helpButton} onClick={() => setMenuOpen((value) => !value)}

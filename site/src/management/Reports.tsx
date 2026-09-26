@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { downloadFile } from '../download';
-import { lessonNames, type Lesson } from './types';
+import { attemptNames, lessonNames, type Lesson } from './types';
 import { ChoiceSelect } from '../components/ChoiceSelect';
 import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskError } from './Desk';
 
@@ -24,7 +24,19 @@ type Insight = { id: string; kind: string; description: string; failed: number; 
 type Progress = { login: string; attempts: number; completed: number; failed: number; average_score: number | null };
 
 function seconds(value: number | null) {
-  return value === null ? '' : String(Math.round(value / 1000));
+  return value == null ? '' : String(Math.round(value / 1000));
+}
+
+function reportStatus(row: ReportRow) {
+  return attemptNames[row.attempt_status ?? ''] ?? row.attempt_status ?? '';
+}
+
+function reportElapsed(row: ReportRow) {
+  return seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms);
+}
+
+function reportDelta(row: ReportRow) {
+  return row.delta_ms == null ? '' : Math.round(row.delta_ms / 1000);
 }
 
 function recommendation(item: Insight) {
@@ -57,8 +69,8 @@ export function Reports() {
   function download() {
     const header = ['Обучающийся', 'Карточка', 'Статус', 'Время, с', 'Норматив, с', 'Отклонение, с', 'Оценка', 'Ошибки', 'Грамматика', 'Действия', 'Замечания'];
     const lines = rows.map((row) => [
-      row.learner_login, row.card_title ?? '', row.attempt_status ?? '', seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms), row.deadline_seconds ?? '',
-      row.delta_ms === null ? '' : Math.round(row.delta_ms / 1000), row.evaluation?.score ?? '',
+      row.learner_login, row.card_title ?? '', reportStatus(row), reportElapsed(row), row.deadline_seconds ?? '',
+      reportDelta(row), row.evaluation?.score ?? '',
       (row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; '),
       row.grammar.map((note) => `${note.field}: ${note.message}`).join('; '),
       row.events.map((event) => `${event.type}×${event.count}`).join('; '),
@@ -86,14 +98,14 @@ export function Reports() {
   </>}>
     {lessons.length === 0 && <DeskEmpty>Занятий нет</DeskEmpty>}
     {lesson && reportReady && rows.length === 0 && <DeskEmpty>По занятию записей нет</DeskEmpty>}
-    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable head={<><span>Обучающийся</span><span>Карточка</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
+    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable head={<><span>Обучающийся</span><span>Карточка</span><span>Статус</span><span>Время, с</span><span>Норма, с</span><span>Отклонение, с</span><span>Оценка</span><span>Ошибки</span><span>Грамматика</span></>}>
       {rows.map((row) => <DeskRow key={row.attempt_id ?? row.learner_login}>
         <span>{row.learner_login}</span>
         <span>{row.card_title ?? ''}</span>
-        <span>{row.attempt_status ?? ''}</span>
-        <span>{seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms)}</span>
+        <span>{reportStatus(row)}</span>
+        <span>{reportElapsed(row)}</span>
         <span>{row.deadline_seconds ?? ''}</span>
-        <span>{row.delta_ms === null ? '' : Math.round(row.delta_ms / 1000)}</span>
+        <span>{reportDelta(row)}</span>
         <span>{row.evaluation?.score ?? ''}</span>
         <span>{(row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; ')}</span>
         <span>{row.grammar.map((note) => note.message).join('; ')}</span>

@@ -26,9 +26,10 @@ export function LearnerProgress() {
   useEffect(() => {
     void api<History[]>('training/history').then(setRows).catch((cause: Error) => setError(cause.message));
   }, []);
-  const scored = rows.filter((row) => row.score !== null);
+  const scored = rows.filter((row) => row.status === 'completed' && row.score !== null);
   const mean = scored.length ? Math.round(scored.reduce((total, row) => total + row.score!, 0) / scored.length) : null;
-  const mistakes = rows.flatMap((row) => row.checks.filter((check) => check.status === 'failed'));
+  const mistakes = rows.filter((row) => row.status === 'completed')
+    .flatMap((row) => row.checks.filter((check) => check.status === 'failed'));
   return <div className={shell.workspace}>
     <WorkspaceHeader leading={<div className={shell.searchPanel}><div className={shell.staffTitle}>Мои результаты</div></div>} />
     <div className={styles.content}>
@@ -44,9 +45,10 @@ export function LearnerProgress() {
               <span>{row.title}</span>
               <span>{new Date(row.finished_at).toLocaleString('ru-RU')}</span>
               <span>{row.status === 'completed' ? 'Завершена' : 'Прервана'}</span>
-              <span>{row.score === null ? 'На проверке' : row.score}</span>
-              <span>{row.checks.filter((check) => check.status === 'failed').map((check) => check.description).join('; ')
-                || row.recommendations.join('; ') || 'Ошибок нет'}</span>
+              <span>{row.status === 'failed' ? '—' : row.score === null ? 'На проверке' : row.score}</span>
+              <span>{row.status === 'failed' ? 'Занятие прервано до сохранения карточки'
+                : row.checks.filter((check) => check.status === 'failed').map((check) => check.description).join('; ')
+                  || row.recommendations.join('; ') || 'Ошибок нет'}</span>
             </DeskRow>)}
           </DeskTable>}
         {error && <div className={deskError} role="alert">{error}</div>}

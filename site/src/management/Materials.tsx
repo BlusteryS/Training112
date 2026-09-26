@@ -6,6 +6,7 @@ import { InputField } from '../components/ui/InputField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 
 import { downloadMaterial, type Material } from './materialDownload';
+import { formatBytes } from '../formatBytes';
 
 const mediaTypes: Record<string, string> = {
   'application/pdf': 'application/pdf',
@@ -18,9 +19,9 @@ const mediaTypes: Record<string, string> = {
 
 async function encode(file: File) {
   const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = '';
-  for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
-  return btoa(binary);
+  const chunks: string[] = [];
+  for (let index = 0; index < bytes.length; index += 0x8000) chunks.push(String.fromCharCode(...bytes.subarray(index, index + 0x8000)));
+  return btoa(chunks.join(''));
 }
 
 export function Materials() {
@@ -31,11 +32,11 @@ export function Materials() {
   const refresh = () => api<Material[]>('training/materials').then(setRows);
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
   return <Desk actions={<button type="button" onClick={() => { setError(''); setUploading(true); }}>Загрузить</button>}>
-    {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Файл</span><span>Байт</span><span /></>}>
+    {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Файл</span><span>Размер</span><span /></>}>
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{row.title}</span>
         <span>{row.filename}</span>
-        <span>{row.byte_size}</span>
+        <span>{formatBytes(row.byte_size)}</span>
         <span className={deskActions}>
           <button type="button" onClick={() => void downloadMaterial(row.id).catch((cause: Error) => setError(cause.message))}>Скачать</button>
           <button type="button" disabled={busy} onClick={() => {
@@ -49,14 +50,12 @@ export function Materials() {
     {uploading && <UploadDialog busy={busy} onClose={() => setUploading(false)} onSubmit={async (title, file) => {
       const media = mediaTypes[file.type];
       if (!media) throw new Error('Нужен файл PDF, TXT, JSON, WAV или MP3.');
-      if (file.size > 96 * 1024) throw new Error('Файл больше 96 КиБ.');
+      if (file.size > 8 * 1024 * 1024) throw new Error('Файл больше 8 МиБ.');
       setBusy(true); setError('');
       try {
         await api('training/materials', { title, filename: file.name, media_type: media, content_base64: await encode(file) });
         await refresh();
         setUploading(false);
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'Не удалось сохранить материал.');
       } finally { setBusy(false); }
     }} />}
   </Desk>;

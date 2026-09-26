@@ -17,6 +17,7 @@ import java.util.UUID;
 
 /** Business transactions own scenarios, attempts and events; Speech never owns a DB connection. */
 public final class TrainingRepository {
+  static final int MAX_MATERIAL_BYTES = 8 * 1024 * 1024;
   private final Pool pool;
   private final CardLinks cardLinks;
   private final TrainingReports reports;
@@ -978,7 +979,7 @@ public final class TrainingRepository {
               boolean card = "card".equals(mode.getString("mode"));
               if (!card && !failed && actor != null && actor.equals(mode.getUUID("learner_id")))
                 CardCommands.validateForSave(mode.getJsonObject("card"));
-                  return db.preparedQuery("UPDATE training_attempt SET status=$2,finished_at=now() WHERE id=$1")
+              return db.preparedQuery("UPDATE training_attempt SET status=$2,finished_at=now() WHERE id=$1")
                   .execute(Tuple.of(id, failed ? "failed" : "completed"))
                   .compose(
                       ignored ->
@@ -1186,8 +1187,8 @@ public final class TrainingRepository {
     instructor(actor);
     if (title.isBlank() || title.length() > 200 || filename.isBlank() || filename.length() > 200
         || !Set.of("application/pdf", "text/plain", "audio/wav", "audio/mpeg", "application/json").contains(media)
-        || content.length < 1 || content.length > 98_304) {
-      throw new ApiException(400, "invalid_material", "Материал должен быть PDF, текстом, JSON или аудио до 96 КиБ.");
+        || content.length < 1 || content.length > MAX_MATERIAL_BYTES) {
+      throw new ApiException(400, "invalid_material", "Материал должен быть PDF, текстом, JSON или аудио до 8 МиБ.");
     }
     UUID id = UUID.randomUUID();
     return pool.withTransaction(db -> db.preparedQuery(

@@ -22,7 +22,8 @@ def evaluate(
     document: dict, card: dict, events: list[dict], *, attempt_status: str, semantic=None
 ) -> dict:
     checks = []
-    for criterion in document["rubric"]:
+    criteria = document["rubric"] if attempt_status == "completed" else []
+    for criterion in criteria:
         kind = criterion["kind"]
         evidence = []
         actual = None
@@ -55,8 +56,6 @@ def evaluate(
                 raise ValueError("Invalid semantic evaluator verdict")
         else:
             raise ValueError("Unsupported rubric check")
-        if attempt_status == "failed":
-            status = "review"
         checks.append(
             {
                 "id": criterion["id"],

@@ -13,6 +13,7 @@ import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskErro
 import { SummaryGrid } from './SummaryGrid';
 import { Operations } from './Operations';
 import { RoleField, roleNames } from './RoleField';
+import { formatBytes } from '../formatBytes';
 
 const sections = {
   users: 'Пользователи',
@@ -275,7 +276,7 @@ function Backups() {
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{row.source === 'automatic' ? 'Автоматически' : row.login}</span>
-        <span>{row.byte_size}</span>
+        <span>{formatBytes(row.byte_size)}</span>
       </DeskRow>)}
     </DeskTable>}
     {error && <div className={deskError} role="alert">{error}</div>}
