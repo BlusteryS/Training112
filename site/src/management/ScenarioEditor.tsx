@@ -4,7 +4,7 @@ import { FormCard, formGrid } from './FormCard';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
 import { TextareaField } from '../components/ui/TextareaField';
-import { incidentSources } from '../incidentSources';
+import { incidentSources, moscowOkrugs } from '../incidentSources';
 import { ScenarioCriterion } from './ScenarioCriterion';
 import { difficultyNames, type ScenarioDocument } from './types';
 import styles from './ScenarioEditor.module.css';
@@ -38,7 +38,12 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
   const [document, setDocument] = useState(() => ({ ...structuredClone(initial), difficulty: initial.difficulty ?? 'basic' }));
   const [error, setError] = useState('');
   function fact(key: string, value: string) {
-    setDocument((previous) => ({ ...previous, facts: { ...previous.facts, [key]: value } }));
+    setDocument((previous) => {
+      const facts = { ...previous.facts };
+      if ((key === 'district' || key === 'okrug') && !value.trim()) delete facts[key];
+      else facts[key] = value;
+      return { ...previous, facts };
+    });
   }
   function updateCriterion(id: string, changes: Partial<ScenarioDocument['rubric'][number]>) {
     setDocument((previous) => ({ ...previous,
@@ -50,7 +55,8 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       setError('Укажите название и источник обращения.');
       return;
     }
-    const missing = Object.entries(document.facts).find(([, value]) => !value.trim());
+    const missing = Object.entries(document.facts).find(([key, value]) =>
+      key !== 'district' && key !== 'okrug' && !value.trim());
     if (missing) {
       setError(`Заполните поле «${factNames[missing[0]] ?? missing[0]}».`);
       return;
@@ -68,7 +74,10 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       return;
     }
     setError('');
-    void onSave(document).catch((cause: Error) => setError(cause.message));
+    const facts = { ...document.facts };
+    if (!facts.district?.trim()) delete facts.district;
+    if (!facts.okrug?.trim()) delete facts.okrug;
+    void onSave({ ...document, facts }).catch((cause: Error) => setError(cause.message));
   }
   return <ModalForm label={editing ? 'Сценарий' : 'Новый сценарий'} onClose={onCancel}>
 <FormCard title={editing ? 'Сценарий' : 'Новый сценарий'} submitLabel="Сохранить" busy={busy} error={error} onClose={onCancel}
@@ -92,8 +101,16 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
     <div className={styles.section}>
       <div className={styles.sectionTitle}>Ответы заявителя</div>
       <div className={formGrid}>
-        {Object.entries(document.facts).map(([key, value]) => <TextareaField key={key} label={factNames[key] ?? key}
+        {Object.entries(document.facts).filter(([key]) => key !== 'district' && key !== 'okrug')
+          .map(([key, value]) => <TextareaField key={key} label={factNames[key] ?? key}
           required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />)}
+        <InputField label="Район происшествия" maxLength={200} value={document.facts.district ?? ''}
+          onChange={(event) => fact('district', event.target.value)} />
+        <SelectField label="Округ происшествия" value={document.facts.okrug ?? ''}
+          onChange={(event) => fact('okrug', event.target.value)}>
+          <option value="">Не указан</option>
+          {moscowOkrugs.map((okrug) => <option key={okrug} value={okrug}>{okrug}</option>)}
+        </SelectField>
       </div>
     </div>
     <div className={styles.section}>

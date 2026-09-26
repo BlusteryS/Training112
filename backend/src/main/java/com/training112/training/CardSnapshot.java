@@ -65,7 +65,8 @@ public final class CardSnapshot {
     if (survey != null) {
       add(names, survey.getJsonArray("services"));
       String victims = text(facts, "victims").trim();
-      if (!victims.isEmpty() && !victims.equalsIgnoreCase("нет"))
+      if (!victims.isEmpty() && !victims.equalsIgnoreCase("нет")
+          && !victims.equalsIgnoreCase("неизвестно"))
         add(names, survey.getJsonArray("victim_services"));
       if ("true".equalsIgnoreCase(text(facts, "law_violation")))
         add(names, survey.getJsonArray("law_services"));

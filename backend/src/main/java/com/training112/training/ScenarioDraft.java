@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** Creates an editable dialogue from a classified incident and the instructor's case details. */
 public final class ScenarioDraft {
@@ -33,12 +34,21 @@ public final class ScenarioDraft {
     document.put("instructions", "Примите учебное происшествие. Уточните адрес, обстоятельства и сведения о пострадавших.");
 
     JsonObject facts = document.getJsonObject("facts");
-    for (String key : facts.fieldNames()) facts.put(key, "");
     facts.put("caller_name", caller);
     facts.put("address", location);
     facts.put("incident", description);
-    facts.put("district", "");
-    facts.put("okrug", "");
+    facts.put("victims", "Неизвестно");
+    facts.put("phone", "+7 999 000-" + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
+    facts.put("victim_count", "Количество пострадавших пока неизвестно.");
+    facts.put("age", "Возраст неизвестен.");
+    facts.put("consciousness", "Сведения о сознании отсутствуют.");
+    facts.put("breathing", "Сведения о дыхании отсутствуют.");
+    facts.put("danger", "Непосредственной опасности для меня нет.");
+    facts.put("fire", description.toLowerCase(java.util.Locale.ROOT).matches(".*(пожар|возгорание|огонь|пламя).*")
+        ? "Вижу огонь." : "Огня не вижу.");
+    facts.put("weapon", "Оружия не видел.");
+    facts.put("description_details", "Других подробностей пока нет.");
+    facts.put("vehicle", "О транспорте сведений нет.");
 
     JsonArray rubric = document.getJsonArray("rubric");
     for (int i = 0; i < rubric.size(); i++) {

@@ -38,7 +38,7 @@ export function servicesForCard(card: ClassifierCard | undefined, address: strin
   okrug: string, victims: string, lawViolation: boolean) {
   if (!card || !address.trim()) return [];
   const services = [...card.services];
-  if (victims !== 'Нет') services.push(...card.victim_services);
+  if (victims.trim() && victims !== 'Нет') services.push(...card.victim_services);
   if (lawViolation) services.push(...card.law_services);
   const local = okrug === 'ТиНАО' ? card.tinao_dds : card.district_dds;
   if (district.trim() && local) services.push(`ДДС района ${district.trim()}`);
