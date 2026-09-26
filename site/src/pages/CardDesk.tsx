@@ -26,11 +26,18 @@ export function CardDesk() {
   const [services, setServices] = useState<DdsServiceState[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [phoneEnabled, setPhoneEnabled] = useState(true);
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    void api<{ dds_phone: boolean }>('training/capabilities')
+      .then((value) => setPhoneEnabled(value.dds_phone))
+      .catch((cause: Error) => setError(cause.message));
   }, []);
 
   useEffect(() => {
@@ -121,7 +128,7 @@ export function CardDesk() {
       </div>
       <div className={styles.contactRow}>
         <DdsPhonePanel attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
-          callerPhone={card.phone ?? ''} pendingReport={pendingReport || null}
+          callerPhone={card.phone ?? ''} pendingReport={pendingReport || null} enabled={phoneEnabled}
           onChange={refresh} onError={setError} />
         <DdsCardContacts card={card} assignment={assignment} />
       </div>

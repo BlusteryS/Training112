@@ -47,6 +47,8 @@ public final class AdminRoutes {
     router.get("/api/admin/statistics").handler(context -> statistics(context, pool));
     router.get("/api/admin/settings").handler(context -> settings(context, pool));
     router.post("/api/admin/settings").handler(context -> saveSettings(context, pool));
+    router.get("/api/admin/operations").handler(context -> operations(context, pool));
+    router.post("/api/admin/operations").handler(context -> saveOperations(context, pool));
     router.get("/api/admin/backups").handler(context -> backups(context, pool));
     router.post("/api/admin/backups").handler(context -> exportBackup(context, pool));
   }
@@ -335,11 +337,41 @@ public final class AdminRoutes {
         .onFailure(context::fail);
   }
 
+  private static void operations(RoutingContext context, Pool pool) {
+    pool.query("SELECT key,value FROM platform_setting WHERE key IN ('service_speech_enabled','service_worker_enabled','dds_phone_enabled','audit_retention_days','backup_interval_hours','backup_retention_count')")
+        .execute().onSuccess(rows -> {
+          JsonObject result = new JsonObject();
+          rows.forEach(row -> result.put(row.getString("key"), Integer.parseInt(row.getString("value"))));
+          context.response().end(result.encode());
+        }).onFailure(context::fail);
+  }
+
+  private static void saveOperations(RoutingContext context, Pool pool) {
+    AuthRepository.Account actor = context.get("actor");
+    JsonObject body = body(context);
+    JsonObject values = new JsonObject()
+        .put("service_speech_enabled", requiredInt(body, "service_speech_enabled", 0, 1))
+        .put("service_worker_enabled", requiredInt(body, "service_worker_enabled", 0, 1))
+        .put("dds_phone_enabled", requiredInt(body, "dds_phone_enabled", 0, 1))
+        .put("audit_retention_days", requiredInt(body, "audit_retention_days", 30, 3650))
+        .put("backup_interval_hours", requiredInt(body, "backup_interval_hours", 1, 168))
+        .put("backup_retention_count", requiredInt(body, "backup_retention_count", 1, 30));
+    pool.withTransaction(database -> {
+      Future<Void> changes = Future.succeededFuture();
+      for (String key : values.fieldNames()) {
+        changes = changes.compose(ignored -> database.preparedQuery(
+            "UPDATE platform_setting SET value=$2,updated_at=now(),updated_by=$3 WHERE key=$1")
+            .execute(Tuple.of(key, Integer.toString(values.getInteger(key)), actor.id())).mapEmpty());
+      }
+      return changes.compose(ignored -> audit(database, actor.id(), "operations.updated", actor.id(), values));
+    }).onSuccess(ignored -> context.response().setStatusCode(204).end()).onFailure(context::fail);
+  }
+
   private static void backups(RoutingContext context, Pool pool) {
     pool.query("""
         SELECT jsonb_build_object('id', b.id, 'created_at', b.created_at, 'sha256', b.sha256,
-          'byte_size', b.byte_size, 'login', u.login) AS value
-        FROM backup_export b JOIN app_user u ON u.id = b.actor_id
+          'byte_size', b.byte_size, 'login', u.login, 'source', b.source) AS value
+        FROM backup_export b LEFT JOIN app_user u ON u.id = b.actor_id
         ORDER BY b.created_at DESC LIMIT 50
         """).execute()
         .onSuccess(rows -> {

@@ -31,6 +31,13 @@ class JobWorker:
 
     def claim(self):
         with self.connect() as db:
+            setting = db.execute(
+                "SELECT value FROM platform_setting WHERE key='service_worker_enabled'"
+            ).fetchone()
+            if setting is None:
+                raise RuntimeError("Worker service setting is missing")
+            if setting["value"] == "0":
+                return None
             job = db.execute("""
                 SELECT * FROM background_job WHERE state='queued' OR
                 (state='running' AND lease_until<now())

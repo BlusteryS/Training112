@@ -5,6 +5,7 @@ import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository;
 import com.training112.auth.AuthRepository.Account;
 import com.training112.auth.AuthSession;
+import com.training112.auth.PlatformSettings;
 import com.training112.training.TrainingRepository;
 import com.training112.training.TrainingRoutes;
 import io.vertx.core.Future;
@@ -15,6 +16,7 @@ import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.sqlclient.Pool;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +29,7 @@ public final class SpeechRoutes {
   private final AppConfig app;
   private final SpeechConfig config;
   private final TrainingRepository training;
+  private final Pool pool;
   private final Map<UUID, Connection> calls = new HashMap<>();
   private final Set<UUID> attaching = new java.util.HashSet<>();
   private MessageConsumer<String> completed;
@@ -37,12 +40,13 @@ public final class SpeechRoutes {
       AuthRepository auth,
       AppConfig app,
       SpeechConfig config,
-      TrainingRepository training) {
+      TrainingRepository training, Pool pool) {
     this.vertx = vertx;
     this.auth = auth;
     this.app = app;
     this.config = config;
     this.training = training;
+    this.pool = pool;
   }
 
   public void mount(Router router) {
@@ -85,8 +89,9 @@ public final class SpeechRoutes {
                   .compose(
                       actor -> {
                         if (actor == null) return Future.failedFuture(ApiException.unauthorized());
-                        return training
-                            .speechAdmission(actor, attempt)
+                        return PlatformSettings.enabled(pool, "service_speech_enabled")
+                            .compose(enabled -> enabled || calls.containsKey(attempt) ? training.speechAdmission(actor, attempt)
+                                : Future.failedFuture(new ApiException(503, "speech_disabled", "Учебные звонки временно отключены.")))
                             .compose(
                                 admission -> attach(context, actor, token, attempt, admission));
                       })

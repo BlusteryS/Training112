@@ -9,12 +9,13 @@ const reportNames: Record<string, string> = {
   working: 'Проведение работ', completed: 'Работы завершены', refused: 'Отказ от выполнения работ',
 };
 
-export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingReport, onChange, onError }: {
+export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingReport, enabled, onChange, onError }: {
   attemptId: string;
   status: string;
   crew: string | null;
   callerPhone: string;
   pendingReport: string | null;
+  enabled: boolean;
   onChange: () => Promise<void>;
   onError: (message: string) => void;
 }) {
@@ -23,8 +24,8 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   const [incoming, setIncoming] = useState(false);
   const [busy, setBusy] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const canCall = reports.includes(status) && !!attemptId;
-  const canCallCaller = ['received', 'rejected', ...reports].includes(status) && !!attemptId;
+  const canCall = enabled && reports.includes(status) && !!attemptId;
+  const canCallCaller = enabled && ['received', 'rejected', ...reports].includes(status) && !!attemptId;
 
   useEffect(() => {
     if (!canCall || !crew || pendingReport || active || incoming) return undefined;
@@ -100,6 +101,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
 
   return <div className={styles.panel}>
     <div className={styles.title}>Учебный IP-телефон</div>
+    {!enabled && <div>Телефон отключён администратором.</div>}
     {status === 'accepted' && !crew && <div className={styles.crewSelect}>
       <InputField label="Номер наряда или название бригады" value={selected} maxLength={100}
         onChange={(event) => setSelected(event.target.value)} />

@@ -50,20 +50,31 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </SelectField>
       <TextareaField label="Инструкция" maxLength={2000} value={document.instructions ?? ''} onChange={(event) => setDocument({ ...document, instructions: event.target.value })} />
+      <InputField label="Минимальная оценка для зачёта, 0–100" type="number" min={0} max={100}
+        value={document.pass_score ?? 70} onChange={(event) => setDocument({ ...document, pass_score: Number(event.target.value) })} />
+      <InputField label="Допустимое число ошибок" type="number" min={0} max={100}
+        value={document.max_errors ?? 2} onChange={(event) => setDocument({ ...document, max_errors: Number(event.target.value) })} />
       {Object.entries(document.facts).map(([key, value]) => <TextareaField key={key} label={factNames[key] ?? key}
         required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />)}
-      {document.rubric.map((rule, index) => rule.expected !== undefined
-        ? <TextareaField key={rule.id} label={rule.description} required maxLength={2000} value={rule.expected} onChange={(event) => setDocument({
+      {document.rubric.map((rule, index) => <div key={rule.id}>
+        <div>{rule.description}</div>
+        {rule.expected !== undefined && <TextareaField label="Требуемый ответ" required maxLength={2000} value={rule.expected} onChange={(event) => setDocument({
           ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? { ...item, expected: event.target.value } : item),
-        })} />
-        : rule.kind === 'deadline' ? <InputField key={rule.id} label="Норматив заполнения карточки оператора 112, секунд" required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(event) => {
+        })} />}
+        {rule.kind === 'deadline' && <InputField label="Норматив заполнения карточки оператора 112, секунд" required type="number" min={1} max={86400} value={rule.seconds ?? 30} onChange={(event) => {
           const seconds = Number(event.target.value);
-          setDocument({
-            ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? {
-              ...item, seconds, description: `Карточка сохранена в течение ${seconds} секунд.`,
-            } : item),
-          });
-        }} /> : null)}
+          setDocument({ ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index ? {
+            ...item, seconds, description: `Карточка сохранена в течение ${seconds} секунд.`,
+          } : item) });
+        }} />}
+        <InputField label="Вес критерия, баллов" type="number" min={1} max={100} value={rule.weight}
+          onChange={(event) => setDocument({ ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index
+            ? { ...item, weight: Number(event.target.value) } : item) })} />
+        <label><input type="checkbox" checked={rule.mandatory ?? false} onChange={(event) => setDocument({
+          ...document, rubric: document.rubric.map((item, itemIndex) => itemIndex === index
+            ? { ...item, mandatory: event.target.checked } : item),
+        })} />Обязательный критерий для зачёта</label>
+      </div>)}
     </div>
   </FormCard>
 </ModalForm>;

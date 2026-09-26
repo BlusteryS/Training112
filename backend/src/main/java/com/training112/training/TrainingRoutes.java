@@ -150,6 +150,7 @@ public final class TrainingRoutes {
     router.get("/api/training/lessons/:id/report").handler(c -> json(c, repository.lessonReport(actor(c), id(c))));
     router.get("/api/training/insights").handler(c -> json(c, repository.insights(actor(c))));
     router.get("/api/training/progress").handler(c -> json(c, repository.progress(actor(c))));
+    router.get("/api/training/history").handler(c -> json(c, repository.learnerHistory(actor(c))));
     router.post("/api/training/grammar").handler(c ->
         c.response().end(GrammarNotes.inspect(text(c, "field", 64), text(c, "text", 4000)).encode()));
     router.get("/api/training/jobs").handler(c -> json(c, repository.jobs(actor(c))));
@@ -184,6 +185,7 @@ public final class TrainingRoutes {
                               return null;
                             })));
     router.get("/api/training/assignments").handler(c -> json(c, repository.assignments(actor(c))));
+    router.get("/api/training/capabilities").handler(c -> json(c, repository.capabilities(actor(c))));
     router.get("/api/training/results").handler(c -> json(c, repository.completedAttempts(actor(c))));
     router
         .post("/api/training/attempts")
@@ -233,15 +235,19 @@ public final class TrainingRoutes {
                   || n.longValue() < 0
                   || n.doubleValue() != n.longValue()
                   || !(b.getValue("payload") instanceof JsonObject)) throw invalid();
-              json(
-                  c,
-                  repository.command(
+              String type = text(c, "type", 64);
+              Future<JsonObject> allowed = "dds.phone.report".equals(type)
+                  ? repository.ddsPhoneEnabled().compose(enabled -> enabled
+                      ? repository.command(actor(c), id(c), uuid(b.getString("event_id")), n.longValue(), type, b.getJsonObject("payload"))
+                      : Future.failedFuture(new ApiException(503, "phone_disabled", "Учебный телефон временно отключён.")))
+                  : repository.command(
                       actor(c),
                       id(c),
                       uuid(b.getString("event_id")),
                       n.longValue(),
-                      text(c, "type", 64),
-                      b.getJsonObject("payload")));
+                      type,
+                      b.getJsonObject("payload"));
+              json(c, allowed);
             });
     router
         .post("/api/training/attempts/:id/finish")

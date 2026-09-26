@@ -63,6 +63,7 @@ def evaluate(
                 "kind": kind,
                 "status": status,
                 "weight": criterion["weight"],
+                "mandatory": criterion.get("mandatory", False),
                 "description": criterion["description"],
                 "source": criterion.get("source"),
                 "actual": actual,
@@ -73,6 +74,13 @@ def evaluate(
     earned = sum(c["weight"] for c in checks if c["status"] == "passed")
     pending = any(c["status"] == "review" for c in checks)
     total = sum(c["weight"] for c in checks)
+    errors = sum(c["status"] == "failed" for c in checks)
+    score = None if pending or not total else round(earned / total * 100, 2)
+    passed = None if score is None else (
+        score >= document.get("pass_score", 70)
+        and errors <= document.get("max_errors", 2)
+        and not any(c["mandatory"] and c["status"] == "failed" for c in checks)
+    )
     recommendations = []
     for check in checks:
         if check["status"] == "failed":
@@ -84,7 +92,11 @@ def evaluate(
         "checks": checks,
         "earned": earned,
         "possible": total,
-        "score": None if pending or not total else round(earned / total * 100, 2),
+        "score": score,
+        "passed": passed,
+        "errors": errors,
+        "pass_score": document.get("pass_score", 70),
+        "max_errors": document.get("max_errors", 2),
         "requires_review": pending,
         "recommendations": recommendations,
         "attempt_status": attempt_status,

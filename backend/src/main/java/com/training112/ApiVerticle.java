@@ -55,7 +55,7 @@ public final class ApiVerticle extends VerticleBase {
             com.training112.auth.AdminRoutes.mount(router, pool, repository, passwords, config, speechConfig);
             TrainingRepository training = new TrainingRepository(pool);
             new TrainingRoutes(vertx, training, repository, config).mount(router);
-            speech = new SpeechRoutes(vertx, repository, config, speechConfig, training);
+            speech = new SpeechRoutes(vertx, repository, config, speechConfig, training, pool);
             speech.mount(router);
             String webRoot = System.getenv("WEB_ROOT");
             if (webRoot != null) {
@@ -97,7 +97,10 @@ public final class ApiVerticle extends VerticleBase {
                         new JsonObject().put("code", code).put("message", message)).encode());
             });
             cleanupTimer = vertx.setPeriodic(300_000, ignored -> repository.cleanup()
-                    .onFailure(error -> LOG.error("Session cleanup failed", error)));
+                    .compose(done -> com.training112.auth.PlatformSettings.auditRetentionDays(pool))
+                    .compose(days -> pool.preparedQuery("DELETE FROM audit_event WHERE created_at < now() - $1 * interval '1 day'")
+                            .execute(io.vertx.sqlclient.Tuple.of(days)))
+                    .onFailure(error -> LOG.error("Cleanup failed", error)));
             HttpServerOptions options = new HttpServerOptions()
                     .setHost(System.getenv().getOrDefault("BIND_HOST", "127.0.0.1"))
                     .setTcpNoDelay(true)

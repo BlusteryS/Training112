@@ -3,6 +3,7 @@ import styles from './EvaluationDetails.module.css';
 export type Evaluation = {
   result: {
     score: number | null;
+    passed?: boolean | null;
     earned: number;
     possible: number;
     checks: { id: string; description: string; status: string; actual?: string; expected?: string }[];
@@ -21,6 +22,7 @@ export function EvaluationDetails({ evaluation }: { evaluation: Evaluation }) {
     <div className={styles.score}>{result.score === null ? 'Оценка требует проверки преподавателя'
       : `Автоматическая оценка: ${result.score} / 100`}</div>
     <div>{result.earned} из {result.possible} баллов по критериям</div>
+    {result.passed !== undefined && <div>{result.passed === null ? 'Итог требует проверки' : result.passed ? 'Требования выполнены' : 'Требования не выполнены'}</div>}
     {result.checks.map((check) => <div className={styles.check} key={check.id}>
       <div>{check.description} — {statusNames[check.status] ?? check.status}</div>
       {check.status === 'review' && check.actual !== undefined && <div>Ответ: {check.actual || 'не заполнено'}</div>}

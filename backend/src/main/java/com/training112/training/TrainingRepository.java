@@ -2,6 +2,7 @@ package com.training112.training;
 
 import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository.Account;
+import com.training112.auth.PlatformSettings;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -708,7 +709,10 @@ public final class TrainingRepository {
   }
 
   public Future<JsonObject> phonePreview(Account actor, UUID id, JsonObject request) {
-    return accessibleAttempt(pool, actor, id, false).map(row -> {
+    return PlatformSettings.enabled(pool, "dds_phone_enabled")
+        .compose(enabled -> enabled ? accessibleAttempt(pool, actor, id, false)
+            : Future.failedFuture(new ApiException(503, "phone_disabled", "Учебный телефон временно отключён.")))
+        .map(row -> {
       if (!"user".equals(actor.role()) || !actor.id().equals(row.getUUID("learner_id"))
           || !"card".equals(row.getString("mode"))
           || !"active".equals(row.getString("status"))) throw forbidden();
@@ -718,6 +722,10 @@ public final class TrainingRepository {
       return DdsPhone.report(row.getString("card_status"), row.getString("dds_crew"),
           row.getJsonObject("card_template"), request);
     });
+  }
+
+  public Future<Boolean> ddsPhoneEnabled() {
+    return PlatformSettings.enabled(pool, "dds_phone_enabled");
   }
 
   public Future<JsonObject> command(
@@ -1325,5 +1333,32 @@ public final class TrainingRepository {
         GROUP BY u.id, u.login
         ORDER BY u.login
         """, Tuple.of(actor.id()));
+  }
+
+  public Future<JsonArray> learnerHistory(Account actor) {
+    if (!"user".equals(actor.role())) throw forbidden();
+    return list(pool, """
+        SELECT jsonb_build_object(
+          'attempt_id',a.id,'title',COALESCE(a.card_template->>'title',l.card_template->>'title',s.title),
+          'mode',l.mode,'status',a.status,'finished_at',a.finished_at,
+          'score',e.result->'score',
+          'checks',COALESCE(e.result->'checks','[]'::jsonb),
+          'recommendations',COALESCE(e.result->'recommendations','[]'::jsonb)
+        ) AS value
+        FROM training_attempt a
+        JOIN lesson_assignment la ON la.id=a.assignment_id
+        JOIN lesson l ON l.id=la.lesson_id
+        LEFT JOIN scenario s ON s.id=l.scenario_id
+        LEFT JOIN attempt_evaluation e ON e.attempt_id=a.id
+        WHERE la.learner_id=$1 AND a.status IN ('completed','failed')
+        ORDER BY a.finished_at DESC LIMIT 200
+        """, Tuple.of(actor.id()));
+  }
+
+  public Future<JsonObject> capabilities(Account actor) {
+    if (!"user".equals(actor.role())) throw forbidden();
+    return PlatformSettings.enabled(pool, "service_speech_enabled")
+        .compose(speech -> PlatformSettings.enabled(pool, "dds_phone_enabled")
+            .map(phone -> new JsonObject().put("speech", speech).put("dds_phone", phone)));
   }
 }

@@ -144,6 +144,16 @@
     "check_in": {
       "$ref": "#/$defs/variants"
     },
+    "pass_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "max_errors": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
     "rubric": {
       "type": "array",
       "maxItems": 100,
@@ -187,6 +197,9 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100
+          },
+          "mandatory": {
+            "type": "boolean"
           },
           "description": {
             "type": "string",

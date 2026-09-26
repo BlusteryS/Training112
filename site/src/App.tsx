@@ -13,6 +13,7 @@ import { IncomingCall } from './components/IncomingCall';
 import { IncidentList } from './pages/IncidentList';
 import { LoginPage } from './pages/LoginPage';
 import { CardDesk } from './pages/CardDesk';
+import { LearnerProgress } from './pages/LearnerProgress';
 import { MaterialsMenu } from './management/Materials';
 import { SpeechPage } from './pages/SpeechPage';
 import { readCooldown, readManualAvailability, writeManualAvailability } from './operatorAvailability';
@@ -114,6 +115,7 @@ function OperatorWorkspace() {
   const lastLoadError = useRef('');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [connectionError, setConnectionError] = useState(false);
+  const [speechEnabled, setSpeechEnabled] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -134,9 +136,13 @@ function OperatorWorkspace() {
     let timer: ReturnType<typeof setTimeout>;
     const read = async () => {
       try {
-        const rows = await api<Assignment[]>('training/assignments');
+        const [rows, capabilities] = await Promise.all([
+          api<Assignment[]>('training/assignments'),
+          api<{ speech: boolean }>('training/capabilities'),
+        ]);
         if (!cancelled) {
           setAssignments(rows);
+          setSpeechEnabled(capabilities.speech);
           setConnectionError(false);
           lastLoadError.current = '';
         }
@@ -164,8 +170,9 @@ function OperatorWorkspace() {
   const hasOpenCard = assignments.some((item) => ['created', 'active', 'suspended'].includes(item.attempt_status ?? ''));
   const coolingDown = now < readCooldown(user.id);
   const telephonySupported = window.isSecureContext && Boolean(navigator.mediaDevices?.getUserMedia);
-  const available = telephonySupported && !connectionError && manuallyAvailable && !hasOpenCard && !coolingDown;
+  const available = telephonySupported && speechEnabled && !connectionError && manuallyAvailable && !hasOpenCard && !coolingDown;
   const availabilityLabel = connectionError ? 'Ошибка'
+    : !speechEnabled ? 'Звонки отключены'
     : !telephonySupported ? 'Не подключен'
       : available ? 'Доступен' : 'Недоступен';
   const incomingCall = available ? assignments.find((item) => item.mode === 'call' && item.status === 'active'
@@ -174,7 +181,7 @@ function OperatorWorkspace() {
     && !['completed', 'failed'].includes(item.attempt_status ?? ''));
 
   const toggleAvailability = () => {
-    if (!telephonySupported || connectionError || hasOpenCard || coolingDown) return;
+    if (!telephonySupported || !speechEnabled || connectionError || hasOpenCard || coolingDown) return;
     setManuallyAvailable((current) => {
       writeManualAvailability(user.id, !current);
       return !current;
@@ -220,7 +227,7 @@ function OperatorWorkspace() {
 
   return <div className={styles.workspace}>
     <WorkspaceHeader
-      menu={<MaterialsMenu />}
+      menu={<><MaterialsMenu /><button type="button" onClick={() => navigate('/progress')}>Мои результаты</button></>}
       leading={<div className={styles.searchPanel}>
         <label className={styles.searchField}>
           <span className={styles.visuallyHidden}>Поиск происшествий</span>
@@ -240,7 +247,7 @@ function OperatorWorkspace() {
       footer={<button className={[styles.availability, available ? '' : styles.unavailable,
         !telephonySupported ? styles.disconnected : ''].filter(Boolean).join(' ')}
         onClick={toggleAvailability}
-        disabled={!telephonySupported || connectionError || hasOpenCard || coolingDown}>
+        disabled={!telephonySupported || !speechEnabled || connectionError || hasOpenCard || coolingDown}>
         <img src={headsetIcon} alt="" />
         <span>{availabilityLabel}</span>
       </button>}
@@ -372,6 +379,7 @@ function Application() {
           <Routes>
             <Route element={session.user.role === 'user' ? <SpeechPage /> : <Navigate replace to="/" />} path="/session" />
             <Route element={session.user.role === 'user' ? <CardDesk /> : <Navigate replace to="/" />} path="/card" />
+            <Route element={session.user.role === 'user' ? <LearnerProgress /> : <Navigate replace to="/" />} path="/progress" />
             <Route element={<Home />} path="/" />
             <Route element={<Navigate replace to="/" />} path="*" />
           </Routes>

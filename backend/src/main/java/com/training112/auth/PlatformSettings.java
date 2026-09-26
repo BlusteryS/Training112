@@ -15,6 +15,16 @@ public final class PlatformSettings {
     return number(pool, "session_hours", 1, 24 * 30);
   }
 
+  public static Future<Boolean> enabled(Pool pool, String key) {
+    if (!"service_speech_enabled".equals(key) && !"dds_phone_enabled".equals(key))
+      throw new IllegalArgumentException("Unknown service");
+    return number(pool, key, 0, 1).map(value -> value == 1);
+  }
+
+  public static Future<Integer> auditRetentionDays(Pool pool) {
+    return number(pool, "audit_retention_days", 30, 3650);
+  }
+
   private static Future<Integer> number(Pool pool, String key, int min, int max) {
     return pool.preparedQuery("SELECT value FROM platform_setting WHERE key=$1")
         .execute(Tuple.of(key))

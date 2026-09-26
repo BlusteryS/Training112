@@ -9,6 +9,7 @@ import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
 import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
 import { SummaryGrid } from './SummaryGrid';
+import { Operations } from './Operations';
 
 const sections = {
   users: 'Пользователи',
@@ -16,6 +17,7 @@ const sections = {
   journal: 'Журнал',
   statistics: 'Статистика',
   policy: 'Политика доступа',
+  operations: 'Параметры комплекса',
   backups: 'Резервные копии',
 } as const;
 
@@ -27,6 +29,7 @@ const actionNames: Record<string, string> = {
   'user.blocked': 'Доступ закрыт',
   'user.unblocked': 'Доступ открыт',
   'settings.updated': 'Изменена политика входа',
+  'operations.updated': 'Изменены параметры комплекса',
   'backup.exported': 'Снята резервная копия',
   'group.created': 'Создана группа',
   'group.member_added': 'Участник добавлен',
@@ -57,6 +60,7 @@ export function AdminDesk() {
     {section === 'journal' && <Journal />}
     {section === 'statistics' && <Statistics />}
     {section === 'policy' && <Policy />}
+    {section === 'operations' && <Operations />}
     {section === 'backups' && <Backups />}
   </div>;
 }
@@ -259,7 +263,7 @@ function Policy() {
 }
 
 function Backups() {
-  const [rows, setRows] = useState<{ id: string; created_at: string; byte_size: number; login: string }[]>([]);
+  const [rows, setRows] = useState<{ id: string; created_at: string; byte_size: number; login: string | null; source: string }[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const refresh = () => api<typeof rows>('admin/backups').then(setRows);
@@ -283,7 +287,7 @@ function Backups() {
     {rows.length === 0 ? <DeskEmpty>Копий нет</DeskEmpty> : <DeskTable columns={columns} head={<><span>Время</span><span>Кто</span><span>Размер</span></>}>
       {rows.map((row) => <DeskRow key={row.id} columns={columns}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
-        <span>{row.login}</span>
+        <span>{row.source === 'automatic' ? 'Автоматически' : row.login}</span>
         <span>{row.byte_size}</span>
       </DeskRow>)}
     </DeskTable>}

@@ -22,12 +22,13 @@ export type Assignment = {
 export type ScenarioDocument = {
   schema_version: number; title: string; origin: string;
   difficulty?: string; instructions?: string;
+  pass_score?: number; max_errors?: number;
   facts: Record<string, string>;
   initial_state: string; states: string[];
   intents: { id: string; examples: string[] }[];
   responses: { id: string; intent: string; states: string[]; variants: string[]; next_state?: string; end_call?: boolean }[];
   greeting: string[]; clarification: string[]; check_in: string[]; contact?: string[];
-  rubric: { id: string; kind: string; weight: number; description: string; field?: string; expected?: string; action?: string; seconds?: number; source?: string }[];
+  rubric: { id: string; kind: string; weight: number; description: string; mandatory?: boolean; field?: string; expected?: string; action?: string; seconds?: number; source?: string }[];
   acceptance_cases?: { text: string; state: string; response_id?: string; response_ids?: string[] }[];
 };
 export const scenarioNames: Record<string, string> = {
