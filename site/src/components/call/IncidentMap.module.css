@@ -1,0 +1,55 @@
+.dialog {
+  display: flex;
+  width: min(1050px, 96vw);
+  height: min(750px, 92vh);
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.header,
+.footer {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  gap: 16px;
+}
+
+.header {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.header button {
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.map {
+  min-height: 0;
+  flex: 1;
+}
+
+.footer {
+  font-size: 14px;
+}
+
+.footer button {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f353a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.footer button:disabled {
+  opacity: .4;
+  cursor: default;
+}

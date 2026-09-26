@@ -74,6 +74,10 @@ public final class TrainingRoutes {
     router.get("/api/training/lessons").handler(c -> json(c, repository.lessons(actor(c))));
     router.get("/api/training/classifier")
         .handler(c -> json(c, Future.succeededFuture(IncidentClassifier.cards())));
+    router.get("/api/training/addresses").handler(c -> {
+      String query = c.request().getParam("q", "");
+      json(c, vertx.executeBlocking(() -> FiasAddresses.search(query)));
+    });
     router.get("/api/training/operator-cards")
         .handler(c -> json(c, repository.operatorCards(actor(c))));
     router.get("/api/training/learners").handler(c -> json(c, repository.learners(actor(c))));

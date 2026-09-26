@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
+import { AddressLookup, type FiasAddress } from '../components/call/AddressLookup';
 import { IncidentSurvey, type SurveySelection } from '../components/call/IncidentSurvey';
 import { ToggleGroup } from '../components/call/ToggleGroup';
 import { ModalForm } from '../components/ModalForm';
@@ -16,6 +17,9 @@ import closeIcon from '../assets/workspace/close.svg';
 import { incidentClassifier, matchingCard, servicesForCard,
   type ClassifierCard } from './incidentClassifier';
 import styles from './CallWorkspace.module.css';
+
+const IncidentMap = lazy(() => import('../components/call/IncidentMap')
+  .then((module) => ({ default: module.IncidentMap })));
 
 export type IncidentDraft = {
   phone: string;
@@ -34,6 +38,8 @@ export type IncidentDraft = {
   incident_details: string;
   address: string;
   address_description: string;
+  location_lat: string;
+  location_lon: string;
   country: string;
   city: string;
   okrug: string;
@@ -63,7 +69,8 @@ function initialDraft(phone: string, card?: Record<string, string> | null): Inci
     foreign_phone: 'false', caller_name: '', caller_status: '', foreign_language: 'false',
     incident_code: '', classifier_code: '', incident_types: '[]',
     incident_sign_2: '', incident_sign_3: '', incident_details: '',
-    address: '', address_description: '', country: 'Россия', city: 'Москва', okrug: '',
+    address: '', address_description: '', location_lat: '', location_lon: '',
+    country: 'Россия', city: 'Москва', okrug: '',
     district: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Нет',
     law_violation: 'false', services: '', comment: '', ...card,
   };
@@ -122,6 +129,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   const [extraIncidents, setExtraIncidents] = useState(() => additionalIncidents(initialCard));
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const [linkQuery, setLinkQuery] = useState('');
   const [linkedTo, setLinkedTo] = useState<LinkedCard | null>(null);
   const [linkCandidates, setLinkCandidates] = useState<LinkedCard[]>([]);
@@ -360,9 +368,15 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       </div>
 
       <div className={styles.addressPanel}>
-        <div className={styles.panelTitle}>Адрес <img src={locationIcon} alt="" /></div>
-        <input id="card-address" required value={draft.address} onChange={(event) => change('address', event.target.value)}
-          placeholder="Адрес с номером дома" />
+        <div className={styles.panelTitle}>Адрес
+          <button className={styles.mapButton} type="button" onClick={() => setMapOpen(true)}
+            aria-label="Открыть карту" title="Открыть карту"><img src={locationIcon} alt="" /></button>
+        </div>
+        <AddressLookup value={draft.address} onChange={(value) => change('address', value)}
+          onSelect={(address: FiasAddress) => setDraft((current) => ({ ...current,
+            address: address.label, country: 'Россия', city: 'Москва',
+            district: address.district, street: address.street, house: address.house }))} />
+        {draft.location_lat && <div className={styles.mapPoint}>Точка на карте: {draft.location_lat}, {draft.location_lon}</div>}
         <div className={styles.addressGrid}>
           <label>Страна<input value={draft.country} onChange={(event) => change('country', event.target.value)} /></label>
           <label>Город<input value={draft.city} onChange={(event) => change('city', event.target.value)} /></label>
@@ -387,6 +401,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           <span>{draft.description.length} / 1999</span>
         </label>
       </div>
+
+      {mapOpen && <Suspense fallback={null}><IncidentMap latitude={draft.location_lat} longitude={draft.location_lon}
+        onClose={() => setMapOpen(false)} onSelect={(lat, lon) => {
+          setDraft((current) => ({ ...current, location_lat: lat, location_lon: lon }));
+          setMapOpen(false);
+        }} /></Suspense>}
 
       <div className={styles.incidentPanel}>
         <div className={styles.panelTitle}>Что случилось?</div>

@@ -1,0 +1,6 @@
+Moscow offline map: Protomaps Basemap, extract dated 2026-09-24.
+Source: https://build.protomaps.com/20260924.pmtiles
+Extract bounds: 36.6,55.1,38.1,56.05; maximum source zoom: 14.
+Map data © OpenStreetMap contributors, https://www.openstreetmap.org/copyright
+Noto Sans glyphs: https://github.com/protomaps/basemaps-assets
+Font license: fonts/OFL.txt
