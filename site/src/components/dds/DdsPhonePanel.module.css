@@ -1,9 +1,10 @@
 .panel {
   display: grid;
-  padding: 16px;
+  padding: 10px 12px;
   border-radius: 8px;
-  background: #ebecec;
-  gap: 12px;
+  background: #fff;
+  color: #1d252b;
+  gap: 6px;
 }
 
 .title {
@@ -11,12 +12,40 @@
   font-weight: 500;
 }
 
+.heading,
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heading {
+  justify-content: space-between;
+}
+
+.buttons button {
+  flex: 1;
+  min-height: 36px;
+  padding: 6px;
+  text-align: center;
+}
+
+.crewName {
+  color: #465159;
+  font-size: 14px;
+}
+
 .crewSelect,
 .incoming,
 .call,
 .caller {
   display: grid;
-  gap: 10px;
+  gap: 6px;
+}
+
+.topicLabel {
+  color: #465159;
+  font-size: 13px;
 }
 
 .crewSelect label {
@@ -25,9 +54,14 @@
 }
 
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.actions button {
+  min-height: 36px;
+  padding: 6px;
 }
 
 .incoming,

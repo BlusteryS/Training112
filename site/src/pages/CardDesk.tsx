@@ -106,24 +106,29 @@ export function CardDesk() {
       <div className={shell.searchFooter}>{assignment.title}</div>
     </div>} />
     <div className={styles.content}>
-      <div className={styles.caseHeader}>
-        <div><strong>{assignment.title}</strong><span>Служба: {ownService}</span></div>
-        <div className={waiting && elapsed > 30 ? styles.late : styles.clock}>
-          {waiting ? elapsed > 30 ? 'Не оповещено' : `До первичного решения ${remaining} с`
-            : `С начала занятия прошло ${elapsed} с`}
+      <div className={styles.phoneRail}>
+        <div className={styles.caseHeader}>
+          <strong>Происшествие {assignmentId.slice(0, 8).toUpperCase()}</strong>
+          <div className={waiting && elapsed > 30 ? styles.late : styles.clock}>
+            {waiting ? elapsed > 30 ? 'Не оповещено' : `Решение: ${remaining} с`
+              : `Прошло ${elapsed} с`}
+          </div>
+          <button type="button" onClick={() => navigate('/')}>К списку</button>
         </div>
-        <button type="button" onClick={() => navigate('/')}>К списку происшествий</button>
-      </div>
-      <div className={styles.contactRow}>
         <DdsPhonePanel attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
           callerPhone={card.phone ?? ''} pendingReport={pendingReport || null} enabled={phoneEnabled}
           onChange={refresh} onError={setError} />
-        <DdsCardContacts card={card} assignment={assignment} />
       </div>
-      <DdsCardDetails card={card} assignment={assignment} />
-      <DdsStatusEditor status={attempt.card_status} crew={attempt.dds_crew}
-        pendingReport={pendingReport} busy={busy} onMove={move} />
-      {error && <Notice error>{error}</Notice>}
+      <div className={styles.caseBody}>
+        <div className={styles.contactRow}>
+          <DdsCardContacts card={card} assignment={assignment} />
+        </div>
+        <DdsCardDetails card={card} assignment={assignment} statusEditor={
+          <DdsStatusEditor status={attempt.card_status} crew={attempt.dds_crew}
+            pendingReport={pendingReport} busy={busy} onMove={move} />
+        } />
+        {error && <Notice error>{error}</Notice>}
+      </div>
       <DdsServiceBar services={notified} ownService={ownService} ownStatus={attempt.card_status}
         events={events} login={user.login} now={now} startedAt={startedAt} />
     </div>

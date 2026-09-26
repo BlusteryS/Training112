@@ -307,7 +307,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           onForeignChange={(value) => change('foreign_phone', String(value))} />
         <PhoneCard id="card-provided-phone" label="Предоставленный номер" value={draft.provided_phone}
           onChange={(value) => change('provided_phone', value)} onCopy={() => change('provided_phone', phone)} />
-        <PhoneCard id="card-scene-phone" label="Телефон на место" value={draft.scene_phone}
+        <PhoneCard id="card-scene-phone" label="Телефон на месте" value={draft.scene_phone}
           onChange={(value) => change('scene_phone', value)} onCopy={() => change('scene_phone', phone)} />
       </div>
       <div className={styles.incidentMeta}>

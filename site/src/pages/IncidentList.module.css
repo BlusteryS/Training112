@@ -63,9 +63,9 @@
 
 .table {
   display: grid;
-  grid-template-columns: repeat(16, minmax(max-content, 1fr));
-  width: max-content;
-  min-width: 100%;
+  grid-template-columns: repeat(16, minmax(max-content, auto));
+  width: 100%;
+  min-width: max-content;
 }
 
 .tableHead,
@@ -86,8 +86,12 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: 0 8px;
+  padding: 0 12px;
   white-space: nowrap;
+}
+
+.tableHead span:nth-child(n + 6):nth-child(-n + 14) {
+  justify-content: flex-start;
 }
 
 .rows {
@@ -114,13 +118,23 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: 36px;
   padding: 8px 12px;
-  border: 1px solid #838f97;
+  border-right: 1px solid #838f97;
   background: #49555d;
   color: rgba(255, 255, 255, .8);
   white-space: nowrap;
+}
+
+.iconCell,
+.cellButton,
+.checkedCell {
+  justify-content: center;
+}
+
+.rowMain > :last-child {
+  border-right: 0;
 }
 
 .darkCell {

@@ -1,30 +1,40 @@
 .content {
   display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
   min-height: calc(100vh - 138px);
-  padding: 12px 20px 0;
+  padding: 12px 20px 82px;
   align-content: start;
+  align-items: start;
+  gap: 10px;
+}
+
+.phoneRail {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.caseBody {
+  display: grid;
+  min-width: 0;
   gap: 8px;
 }
 
 .caseHeader {
-  display: flex;
-  min-height: 62px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #ebecec;
-  color: #000;
-  gap: 16px;
-}
-
-.caseHeader > div:first-child {
   display: grid;
+  align-content: start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d252b;
   gap: 4px;
 }
 
 .caseHeader strong {
   font-weight: 500;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .caseHeader span {
@@ -32,9 +42,9 @@
 }
 
 .caseHeader button {
-  padding: 8px 12px;
-  border: 1px solid #ec653b;
-  border-radius: 6px;
+  justify-self: start;
+  padding: 0;
+  border: 0;
   background: transparent;
   color: #ec653b;
   cursor: pointer;
@@ -42,7 +52,7 @@
 
 .clock,
 .late {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -51,13 +61,10 @@
 }
 
 .contactRow {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(0, 4fr);
-  align-items: start;
-  gap: 8px;
+  min-width: 0;
 }
 
-.contactRow button {
+.phoneRail > div:last-child button {
   padding: 8px 12px;
   border: 1px solid #ec653b;
   border-radius: 6px;
@@ -66,7 +73,7 @@
   cursor: pointer;
 }
 
-.contactRow button:disabled {
+.phoneRail > div:last-child button:disabled {
   opacity: .55;
   cursor: default;
 }
@@ -76,5 +83,5 @@
 }
 
 @media (max-width: 1200px) {
-  .contactRow { grid-template-columns: 1fr; }
+  .content { grid-template-columns: 220px minmax(0, 1fr); }
 }

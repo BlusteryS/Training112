@@ -40,7 +40,7 @@
 .top {
   display: grid;
   grid-template-columns: 97px minmax(0, 1fr) 248px;
-  min-height: 220px;
+  min-height: 108px;
   padding: 8px 8px 0;
   gap: 4px;
 }
@@ -106,17 +106,13 @@
 
 .phoneGrid {
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
-}
-
-.phoneGrid > div:first-child {
-  grid-column: 1 / -1;
 }
 
 .incidentMeta {
   display: grid;
-  grid-template-rows: 92px 1fr;
+  grid-template-rows: 50px 1fr;
   gap: 4px;
   background: transparent;
 }
@@ -125,7 +121,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 20px;
+  padding: 6px 10px;
   background: #2f353a;
   color: #fff;
   gap: 8px;
@@ -148,9 +144,9 @@
 }
 
 .timerValue {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 500;
-  line-height: 42px;
+  line-height: 36px;
 }
 
 .timerSeconds {
@@ -162,9 +158,9 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 16px;
+  padding: 6px 10px;
   background: #fff;
-  gap: 12px;
+  gap: 2px;
 }
 
 .metaText .incidentName {
@@ -596,10 +592,6 @@ button.linkRow {
 }
 
 @media (max-height: 820px) {
-  .top {
-    min-height: 190px;
-  }
-
   .form {
     grid-template-rows: 56px 56px minmax(330px, 1fr);
   }

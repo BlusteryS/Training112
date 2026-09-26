@@ -23,6 +23,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   const [selected, setSelected] = useState('Бригада 1');
   const [active, setActive] = useState<PhoneReport | null>(null);
   const [incoming, setIncoming] = useState(false);
+  const [callerActionsOpen, setCallerActionsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canCall = enabled && reports.includes(status) && !!attemptId;
@@ -101,33 +102,38 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   }
 
   return <div className={styles.panel}>
-    <div className={styles.title}>Учебный IP-телефон</div>
+    <div className={styles.heading}><div className={styles.title}>Телефон</div>
+      {crew && <div className={styles.crewName}>{crew}</div>}</div>
     {!enabled && <div>Телефон отключён администратором.</div>}
     {status === 'accepted' && !crew && <div className={styles.crewSelect}>
       <SelectField label="Бригада" value={selected} onChange={(event) => setSelected(event.target.value)}>
         {crews.map((name) => <option key={name} value={name}>{name}</option>)}
       </SelectField>
-      <button type="button" disabled={busy} onClick={() => void chooseCrew()}>Назначить бригаду</button>
+      <button type="button" disabled={busy} onClick={() => void chooseCrew()}>Назначить</button>
     </div>}
-    {crew && <div>Бригада на вызове: {crew}</div>}
     {active ? <div className={styles.call}>
-      <div>Разговор: {active.party === 'crew' ? crew : `заявитель ${callerPhone}`}</div>
+      <div>Разговор: {active.party === 'crew' ? crew : 'заявитель'}</div>
       <div>{active.message}</div>
-      <button type="button" onClick={hangUp}>Завершить разговор</button>
+      <button type="button" onClick={hangUp}>Завершить</button>
     </div> : <>
       {incoming && !pendingReport && <div className={styles.incoming}>
-        <span>Входящий звонок от старшего бригады</span>
+        <span>Звонит старший бригады</span>
         <button type="button" disabled={busy} onClick={() => void call('crew', 'incoming')}>Ответить</button>
       </div>}
-      {canCall && crew && !pendingReport && <button type="button" disabled={busy}
-        onClick={() => void call('crew', 'outgoing')}>Позвонить старшему бригады</button>}
-      {pendingReport && <div className={styles.report}>Доклад получен. Установите статус «{reportNames[pendingReport] ?? pendingReport}».</div>}
-      {canCallCaller && callerPhone && <div className={styles.caller}>
-        <div>Заявитель: {callerPhone}</div>
+      <div className={styles.buttons}>
+        {canCall && crew && !pendingReport && <button type="button" disabled={busy}
+          aria-label="Позвонить бригаде" onClick={() => void call('crew', 'outgoing')}>Бригаде</button>}
+        {canCallCaller && callerPhone && <button type="button" className={styles.callerToggle}
+          aria-label="Позвонить заявителю" aria-expanded={callerActionsOpen}
+          onClick={() => setCallerActionsOpen((open) => !open)}>Заявителю</button>}
+      </div>
+      {pendingReport && <div className={styles.report}>Доклад: {reportNames[pendingReport] ?? pendingReport}</div>}
+      {canCallCaller && callerPhone && callerActionsOpen && <div className={styles.caller}>
+        <div className={styles.topicLabel}>Тема звонка</div>
         <div className={styles.actions}>
-          <button type="button" disabled={busy} onClick={() => void call('caller', 'outgoing', 'address')}>Уточнить адрес</button>
-          <button type="button" disabled={busy} onClick={() => void call('caller', 'outgoing', 'situation')}>Уточнить обстановку</button>
-          <button type="button" disabled={busy} onClick={() => void call('caller', 'outgoing', 'victims')}>Уточнить пострадавших</button>
+          <button type="button" disabled={busy} onClick={() => void call('caller', 'outgoing', 'address')}>Адрес</button>
+          <button type="button" disabled={busy} onClick={() => void call('caller', 'outgoing', 'situation')}>Обстановка</button>
+          <button type="button" disabled={busy} onClick={() => void call('caller', 'outgoing', 'victims')}>Пострадавшие</button>
         </div>
       </div>}
     </>}

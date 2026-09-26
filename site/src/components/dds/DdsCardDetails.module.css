@@ -6,7 +6,7 @@
 }
 
 .callerRow {
-  grid-template-columns: 2fr 1fr 2fr;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .field,
@@ -14,15 +14,15 @@
   min-width: 0;
   padding: 12px 14px;
   border-radius: 6px;
-  background: #ebecec;
-  color: #000;
+  background: #fff;
+  color: #1d252b;
 }
 
 .field > span {
   display: block;
   margin-bottom: 6px;
-  color: rgba(0, 0, 0, .55);
-  font-size: 13px;
+  color: #465159;
+  font-size: 14px;
 }
 
 .field > div,
@@ -73,10 +73,6 @@
   background: transparent;
 }
 
-.description {
-  min-height: 180px;
-}
-
-@media (max-width: 1300px) {
+@media (max-width: 900px) {
   .phoneRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

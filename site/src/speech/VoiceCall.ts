@@ -42,11 +42,29 @@ export class VoiceCall {
     }
     window.addEventListener('pagehide', this.onPageHide);
     this.callbacks.status('Разрешите доступ к микрофону.');
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: {
+    let timedOut = false;
+    let microphoneTimer: ReturnType<typeof setTimeout> | undefined;
+    const microphoneRequest = navigator.mediaDevices.getUserMedia({ audio: {
       channelCount: { ideal: 1 }, echoCancellation: { exact: true },
       noiseSuppression: { ideal: true }, autoGainControl: { ideal: true },
       sampleRate: { ideal: 48000 },
     } });
+    void microphoneRequest.then((stream) => {
+      if (timedOut) stream.getTracks().forEach((track) => track.stop());
+    }).catch(() => undefined);
+    try {
+      this.stream = await Promise.race([
+        microphoneRequest,
+        new Promise<MediaStream>((_, reject) => {
+          microphoneTimer = setTimeout(() => {
+            timedOut = true;
+            reject(new Error('Браузер не предоставил доступ к микрофону. Разрешите доступ и повторите подключение.'));
+          }, 20_000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(microphoneTimer);
+    }
     if (this.closed) {
       this.stream.getTracks().forEach((track) => track.stop());
       return;

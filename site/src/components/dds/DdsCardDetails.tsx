@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Assignment } from '../../management/types';
 import styles from './DdsCardDetails.module.css';
 
@@ -28,21 +29,27 @@ export function DdsCardContacts({ card, assignment }: {
   const facts = assignment?.facts;
   return <div className={styles.phoneRow}>
       <Field label="АОН" text={card.phone || facts?.phone} />
-      <Field label="Предоставленный номер" text={card.provided_phone} />
-      <Field label="Телефон на месте происшествия" text={card.scene_phone} />
+      <Field label="Указанный номер" text={card.provided_phone} />
+      <Field label="Телефон на месте" text={card.scene_phone} />
       <Field label="Канал связи" text={card.communication_channel} />
     </div>;
 }
 
-export function DdsCardDetails({ card, assignment }: {
+export function DdsCardDetails({ card, assignment, statusEditor }: {
   card: Record<string, string>;
   assignment: Assignment | null;
+  statusEditor: ReactNode;
 }) {
   const facts = assignment?.facts;
+  const addressParts: [string, string | undefined][] = [
+    ['Округ', card.okrug], ['Район', card.district], ['Объект', card.object],
+    ['Улица', card.street], ['Дом', card.house], ['Подъезд', card.entrance], ['Этаж', card.floor],
+  ];
+  const visibleAddressParts = addressParts.filter((entry) => entry[1]?.trim());
   return <>
     <div className={styles.callerRow}>
       <Field label="Заявитель" text={card.caller_name || facts?.caller_name} />
-      <Field label="Статус заявителя" text={card.caller_status} />
+      {card.caller_status && <Field label="Статус заявителя" text={card.caller_status} />}
       <Field label="Пострадавшие" text={card.victims || facts?.victims} />
       {card.law_violation === 'true' && <Field label="Правонарушение" text="Да" />}
     </div>
@@ -51,16 +58,11 @@ export function DdsCardDetails({ card, assignment }: {
         <div className={styles.block}>
           <div className={styles.blockTitle}>Адрес происшествия</div>
           <div className={styles.strong}>{value(card.address || facts?.address)}</div>
-          <div className={styles.addressFields}>
-            <Field label="Округ" text={card.okrug} />
-            <Field label="Район" text={card.district} />
-            <Field label="Объект" text={card.object} />
-            <Field label="Улица" text={card.street} />
-            <Field label="Дом" text={card.house} />
-            <Field label="Подъезд" text={card.entrance} />
-            <Field label="Этаж" text={card.floor} />
-          </div>
-          <Field label="Ориентир и описание адреса" text={card.address_description || card.landmark} />
+          {visibleAddressParts.length > 0 && <div className={styles.addressFields}>
+            {visibleAddressParts.map(([label, text]) => <Field key={label} label={label} text={text} />)}
+          </div>}
+          {(card.address_description || card.landmark) &&
+            <Field label="Ориентир и описание адреса" text={card.address_description || card.landmark} />}
         </div>
         <div className={styles.block}>
           <div className={styles.blockTitle}>Описание со слов заявителя</div>
@@ -79,6 +81,7 @@ export function DdsCardDetails({ card, assignment }: {
           {card.incident_details && <Field label="Подробности" text={card.incident_details} />}
           <Field label="Источник обращения" text={card.origin || assignment?.origin} />
         </div>
+        {statusEditor}
       </div>
     </div>
   </>;

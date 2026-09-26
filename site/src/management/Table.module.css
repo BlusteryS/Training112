@@ -5,9 +5,9 @@
 
 .table {
   display: grid;
-  grid-template-columns: repeat(var(--column-count), minmax(max-content, 1fr));
-  width: max-content;
-  min-width: 100%;
+  grid-template-columns: repeat(var(--column-count), minmax(max-content, auto));
+  width: 100%;
+  min-width: max-content;
   row-gap: 8px;
 }
 

@@ -16,6 +16,17 @@ function incidentNumber(id: string) {
   return digits || id.slice(0, 6).toUpperCase();
 }
 
+function callError(cause: unknown) {
+  if (cause instanceof DOMException && ['NotAllowedError', 'PermissionDeniedError'].includes(cause.name)) {
+    return 'Доступ к микрофону запрещён. Разрешите его в браузере и системе, затем повторите подключение.';
+  }
+  const message = cause instanceof Error ? cause.message : '';
+  if (/permission denied|notallowederror/i.test(message)) {
+    return 'Доступ к микрофону запрещён. Разрешите его в браузере и системе, затем повторите подключение.';
+  }
+  return message || 'Не удалось начать звонок.';
+}
+
 export function SpeechPage() {
   const { user } = useAuth();
   const notify = useNotification();
@@ -106,7 +117,7 @@ export function SpeechPage() {
         await current.start();
       }).catch((cause: unknown) => {
         if (disposed) return;
-        const text = cause instanceof Error ? cause.message : 'Не удалось начать звонок.';
+        const text = callError(cause);
         if (current) current.close(text);
         else {
           failAttempt();
@@ -167,7 +178,7 @@ export function SpeechPage() {
     navigate('/');
   }
 
-  if (phase === 'waiting') return null;
+  if (phase === 'waiting' && !attemptId) return null;
 
   if (phase === 'error') {
     return <div className={styles.errorPage}>
@@ -189,5 +200,5 @@ export function SpeechPage() {
     connected={phase === 'active'} initialCard={card} incidentNumber={incidentNumber(attemptId)}
     attemptId={attemptId}
     deadlineSeconds={deadlineSeconds}
-    saving={saving} onEndCall={() => call.current?.close()} onCancel={() => void cancel()} onSave={save} />;
+    saving={saving || phase === 'waiting'} onEndCall={() => call.current?.close()} onCancel={() => void cancel()} onSave={save} />;
 }

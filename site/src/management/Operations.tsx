@@ -51,7 +51,7 @@ export function Operations() {
             onChange={(event) => number('service_worker_enabled', event.target.value)}>
             <option value={1}>Работает</option><option value={0}>Приостановлена</option>
           </SelectField>
-          <SelectField label="Учебный IP-телефон ДДС" value={settings.dds_phone_enabled}
+          <SelectField label="Телефон ДДС" value={settings.dds_phone_enabled}
             onChange={(event) => number('dds_phone_enabled', event.target.value)}>
             <option value={1}>Доступен</option><option value={0}>Отключён</option>
           </SelectField>

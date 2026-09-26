@@ -28,12 +28,13 @@ export function DdsServiceBar({ services, ownService, ownStatus, events, login, 
   startedAt: number | null;
 }) {
   const [selected, setSelected] = useState(ownService);
+  const [expanded, setExpanded] = useState(false);
   const current = services.some((service) => sameService(service, selected)) ? selected : ownService;
   const own = sameService(current, ownService);
   const history = events.filter((event) => ['card.status', 'dds.crew.select', 'dds.phone.report'].includes(event.type));
   return <div className={styles.dock}>
-    <div className={styles.detail}>
-      <div className={styles.detailTitle}>{current} · {currentStatus(own ? ownStatus : 'added', now, startedAt)}</div>
+    {expanded && <div className={styles.detail}>
+      <div className={styles.detailTitle}>{current} · {own ? currentStatus(ownStatus, now, startedAt) : labels.added}</div>
       {own ? <div className={styles.history}>
         {history.length === 0 ? <span>История статусов появится здесь после первого действия.</span> : history.map((event, index) =>
           <div key={`${event.created_at}-${index}`}>
@@ -45,14 +46,17 @@ export function DdsServiceBar({ services, ownService, ownStatus, events, login, 
             {(event.payload.comment || event.payload.message) && <span>{event.payload.comment || event.payload.message}</span>}
           </div>)}
       </div> : <div className={styles.otherNotice}>Статус другой службы в этом занятии не обновляется.</div>}
-    </div>
+    </div>}
     <div className={styles.tabs}>
       <span className={styles.tabsLabel}>Службы:</span>
       {services.map((service) => {
         const isOwn = sameService(service, ownService);
         return <button type="button" key={service} className={sameService(service, current) ? styles.selected : ''}
-          onClick={() => setSelected(service)} aria-current={sameService(service, current) ? 'true' : undefined}>
-          <span>{service}</span><small>{currentStatus(isOwn ? ownStatus : 'added', now, startedAt)}</small>
+          onClick={() => {
+            if (sameService(service, current)) setExpanded((open) => !open);
+            else { setSelected(service); setExpanded(true); }
+          }} aria-current={sameService(service, current) ? 'true' : undefined} aria-expanded={expanded && sameService(service, current)}>
+          <span>{service}</span><small>{isOwn ? currentStatus(ownStatus, now, startedAt) : labels.added}</small>
         </button>;
       })}
     </div>
