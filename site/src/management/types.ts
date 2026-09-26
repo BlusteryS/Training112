@@ -7,6 +7,7 @@ export type Assignment = {
   title: string; group_name: string; mode: string; status: string;
   instructions: string | null; difficulty: string | null;
   attempt_id: string | null; attempt_status: string | null;
+  link_count?: number;
   attempt_started_at: string | null; card_status: string | null;
   created_at: string | null;
   workstation: string | null;

@@ -35,7 +35,8 @@ public final class DdsCardTemplate {
     JsonObject facts = new JsonObject();
     for (String key : FIELDS) {
       Object value = input.getValue(key);
-      if (value != null && (!(value instanceof String) || ((String) value).length() > 4000))
+      int maxLength = "incident_types".equals(key) ? 20_000 : 4000;
+      if (value != null && (!(value instanceof String) || ((String) value).length() > maxLength))
         throw invalid();
       facts.put(key, value == null ? "" : ((String) value).trim());
     }

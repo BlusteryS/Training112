@@ -20,14 +20,16 @@ public final class CardLinks {
   }
 
   public Future<JsonArray> chain(Account actor, UUID attempt) {
-    return accessible(pool, actor, attempt, false).compose(current ->
-        root(pool, attempt).compose(main -> list(pool, """
+    return accessible(pool, actor, attempt, false).compose(current -> {
+      requireSavedCall(current);
+      return root(pool, attempt).compose(main -> list(pool, """
             SELECT jsonb_build_object('id',a.id,'main',a.id=$1::uuid,
               'incident',a.card->>'incident_code','address',a.card->>'address',
               'phone',a.card->>'phone','created_at',a.created_at) AS value
             FROM training_attempt a LEFT JOIN card_link cl ON cl.child_attempt_id=a.id
-            WHERE a.id=$1 OR cl.parent_attempt_id=$1 ORDER BY a.created_at
-            """, Tuple.of(main))));
+            WHERE a.id=$1 OR cl.parent_attempt_id=$1 ORDER BY (a.id=$1) DESC,a.created_at
+            """, Tuple.of(main)));
+    });
   }
 
   public Future<JsonArray> candidates(Account actor, UUID attempt, String query) {

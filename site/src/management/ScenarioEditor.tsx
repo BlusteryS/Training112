@@ -50,9 +50,30 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
     }));
   }
   function save() {
+    if (!document.title.trim() || !document.origin) {
+      setError('Укажите название и источник обращения.');
+      return;
+    }
     const missing = Object.entries(document.facts).find(([, value]) => !value.trim());
     if (missing) {
       setError(`Заполните поле «${factNames[missing[0]] ?? missing[0]}».`);
+      return;
+    }
+    const missingRule = document.rubric.find((rule) => rule.expected !== undefined && !rule.expected.trim());
+    if (missingRule) {
+      setError(`Заполните правильное значение критерия «${missingRule.description}».`);
+      return;
+    }
+    if (document.rubric.some((rule) => !Number.isInteger(rule.weight) || rule.weight < 1 || rule.weight > 100
+        || rule.kind === 'deadline' && (!Number.isInteger(rule.seconds) || (rule.seconds ?? 0) < 1
+          || (rule.seconds ?? 0) > 86400))) {
+      setError('Проверьте баллы критериев и норматив времени.');
+      return;
+    }
+    if (!Number.isInteger(document.pass_score ?? 70) || (document.pass_score ?? 70) < 0
+      || (document.pass_score ?? 70) > 100 || !Number.isInteger(document.max_errors ?? 2)
+      || (document.max_errors ?? 2) < 0 || (document.max_errors ?? 2) > 100) {
+      setError('Проверьте минимальную оценку и число ошибок.');
       return;
     }
     setError('');

@@ -85,7 +85,9 @@ function IncidentRow({ assignment, onViewResult, onViewLinks }: {
         : <div className={styles.iconCell}><img src={expandIcon} alt="" /></div>}
       {assignment.mode === 'call' && assignment.attempt_id && assignment.attempt_status === 'completed'
         ? <button type="button" className={styles.cellButton} title="Связи карточки"
-          onClick={() => onViewLinks(assignment)}><img src={linkIcon} alt="" /></button>
+          onClick={() => onViewLinks(assignment)}><img src={linkIcon} alt="" />
+          {!!assignment.link_count && <span className={styles.linkCount}>{assignment.link_count}</span>}
+        </button>
         : <div className={styles.iconCell} />}
       <div className={styles.iconCell}><img src={bookmarkIcon} alt="" /></div>
       <div className={styles.iconCell}><img src={boltIcon} alt="" /></div>

@@ -391,6 +391,11 @@
   cursor: pointer;
 }
 
+.addIncident:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
 .callState {
   display: flex;
   min-height: 38px;

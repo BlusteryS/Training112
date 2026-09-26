@@ -51,7 +51,8 @@ public final class CardCommands {
       if (payload.isEmpty() || !FIELDS.containsAll(payload.fieldNames()))
         throw invalid("Неизвестные поля карточки.");
       for (var entry : payload) {
-        if (!(entry.getValue() instanceof String value) || value.length() > 4000)
+        int maxLength = "incident_types".equals(entry.getKey()) ? 20_000 : 4000;
+        if (!(entry.getValue() instanceof String value) || value.length() > maxLength)
           throw invalid("Неверное значение поля.");
         copy.put(entry.getKey(), entry.getValue());
       }
@@ -91,7 +92,9 @@ public final class CardCommands {
 
   public static void validateForSave(JsonObject card) {
     String comment = card.getString("comment", "");
-    if (Set.of("Нет контакта с заявителем", "Срыв звонка").contains(comment)) return;
+    if (Set.of("Нет контакта с заявителем", "Срыв звонка").contains(comment)
+        && comment.equals(card.getString("incident_code", ""))
+        && comment.equals(card.getString("description", ""))) return;
     for (String field : new String[] {"caller_name", "caller_status", "address", "okrug",
         "description", "incident_details", "services", "classifier_code"}) {
       if (card.getString(field, "").isBlank()) {

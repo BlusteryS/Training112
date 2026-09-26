@@ -346,7 +346,8 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
 
       <div className={styles.incidentPanel}>
         <div className={styles.panelTitle}>Что случилось?</div>
-        <IncidentSurvey cards={classifier} types={types} listId="incident-types" value={{
+        <IncidentSurvey cards={classifier} types={types} inputId="incident-types"
+          listId="incident-lookup" value={{
           type: draft.incident_code, sign2: draft.incident_sign_2, sign3: draft.incident_sign_3,
           code: draft.classifier_code,
         }} onChange={(value) => setDraft((current) => ({ ...current,
@@ -354,11 +355,13 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           classifier_code: value.code,
         }))} />
         {extraIncidents.map((item, index) => <IncidentSurvey key={index} cards={classifier}
-          types={types} listId={`incident-type-${index}`} value={item}
+          types={types} inputId={`incident-type-${index}`} listId="incident-lookup"
+          showOptions={false} value={item}
           onChange={(value) => setExtraIncidents((current) => current.map((row, rowIndex) =>
             rowIndex === index ? value : row))}
           onRemove={() => setExtraIncidents((current) => current.filter((_, rowIndex) => rowIndex !== index))} />)}
-        <button className={styles.addIncident} type="button" onClick={() => setExtraIncidents((current) =>
+        <button className={styles.addIncident} type="button" disabled={extraIncidents.length >= 29}
+          onClick={() => setExtraIncidents((current) =>
           [...current, { type: '', sign2: '', sign3: '', code: '' }])}>Добавить ещё тип происшествия</button>
         {classifierError && <div className={styles.modalError} role="alert">{classifierError}</div>}
         {error && !confirm && <div className={styles.modalError} role="alert">{error}</div>}

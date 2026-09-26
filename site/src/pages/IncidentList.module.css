@@ -142,7 +142,22 @@
 }
 
 .cellButton {
+  position: relative;
   cursor: pointer;
+}
+
+.linkCount {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 8px;
+  background: #ef6338;
+  color: #fff;
+  font-size: 11px;
 }
 
 .cellButton:hover,

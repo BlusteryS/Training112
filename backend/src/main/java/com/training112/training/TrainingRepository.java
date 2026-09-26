@@ -517,7 +517,9 @@ public final class TrainingRepository {
            'attempt_started_at',latest.started_at,'card_status',latest.card_status,
            'workstation',latest.workstation,'incident_source',latest.incident_source,
            'vis_operator',latest.vis_operator,
-           'attempt_id',latest.id,'attempt_status',latest.status) AS value
+           'attempt_id',latest.id,'attempt_status',latest.status,
+           'link_count',(SELECT count(*) FROM card_link cl WHERE cl.parent_attempt_id=
+             COALESCE((SELECT parent_attempt_id FROM card_link WHERE child_attempt_id=latest.id),latest.id))) AS value
         FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
         JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON s.id=l.scenario_id
         JOIN app_user u ON u.id=a.learner_id

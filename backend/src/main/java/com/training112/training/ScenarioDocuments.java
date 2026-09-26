@@ -40,6 +40,10 @@ public final class ScenarioDocuments {
       throw new ApiException(
           400, "invalid_scenario", "Сценарий содержит неполные или некорректные данные.");
     }
+    String classifierCode = scenario.getString("classifier_code");
+    if (classifierCode != null && IncidentClassifier.card(classifierCode) == null) {
+      throw new ApiException(400, "invalid_scenario", "Код происшествия отсутствует в классификаторе.");
+    }
     return scenario;
   }
 }

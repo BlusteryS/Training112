@@ -130,7 +130,8 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
     onSubmit({ classifier_code: card.code, location, difficulty, seconds: Number(seconds),
       origin, caller_name: caller });
   }}>
-    <IncidentSurvey cards={classifier} types={types} listId="scenario-incident-types"
+    <IncidentSurvey cards={classifier} types={types} inputId="scenario-incident-types"
+      listId="scenario-incident-lookup"
       value={incident} onChange={(value) => { setIncident(value); setLocalError(''); }} />
     <div className={formGrid}>
       <InputField label="Место" maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} />
