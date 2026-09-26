@@ -24,7 +24,6 @@ public final class ScenarioDraft {
       throw new ApiException(400, "invalid_scenario", "Проверьте тип, место, сложность, источник и норматив.");
     }
 
-    String type = incident.getString("type");
     String description = incident.getString("result");
     JsonObject document = TEMPLATE.copy();
     document.put("title", "Учебный сценарий: " + description);
@@ -44,32 +43,25 @@ public final class ScenarioDraft {
     JsonArray rubric = document.getJsonArray("rubric");
     for (int i = 0; i < rubric.size(); i++) {
       JsonObject rule = rubric.getJsonObject(i);
-      String field = rule.getString("field", "");
-      if ("address".equals(field)) rule.put("expected", location);
-      if ("caller_name".equals(field)) rule.put("expected", caller);
-      if ("incident_code".equals(field)) rule.put("expected", type);
-      if ("description".equals(field)) rule.put("expected", description);
       if ("deadline".equals(rule.getString("kind"))) {
         rule.put("seconds", seconds);
         rule.put("action", "saved");
         rule.put("description", "Карточка сохранена в течение " + seconds + " секунд.");
       }
     }
-    rubric.add(fieldRule("classifier_code", "Код сценария реагирования выбран верно.", classifierCode));
+    rubric.add(fieldRule("classifier_code", "Код сценария реагирования выбран верно."));
     if (!incident.getString("sign2").isEmpty()) {
-      rubric.add(fieldRule("incident_sign_2", "Второй признак происшествия выбран верно.",
-          incident.getString("sign2")));
+      rubric.add(fieldRule("incident_sign_2", "Второй признак происшествия выбран верно."));
     }
     if (!incident.getString("sign3").isEmpty()) {
-      rubric.add(fieldRule("incident_sign_3", "Третий признак происшествия выбран верно.",
-          incident.getString("sign3")));
+      rubric.add(fieldRule("incident_sign_3", "Третий признак происшествия выбран верно."));
     }
-    return document;
+    return ScenarioDocuments.fillExpected(document);
   }
 
-  private static JsonObject fieldRule(String field, String description, String expected) {
+  private static JsonObject fieldRule(String field, String description) {
     return new JsonObject().put("id", field).put("kind", "field_equals")
-        .put("field", field).put("expected", expected).put("weight", 1)
+        .put("field", field).put("weight", 1)
         .put("description", description);
   }
 

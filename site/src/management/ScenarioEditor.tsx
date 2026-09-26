@@ -55,17 +55,6 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       setError(`Заполните поле «${factNames[missing[0]] ?? missing[0]}».`);
       return;
     }
-    const rubric = document.rubric.map((rule) => {
-      if (rule.expected === undefined) return rule;
-      const factKey = rule.kind === 'semantic' && rule.field === 'description' ? 'incident' : rule.field;
-      const expected = factKey && document.facts[factKey];
-      return expected === undefined ? rule : { ...rule, expected };
-    });
-    const missingRule = rubric.find((rule) => rule.expected !== undefined && !rule.expected.trim());
-    if (missingRule) {
-      setError(`Заполните правильное значение критерия «${missingRule.description}».`);
-      return;
-    }
     if (document.rubric.some((rule) => !Number.isInteger(rule.weight) || rule.weight < 1 || rule.weight > 100
         || rule.kind === 'deadline' && (!Number.isInteger(rule.seconds) || (rule.seconds ?? 0) < 1
           || (rule.seconds ?? 0) > 86400))) {
@@ -79,7 +68,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       return;
     }
     setError('');
-    void onSave({ ...document, rubric }).catch((cause: Error) => setError(cause.message));
+    void onSave(document).catch((cause: Error) => setError(cause.message));
   }
   return <ModalForm label={editing ? 'Сценарий' : 'Новый сценарий'} onClose={onCancel}>
 <FormCard title={editing ? 'Сценарий' : 'Новый сценарий'} submitLabel="Сохранить" busy={busy} error={error} onClose={onCancel}

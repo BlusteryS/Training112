@@ -1,6 +1,7 @@
 package com.training112.training;
 
 import com.training112.auth.ApiException;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.json.schema.Draft;
 import io.vertx.json.schema.JsonSchema;
@@ -36,6 +37,7 @@ public final class ScenarioDocuments {
     }
     JsonObject scenario = document.copy();
     scenario.remove("acceptance_cases");
+    fillExpected(scenario);
     if (!VALIDATOR.validate(scenario).getValid()) {
       throw new ApiException(
           400, "invalid_scenario", "Сценарий содержит неполные или некорректные данные.");
@@ -43,6 +45,29 @@ public final class ScenarioDocuments {
     String classifierCode = scenario.getString("classifier_code");
     if (classifierCode != null && IncidentClassifier.card(classifierCode) == null) {
       throw new ApiException(400, "invalid_scenario", "Код происшествия отсутствует в классификаторе.");
+    }
+    return scenario;
+  }
+
+  static JsonObject fillExpected(JsonObject scenario) {
+    if (!(scenario.getValue("facts") instanceof JsonObject facts)
+        || !(scenario.getValue("rubric") instanceof JsonArray rubric)) return scenario;
+    Object code = scenario.getValue("classifier_code");
+    JsonObject classifier = code instanceof String value ? IncidentClassifier.card(value) : null;
+    for (Object entry : rubric) {
+      if (!(entry instanceof JsonObject rule)) continue;
+      Object kind = rule.getValue("kind");
+      if (!"field_equals".equals(kind) && !"semantic".equals(kind)) continue;
+      if (!(rule.getValue("field") instanceof String field)) continue;
+      Object expected = switch (field) {
+        case "description" -> facts.getValue("incident");
+        case "classifier_code" -> code;
+        case "incident_code" -> classifier == null ? null : classifier.getValue("type");
+        case "incident_sign_2" -> classifier == null ? null : classifier.getValue("sign2");
+        case "incident_sign_3" -> classifier == null ? null : classifier.getValue("sign3");
+        default -> facts.getValue(field);
+      };
+      if (expected instanceof String value) rule.put("expected", value);
     }
     return scenario;
   }
