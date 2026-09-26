@@ -1,0 +1,21 @@
+.pool {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 18px;
+}
+
+.group {
+  display: grid;
+  max-height: 230px;
+  overflow-y: auto;
+  gap: 6px;
+}
+
+.heading {
+  font-weight: 500;
+}
+
+.hint {
+  color: #49555d;
+  line-height: 1.4;
+}

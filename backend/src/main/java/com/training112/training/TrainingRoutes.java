@@ -184,6 +184,7 @@ public final class TrainingRoutes {
                               return null;
                             })));
     router.get("/api/training/assignments").handler(c -> json(c, repository.assignments(actor(c))));
+    router.get("/api/training/results").handler(c -> json(c, repository.completedAttempts(actor(c))));
     router
         .post("/api/training/attempts")
         .handler(

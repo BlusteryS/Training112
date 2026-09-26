@@ -3,20 +3,40 @@ package com.training112.training;
 import com.training112.auth.ApiException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** Builds an editable call scenario draft from the lesson parameters. */
 public final class ScenarioDraft {
   private static final Set<String> DIFFICULTIES = Set.of("basic", "intermediate", "advanced");
-  private static final Map<String, String> INCIDENTS =
+  private static final Map<String, List<String>> INCIDENTS =
       Map.of(
-          "Пожар или задымление", "В помещении дым. Источник я не вижу.",
-          "Дорожно-транспортное происшествие", "Произошло столкновение автомобилей.",
-          "Требуется медицинская помощь", "Человеку плохо, нужна скорая помощь.",
-          "Нарушение общественного порядка", "Происходит драка, нужна полиция.",
-          "Запах газа или авария газового оборудования", "Пахнет газом.",
-          "Авария коммунальных сетей", "Прорвало трубу, вода заливает помещение.");
+          "Пожар или задымление", List.of(
+              "В подъезде появился дым. Откуда он идёт, я не вижу.",
+              "На лестничной площадке пахнет гарью, сверху идёт дым.",
+              "Из окна здания идёт дым. Есть ли внутри огонь, мне не видно."),
+          "Дорожно-транспортное происшествие", List.of(
+              "На дороге столкнулись две машины, проезд затруднён.",
+              "Автомобили столкнулись у перекрёстка. Один стоит поперёк дороги.",
+              "Машина врезалась в другой автомобиль, люди ещё на месте."),
+          "Требуется медицинская помощь", List.of(
+              "Человеку внезапно стало плохо, нужна скорая помощь.",
+              "Человек упал и говорит с трудом. Помогите вызвать скорую.",
+              "У человека сильная боль, он не может сам дойти до врача."),
+          "Нарушение общественного порядка", List.of(
+              "Возле входа происходит драка, нужна полиция.",
+              "Несколько человек дерутся у дома. Я нахожусь в стороне.",
+              "На улице напали на человека, конфликт ещё продолжается."),
+          "Запах газа или авария газового оборудования", List.of(
+              "В доме сильно пахнет газом. Откуда запах, не знаю.",
+              "У подъезда чувствуется запах газа, рядом находятся люди.",
+              "На лестничной площадке пахнет газом. Я вышел на улицу."),
+          "Авария коммунальных сетей", List.of(
+              "Прорвало трубу, вода заливает помещение.",
+              "Из трубы течёт вода, она уже вышла в коридор.",
+              "В помещении сильная течь, вода прибывает."));
   private static final Map<String, String> VICTIMS =
       Map.of(
           "Пожар или задымление", "Пострадавших я не видел.",
@@ -97,12 +117,13 @@ public final class ScenarioDraft {
         || caller.isBlank() || caller.length() > 200) {
       throw new ApiException(400, "invalid_scenario", "Проверьте тип, место, сложность, источник и норматив.");
     }
-    String story = INCIDENTS.get(incident);
+    List<String> stories = INCIDENTS.get(incident);
+    String story = stories.get(ThreadLocalRandom.current().nextInt(stories.size()));
     Details details = DIFFICULTY_DETAILS.get(incident);
     if ("intermediate".equals(difficulty)) story += " " + details.intermediate();
     if ("advanced".equals(difficulty)) story += " " + details.advanced();
     JsonObject document = demo.copy();
-    document.put("title", ("Учебный сценарий: " + incident).substring(0, Math.min(200, ("Учебный сценарий: " + incident).length())));
+    document.put("title", "Учебный сценарий: " + incident);
     document.put("origin", origin);
     document.put("difficulty", difficulty);
     document.put("instructions", "Примите учебное происшествие «" + incident + "». Уточните адрес, обстоятельства и сведения о пострадавших.");

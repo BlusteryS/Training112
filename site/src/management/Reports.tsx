@@ -5,6 +5,8 @@ import { ChoiceSelect } from '../components/ChoiceSelect';
 import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskError } from './Desk';
 
 type ReportRow = {
+  attempt_id: string | null;
+  card_title: string | null;
   learner_login: string;
   mode: string;
   attempt_status: string | null;
@@ -17,11 +19,20 @@ type ReportRow = {
   events: { type: string; count: number }[];
   reviews: { reason: string }[];
 };
-type Insight = { description: string; failed: number; total: number };
+type Insight = { id: string; kind: string; description: string; failed: number; review: number; total: number };
 type Progress = { login: string; attempts: number; completed: number; failed: number; average_score: number | null };
 
 function seconds(value: number | null) {
   return value === null ? '' : String(Math.round(value / 1000));
+}
+
+function recommendation(item: Insight) {
+  if (item.kind === 'semantic') return 'Разберите, какие сведения заявителя нужно сохранить в описании.';
+  if (item.id === 'address') return 'Отработайте уточнение улицы, дома и места происшествия.';
+  if (item.id === 'incident_code') return 'Сравните выбранный тип с описанной обстановкой.';
+  if (item.id === 'caller_name') return 'Отработайте запрос имени заявителя.';
+  if (item.kind === 'deadline') return 'Проведите тренировку с ограничением времени.';
+  return `Повторите действие: ${item.description}`;
 }
 
 export function Reports() {
@@ -31,7 +42,7 @@ export function Reports() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [progress, setProgress] = useState<Progress[]>([]);
   const [error, setError] = useState('');
-  const columns = '140px 120px 70px 70px 90px 70px minmax(140px, 1fr) minmax(140px, 1fr)';
+  const columns = '140px minmax(180px, 1fr) 120px 70px 70px 90px 70px minmax(140px, 1fr) minmax(140px, 1fr)';
 
   useEffect(() => {
     void Promise.all([api<Lesson[]>('training/lessons'), api<Insight[]>('training/insights'), api<Progress[]>('training/progress')])
@@ -40,9 +51,9 @@ export function Reports() {
   }, []);
 
   function download() {
-    const header = ['Обучающийся', 'Статус', 'Время, с', 'Норматив, с', 'Отклонение, с', 'Оценка', 'Ошибки', 'Грамматика', 'Действия', 'Замечания'];
+    const header = ['Обучающийся', 'Карточка', 'Статус', 'Время, с', 'Норматив, с', 'Отклонение, с', 'Оценка', 'Ошибки', 'Грамматика', 'Действия', 'Замечания'];
     const lines = rows.map((row) => [
-      row.learner_login, row.attempt_status ?? '', seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms), row.deadline_seconds ?? '',
+      row.learner_login, row.card_title ?? '', row.attempt_status ?? '', seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms), row.deadline_seconds ?? '',
       row.delta_ms === null ? '' : Math.round(row.delta_ms / 1000), row.evaluation?.score ?? '',
       (row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; '),
       row.grammar.map((note) => `${note.field}: ${note.message}`).join('; '),
@@ -70,9 +81,10 @@ export function Reports() {
   </>}>
     {lessons.length === 0 && <DeskEmpty>Занятий нет</DeskEmpty>}
     {lesson && rows.length === 0 && <DeskEmpty>По занятию записей нет</DeskEmpty>}
-    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable columns={columns} head={<><span>Обучающийся</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
-      {rows.map((row) => <DeskRow key={row.learner_login} columns={columns}>
+    {rows.length > 0 && <DeskSection title="Результаты занятия"><DeskTable columns={columns} head={<><span>Обучающийся</span><span>Карточка</span><span>Статус</span><span>Время</span><span>Норма</span><span>Отклонение</span><span>Оценка</span><span>Ошибки</span><span>Текст</span></>}>
+      {rows.map((row) => <DeskRow key={row.attempt_id ?? row.learner_login} columns={columns}>
         <span>{row.learner_login}</span>
+        <span>{row.card_title ?? ''}</span>
         <span>{row.attempt_status ?? ''}</span>
         <span>{seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms)}</span>
         <span>{row.deadline_seconds ?? ''}</span>
@@ -87,9 +99,9 @@ export function Reports() {
         <span>{row.login}</span><span>{row.attempts}</span><span>{row.completed}</span><span>{row.failed}</span><span>{row.average_score ?? ''}</span>
       </DeskRow>)}
     </DeskTable></DeskSection>}
-    {insights.length > 0 && <DeskSection title="Частые ошибки"><DeskTable columns="minmax(0, 1fr) 120px 100px" head={<><span>Критерий</span><span>Не выполнено</span><span>Всего</span></>}>
-      {insights.map((item) => <DeskRow key={item.description} columns="minmax(0, 1fr) 120px 100px">
-        <span>{item.description}</span><span>{item.failed}</span><span>{item.total}</span>
+    {insights.length > 0 && <DeskSection title="Частые ошибки"><DeskTable columns="minmax(160px, 1fr) 120px 120px 90px minmax(240px, 1.4fr)" head={<><span>Критерий</span><span>Ошибки</span><span>На проверке</span><span>Всего</span><span>Что отработать</span></>}>
+      {insights.map((item) => <DeskRow key={`${item.id}-${item.description}`} columns="minmax(160px, 1fr) 120px 120px 90px minmax(240px, 1.4fr)">
+        <span>{item.description}</span><span>{item.failed}</span><span>{item.review}</span><span>{item.total}</span><span>{recommendation(item)}</span>
       </DeskRow>)}
     </DeskTable></DeskSection>}
     {error && <div className={deskError} role="alert">{error}</div>}

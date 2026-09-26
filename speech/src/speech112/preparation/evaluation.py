@@ -9,6 +9,15 @@ def normalize(value: str) -> str:
     return " ".join(re.findall(r"\w+", value.casefold().replace("ё", "е")))
 
 
+_ADVICE = {
+    "address": "Уточняйте улицу, номер дома и место происшествия до сохранения карточки.",
+    "caller_name": "Спросите имя заявителя и запишите его ответ.",
+    "incident_code": "Выбирайте тип происшествия по описанной заявителем обстановке.",
+    "description": "Перед сохранением сопоставьте описание с тем, что сообщил заявитель.",
+    "accepted": "Сохраняйте заполненную карточку в отведённое время.",
+}
+
+
 def evaluate(
     document: dict, card: dict, events: list[dict], *, attempt_status: str, semantic=None
 ) -> dict:
@@ -67,9 +76,9 @@ def evaluate(
     recommendations = []
     for check in checks:
         if check["status"] == "failed":
-            recommendations.append(f"Повторите: {check['description']}")
+            recommendations.append(_ADVICE.get(check["id"], check["description"]))
         elif check["status"] == "review":
-            recommendations.append(f"Разберите с преподавателем: {check['description']}")
+            recommendations.append(f"Попросите преподавателя проверить: {check['description']}")
     return {
         "schema_version": 1,
         "checks": checks,

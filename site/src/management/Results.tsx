@@ -21,9 +21,8 @@ export function Results() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void api<Assignment[]>('training/assignments')
-      .then((items) => setRows(items.filter((item) => item.attempt_id
-        && ['completed', 'failed'].includes(item.attempt_status ?? ''))))
+    void api<Assignment[]>('training/results')
+      .then(setRows)
       .catch((cause: Error) => setError(cause.message));
   }, []);
 

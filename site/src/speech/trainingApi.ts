@@ -58,9 +58,7 @@ export async function openCardAttempt(learnerId: string, assignmentId: string) {
     const attempt = await api<CardAttempt>(`training/attempts/${assignment.attempt_id}`);
     return { assignment, attempt };
   }
-  const created = await api<CardAttempt>('training/attempts', { id: crypto.randomUUID(), assignment_id: assignment.id });
-  const attempt = await api<CardAttempt>(`training/attempts/${created.id}`);
-  return { assignment, attempt };
+  throw new Error('Карточка уже обработана. Дождитесь следующей карточки или обновите список происшествий.');
 }
 
 export type AttemptEvent = {

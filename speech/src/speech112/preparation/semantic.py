@@ -1,4 +1,4 @@
-"""Conservative meaning check using the local conversational encoder."""
+"""Meaning check for the operator's description using the local encoder."""
 
 from __future__ import annotations
 
@@ -8,6 +8,18 @@ import numpy as np
 
 from speech112.preparation.evaluation import normalize
 from speech112.runtime.context_input import OperatorUtteranceTooLong
+
+
+_NEGATION = re.compile(r"\b(?:не|нет|никто|ничего|отсутств\w*|без)\b")
+_CRITICAL = (
+    re.compile(r"\b(?:дым\w*|задым\w*)\b"),
+    re.compile(r"\b(?:газ\w*|газов\w*)\b"),
+    re.compile(r"\b(?:вод\w*|затоп\w*|труб\w*|прорыв\w*)\b"),
+    re.compile(r"\b(?:машин\w*|автомобил\w*|дтп|столкнов\w*)\b"),
+    re.compile(r"\b(?:пострад\w*|ранен\w*|травм\w*)\b"),
+    re.compile(r"\b(?:огн\w*|плам\w*|гор\w*|пожар\w*)\b"),
+    re.compile(r"\b(?:драк\w*|напад\w*|избиен\w*)\b"),
+)
 
 
 class SemanticCardEvaluator:
@@ -22,19 +34,12 @@ class SemanticCardEvaluator:
         if actual_text == expected_text:
             return "passed"
 
-        # Numbers and negation often reverse the meaning of a short emergency report.
-        # The embedding alone cannot safely decide these cases.
         if set(re.findall(r"\d+", actual_text)) != set(re.findall(r"\d+", expected_text)):
             return "review"
-        negative = re.compile(r"\b(?:не|нет|никто|ничего|отсутств\w*)\b")
-        if bool(negative.search(actual_text)) != bool(negative.search(expected_text)):
+        if bool(_NEGATION.search(actual_text)) != bool(_NEGATION.search(expected_text)):
             return "review"
-
-        # A near-identical sentence with a changed object (smoke versus gas, for
-        # example) can still have a high cosine similarity.
-        expected_terms = {word[:4] for word in expected_text.split() if len(word) >= 4}
-        actual_terms = {word[:4] for word in actual_text.split() if len(word) >= 4}
-        if not expected_terms.issubset(actual_terms):
+        if any(bool(concept.search(actual_text)) != bool(concept.search(expected_text))
+               for concept in _CRITICAL):
             return "review"
 
         try:
@@ -46,8 +51,8 @@ class SemanticCardEvaluator:
         similarity = float(np.dot(vectors[0], vectors[1]))
         if not np.isfinite(similarity):
             raise ValueError("Non-finite semantic similarity")
-        if similarity >= 0.9:
+        if similarity >= 0.84:
             return "passed"
-        if similarity <= 0.55:
+        if similarity <= 0.45:
             return "failed"
         return "review"

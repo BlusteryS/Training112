@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
-import { FormCard, formGrid } from './FormCard';
+import { FormCard, formCheck, formGrid } from './FormCard';
 import { SelectField } from '../components/ui/SelectField';
 import { InputField } from '../components/ui/InputField';
 import { TextareaField } from '../components/ui/TextareaField';
 import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario } from './types';
 import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
+import styles from './LessonCreate.module.css';
 
 const columns = 'minmax(180px, 1.4fr) minmax(140px, 1fr) 120px 160px 220px';
 type OperatorCard = { id: string; incident_code: string; address: string; services: string; created_at: string };
@@ -98,13 +99,14 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
   busy: boolean;
   error: string;
   onClose: () => void;
-  onSubmit: (body: Record<string, string>) => void;
+  onSubmit: (body: Record<string, unknown>) => void;
 }) {
   const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
   const [scenarioId, setScenarioId] = useState(scenarios[0]?.id ?? '');
   const [mode, setMode] = useState('call');
   const [source, setSource] = useState('manual');
-  const [sourceAttemptId, setSourceAttemptId] = useState('');
+  const [generated, setGenerated] = useState<string[]>([]);
+  const [operator, setOperator] = useState<string[]>([]);
   const [incident, setIncident] = useState('');
   const [caller, setCaller] = useState('');
   const [phone, setPhone] = useState('');
@@ -130,14 +132,21 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
     const normalized = part.trim().toLowerCase().replace('служба ', '');
     return normalized === service.toLowerCase().replace('служба ', '');
   }));
+  const selectedCount = generated.length + operator.length;
   const ready = Boolean(groupId && groups.find((item) => item.id === groupId)?.member_count
-    && (mode === 'call' ? scenarioId : source === 'operator' ? sourceAttemptId
+    && (mode === 'call' ? scenarioId : source === 'pool' ? selectedCount >= 2 && selectedCount <= 30
       : incident.trim() && phone.trim() && address.trim() && description.trim()));
+  function toggle(current: string[], id: string, checked: boolean, update: (ids: string[]) => void) {
+    update(checked ? [...current, id] : current.filter((item) => item !== id));
+  }
   function submit() {
     if (mode === 'call') { onSubmit({ group_id: groupId, scenario_id: scenarioId, mode }); return; }
     const shared = { group_id: groupId, mode, expected_primary: expectedPrimary, outcome };
-    if (source === 'operator') {
-      onSubmit({ ...shared, source_attempt_id: sourceAttemptId });
+    if (source === 'pool') {
+      onSubmit({ ...shared, sources: [
+        ...generated.map((id) => ({ type: 'generated', id })),
+        ...operator.map((id) => ({ type: 'operator', id })),
+      ] });
     } else {
       onSubmit({ ...shared, incident_code: incident, caller_name: caller, phone, address,
         address_description: addressDescription, district, okrug, object, scene_phone: scenePhone,
@@ -159,15 +168,29 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
       </SelectField> : <>
         <SelectField label="Источник карточки" value={source} onChange={(event) => setSource(event.target.value)}>
           <option value="manual">Заполнить карточку</option>
-          <option value="operator">Карточка оператора 112</option>
+          <option value="pool">Подборка карточек</option>
         </SelectField>
-        {source === 'operator' ? <SelectField label="Карточка оператора" value={sourceAttemptId}
-          onChange={(event) => setSourceAttemptId(event.target.value)}>
-          <option value="">Выберите карточку, направленную в {service}</option>
-          {availableCards.map((item) => <option key={item.id} value={item.id}>
-            {item.incident_code} — {item.address}
-          </option>)}
-        </SelectField> : <>
+        {source === 'pool' ? <div className={styles.pool}>
+          <div className={styles.hint}>Выберите минимум две карточки. После обработки следующая выдаётся случайно; до исчерпания подборки карточки не повторяются.</div>
+          <div className={styles.group}>
+            <div className={styles.heading}>Подготовленные системой</div>
+            {scenarios.length === 0 && <div className={styles.hint}>Нет утверждённых сценариев.</div>}
+            {scenarios.map((item) => <label className={formCheck} key={item.id}>
+              <input type="checkbox" checked={generated.includes(item.id)}
+                onChange={(event) => toggle(generated, item.id, event.target.checked, setGenerated)} />
+              <span>{item.title}</span>
+            </label>)}
+          </div>
+          <div className={styles.group}>
+            <div className={styles.heading}>Заполненные операторами 112 и направленные в {service}</div>
+            {availableCards.length === 0 && <div className={styles.hint}>Таких карточек пока нет.</div>}
+            {availableCards.map((item) => <label className={formCheck} key={item.id}>
+              <input type="checkbox" checked={operator.includes(item.id)}
+                onChange={(event) => toggle(operator, item.id, event.target.checked, setOperator)} />
+              <span>{item.incident_code} — {item.address}</span>
+            </label>)}
+          </div>
+        </div> : <>
           <InputField label="Тип происшествия" value={incident} maxLength={200} onChange={(event) => setIncident(event.target.value)} />
           <InputField label="Заявитель" value={caller} maxLength={200} onChange={(event) => setCaller(event.target.value)} />
           <InputField label="Телефон заявителя" value={phone} maxLength={100} onChange={(event) => setPhone(event.target.value)} />

@@ -14,14 +14,17 @@ def operator_text(text: str) -> str:
     return " ".join(re.findall(r"\w+", text.lower().replace("ё", "е")))
 
 
-_CLAUSE_BREAK = re.compile(
-    r"[;.!?]+\s*|,\s*(?=(?:кто|где|сколько|есть|назовите|скажите|уточните|сообщите|опишите)\b)"
-    r"|\s+(?:и|а также|затем|потом)\s+",
-    re.IGNORECASE,
-)
 _QUESTION_WORD = re.compile(
     r"\b(?:кто|что|где|сколько|какой|какая|какие|какое|есть ли|можно ли"
     r"|назовите|скажите|уточните|сообщите|опишите)\b",
+    re.IGNORECASE,
+)
+_NEW_TOPIC = (
+    r"(?:кто|что|где|сколько|какой|какая|какие|какое|есть|назовите|скажите|уточните"
+    r"|сообщите|опишите|дышит|в сознании|адрес|телефон|пострадавшие|раненые|возраст)\b"
+)
+_CLAUSE_BREAK = re.compile(
+    rf"[;.!?]+\s*|,\s*(?={_NEW_TOPIC})|\s+(?:и|а также|затем|потом)\s+(?={_NEW_TOPIC})",
     re.IGNORECASE,
 )
 
@@ -47,7 +50,7 @@ def question_parts(text: str) -> tuple[str, ...]:
                 continue
             before = clause[start:match.start()].strip()
             after = clause[match.start():].strip()
-            if len(before.split()) >= 3 and len(after.split()) >= 2:
+            if len(before.split()) >= 2 and len(after.split()) >= 2:
                 parts.append(before)
                 start = match.start()
             elif (
