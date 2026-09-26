@@ -5,7 +5,7 @@
 
 .table {
   display: grid;
-  grid-template-columns: repeat(var(--column-count), max-content);
+  grid-template-columns: repeat(var(--column-count), minmax(max-content, 1fr));
   width: max-content;
   min-width: 100%;
   row-gap: 8px;
