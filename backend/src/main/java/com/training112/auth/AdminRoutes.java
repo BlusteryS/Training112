@@ -230,7 +230,11 @@ public final class AdminRoutes {
               (SELECT count(*) FROM lesson WHERE status = 'active') AS active_lessons,
               (SELECT count(*) FROM background_job WHERE state IN ('queued','running')) AS worker_queue,
               (SELECT count(*) FROM background_job WHERE state = 'failed') AS failed_jobs,
-              (SELECT max(finished_at) FROM background_job) AS worker_seen
+              (SELECT max(finished_at) FROM background_job) AS worker_seen,
+              (SELECT COALESCE(jsonb_agg(to_jsonb(f)), '[]'::jsonb) FROM (
+                SELECT id,kind,error,finished_at FROM background_job
+                WHERE state='failed' ORDER BY finished_at DESC LIMIT 20
+              ) f) AS failures
             """).execute().map(rows -> {
               Row row = rows.iterator().next();
               Runtime runtime = Runtime.getRuntime();
@@ -242,6 +246,7 @@ public final class AdminRoutes {
                   .put("worker_seen", row.getOffsetDateTime("worker_seen") == null ? null
                       : row.getOffsetDateTime("worker_seen").toString())
                   .put("failed_jobs", row.getLong("failed_jobs"))
+                  .put("failures", row.getJsonArray("failures"))
                   .put("open_attempts", row.getLong("open_attempts"))
                   .put("active_lessons", row.getLong("active_lessons"))
                   .put("users", row.getLong("users"))

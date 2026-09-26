@@ -134,13 +134,17 @@ function UserEdit({ entry, onClose, onDone }: { entry: User & { blocked: boolean
 }
 
 function Status() {
-  const [row, setRow] = useState<Record<string, string | number | null> | null>(null);
+  type Failure = { id: string; kind: string; error: string | null; finished_at: string };
+  type StatusData = { database: string; speech: string; worker_queue: number; failed_jobs: number;
+    open_attempts: number; active_lessons: number; memory_used: number; memory_max: number;
+    worker_seen: string | null; failures: Failure[] };
+  const [row, setRow] = useState<StatusData | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const next = await api<Record<string, string | number | null>>('admin/status');
+        const next = await api<StatusData>('admin/status');
         if (!cancelled) { setRow(next); setError(''); }
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : 'Комплекс не ответил.');
@@ -157,11 +161,18 @@ function Status() {
     ['Сбойные задачи', String(row.failed_jobs ?? 0)],
     ['Открытые попытки', String(row.open_attempts ?? 0)],
     ['Активные занятия', String(row.active_lessons ?? 0)],
-    ['Память', `${Math.round(Number(row.memory_used) / 1048576)} / ${Math.round(Number(row.memory_max) / 1048576)} МиБ`],
+    ['Память backend', `${Math.round(row.memory_used / 1048576)} / ${Math.round(row.memory_max / 1048576)} МиБ`],
     ...(row.worker_seen ? [['Обработчик', new Date(String(row.worker_seen)).toLocaleString('ru-RU')]] : []),
   ] : [];
   return <Desk>
     {lines.length > 0 && <SummaryGrid items={lines.map(([label, value]) => ({ label: String(label), value }))} />}
+    {!!row?.failures.length && <DeskSection title="Сбои обработки"><DeskTable head={<><span>Время</span><span>Задача</span><span>Ошибка</span></>}>
+      {row.failures.map((failure) => <DeskRow key={failure.id}>
+        <span>{new Date(failure.finished_at).toLocaleString('ru-RU')}</span>
+        <span>{failure.kind === 'compile_scenario' ? 'Подготовка сценария' : 'Оценка попытки'}</span>
+        <span>{failure.error ?? 'Неизвестная ошибка'}</span>
+      </DeskRow>)}
+    </DeskTable></DeskSection>}
     {error && <div className={deskError} role="alert">{error}</div>}
   </Desk>;
 }
