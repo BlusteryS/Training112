@@ -12,6 +12,7 @@ public final class CardCommands {
           "address", "address_description", "landmark", "caller_name", "caller_status", "city", "comment",
           "communication_channel", "country", "description", "district", "entrance", "floor",
           "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code", "incident_types",
+          "law_violation",
           "incident_sign_2", "incident_sign_3", "incident_details",
           "okrug", "phone", "provided_phone", "scene_phone", "services", "street", "victims",
           "location_lat", "location_lon");

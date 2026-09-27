@@ -524,10 +524,12 @@
   border: 1px solid rgba(0, 0, 0, .12);
   border-radius: 8px;
   background: #fff;
+  color: #2f353a;
   cursor: pointer;
 }
 
 .serviceChoices button.serviceSelected,
+.modalActions button.primary,
 .primary {
   border-color: #2f353a;
   background: #2f353a;
