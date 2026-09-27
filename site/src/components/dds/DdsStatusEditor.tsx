@@ -5,7 +5,7 @@ import { TextareaField } from '../ui/TextareaField';
 import styles from './DdsStatusEditor.module.css';
 
 const labels: Record<string, string> = {
-  accepted: 'Принята', rejected: 'Не принята', dispatched: 'Начало реагирования',
+  received: 'Получена', accepted: 'Принята', rejected: 'Не принята', dispatched: 'Начало реагирования',
   arrived: 'Прибытие', working: 'Проведение работ', completed: 'Работы завершены',
   refused: 'Отказ от выполнения работ',
 };
@@ -27,18 +27,21 @@ export function DdsStatusEditor({ status, crew, pendingReport, busy, onMove }: {
   onMove: (status: string, comment: string) => Promise<boolean>;
 }) {
   const available = options[status] ?? [];
-  const [next, setNext] = useState(available[0] ?? '');
+  const [next, setNext] = useState('');
   const [comment, setComment] = useState('');
-  useEffect(() => setNext((current) => available.includes(current) ? current : available[0] ?? ''), [status]);
+  useEffect(() => setNext(''), [status]);
   if (available.length === 0) return null;
   const needsComment = ['rejected', 'refused', 'completed'].includes(next);
-  const needsReport = !['accepted', 'rejected'].includes(next);
+  const needsReport = !!next && !['accepted', 'rejected'].includes(next);
   const ready = !!next && !busy && (!needsComment || !!comment.trim())
     && (!needsReport || pendingReport === next);
   return <div className={styles.editor}>
-    <div className={styles.title}>Статус реагирования вашей службы</div>
+    <div className={styles.title}>Статус реагирования вашей службы
+      <span>Сейчас: {labels[status] ?? status}</span>
+    </div>
     <div className={styles.controls}>
       <SelectField label="Новый статус" value={next} onChange={(event) => setNext(event.target.value)}>
+        <option value="" disabled>Выберите статус</option>
         {available.map((item) => <option key={item} value={item}>{labels[item]}</option>)}
       </SelectField>
       <InputField label="Бригада" value={crew ?? 'Не назначена'} readOnly />

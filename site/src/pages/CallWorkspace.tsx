@@ -496,11 +496,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         </div>}
         {error && <div className={styles.modalError} role="alert">{error}</div>}
         <div className={styles.modalActions}>
-          <button className={styles.primary} type="button" disabled={saving || confirm === 'save' && missingFields.length > 0}
+          <button className={styles.confirmAction} type="button" disabled={saving || confirm === 'save' && missingFields.length > 0}
             onClick={() => void save()}>
             {confirm === 'save' ? 'Оповестить и сохранить' : 'Сохранить карточку'}
           </button>
-          <button type="button" disabled={saving} onClick={() => setConfirm(null)}>Вернуться к заполнению</button>
+          <button className={styles.returnAction} type="button" disabled={saving}
+            onClick={() => setConfirm(null)}>Вернуться к заполнению</button>
         </div>
       </div>
     </ModalForm>}

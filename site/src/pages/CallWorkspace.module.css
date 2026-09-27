@@ -529,11 +529,28 @@
 }
 
 .serviceChoices button.serviceSelected,
-.modalActions button.primary,
 .primary {
   border-color: #2f353a;
   background: #2f353a;
   color: #fff;
+}
+
+.modalActions button.confirmAction {
+  border-color: #2f353a;
+  background: #2f353a;
+  color: #fff;
+}
+
+.modalActions button.confirmAction:disabled {
+  background: #2f353a;
+  color: #fff;
+  opacity: .62;
+}
+
+.modalActions button.returnAction {
+  border-color: rgba(0, 0, 0, .12);
+  background: #fff;
+  color: #2f353a;
 }
 
 .linkSearch {

@@ -8,10 +8,21 @@
 }
 
 .title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(0, 0, 0, .16);
   font-size: 18px;
   font-weight: 500;
+  gap: 12px;
+}
+
+.title span {
+  color: #465159;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
 }
 
 .controls {
