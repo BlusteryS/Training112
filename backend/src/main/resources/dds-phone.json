@@ -1,0 +1,34 @@
+{
+  "dispatched": {
+    "audio": "crew-dispatched",
+    "message": "Старший бригады: выезжаем на место происшествия."
+  },
+  "arrived": {
+    "audio": "crew-arrived",
+    "message": "Старший бригады: прибыли на место происшествия."
+  },
+  "working": {
+    "audio": "crew-working",
+    "message": "Старший бригады: приступили к работам."
+  },
+  "completed": {
+    "audio": "crew-completed",
+    "message": "Старший бригады: работы завершены, результат передаю диспетчеру."
+  },
+  "refused": {
+    "audio": "crew-refused",
+    "message": "Старший бригады: работы на месте не проводим, причину сообщаю диспетчеру."
+  },
+  "address": {
+    "audio": "caller-address",
+    "message": "Заявитель: адрес тот же, что указан в карточке."
+  },
+  "situation": {
+    "audio": "caller-situation",
+    "message": "Заявитель: обстановка пока не изменилась, я нахожусь на месте."
+  },
+  "victims": {
+    "audio": "caller-victims",
+    "message": "Заявитель: дополнительных сведений о пострадавших у меня нет."
+  }
+}

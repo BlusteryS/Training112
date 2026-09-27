@@ -2,6 +2,8 @@ package com.training112.training;
 
 import com.training112.auth.ApiException;
 import io.vertx.core.json.JsonObject;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,24 +13,7 @@ public final class DdsPhone {
   private static final Map<String, String> NEXT = Map.of(
       "accepted", "dispatched", "dispatched", "arrived", "arrived", "working",
       "working", "completed");
-  private static final Map<String, String> AUDIO = Map.of(
-      "dispatched", "crew-dispatched",
-      "arrived", "crew-arrived",
-      "working", "crew-working",
-      "completed", "crew-completed",
-      "refused", "crew-refused",
-      "address", "caller-address",
-      "situation", "caller-situation",
-      "victims", "caller-victims");
-  private static final Map<String, String> MESSAGE = Map.of(
-      "dispatched", "Старший бригады: выезжаем на место происшествия.",
-      "arrived", "Старший бригады: прибыли на место происшествия.",
-      "working", "Старший бригады: приступили к работам.",
-      "completed", "Старший бригады: работы завершены, результат передаю диспетчеру.",
-      "refused", "Старший бригады: работы на месте не проводим, причину сообщаю диспетчеру.",
-      "address", "Заявитель: адрес тот же, что указан в карточке.",
-      "situation", "Заявитель: обстановка пока не изменилась, я нахожусь на месте.",
-      "victims", "Заявитель: дополнительных сведений о пострадавших у меня нет.");
+  private static final JsonObject REPLIES = loadReplies();
 
   private DdsPhone() {}
 
@@ -46,9 +31,10 @@ public final class DdsPhone {
       if (!request.fieldNames().equals(Set.of("party", "direction"))) throw invalid("Лишние поля звонка.");
       String next = template != null && "refused".equals(template.getString("outcome"))
           ? "refused" : NEXT.get(status);
+      JsonObject reply = reply(next);
       return new JsonObject().put("request", request.copy()).put("party", party)
           .put("direction", direction).put("crew", crew).put("report_status", next)
-          .put("audio", AUDIO.get(next)).put("message", MESSAGE.get(next));
+          .put("audio", reply.getString("audio")).put("message", reply.getString("message"));
     }
     if ("caller".equals(party) && "outgoing".equals(direction)) {
       if (!Set.of("received", "rejected", "accepted", "dispatched", "arrived", "working")
@@ -57,14 +43,31 @@ public final class DdsPhone {
       if (!Set.of("address", "situation", "victims").contains(topic)
           || !request.fieldNames().equals(Set.of("party", "direction", "topic")))
         throw invalid("Неизвестный вопрос заявителю.");
+      JsonObject reply = reply(topic);
       return new JsonObject().put("request", request.copy()).put("party", party)
-          .put("direction", direction).put("topic", topic).put("audio", AUDIO.get(topic))
-          .put("message", MESSAGE.get(topic));
+          .put("direction", direction).put("topic", topic).put("audio", reply.getString("audio"))
+          .put("message", reply.getString("message"));
     }
     throw invalid("Недопустимый звонок.");
   }
 
   private static ApiException invalid(String message) {
     return new ApiException(400, "invalid_dds_phone", message);
+  }
+
+  private static JsonObject reply(String key) {
+    JsonObject value = REPLIES.getJsonObject(key);
+    if (value == null || value.getString("audio") == null || value.getString("message") == null)
+      throw new IllegalStateException("Missing DDS phone reply: " + key);
+    return value;
+  }
+
+  private static JsonObject loadReplies() {
+    try (var input = DdsPhone.class.getResourceAsStream("/dds-phone.json")) {
+      if (input == null) throw new IllegalStateException("Missing DDS phone replies");
+      return new JsonObject(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+    } catch (IOException error) {
+      throw new IllegalStateException("Cannot read DDS phone replies", error);
+    }
   }
 }
