@@ -2,7 +2,7 @@
 class PcmPlaybackProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
-    this.capacity = 12000; // At most 500 ms, independent of network credit.
+    this.capacity = 24000; // Covers the 768 ms server credit window and browser scheduling jitter.
     this.samples = new Float32Array(this.capacity);
     this.generation = 0;
     this.target = 1536; // 64 ms initial jitter buffer; adapts only after underrun.

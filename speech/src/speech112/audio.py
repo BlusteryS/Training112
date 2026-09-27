@@ -24,7 +24,7 @@ class VadAudioChannel:
         self._input_sample_rate = sample_rate
         self._block_ms = block_ms
         self._vad_config = vad
-        self._frames: asyncio.Queue[NDArray[np.float32]] = asyncio.Queue(maxsize=64)
+        self._frames: asyncio.Queue[NDArray[np.float32]] = asyncio.Queue(maxsize=128)
         self.events: asyncio.Queue[SpeechEvent] = asyncio.Queue(maxsize=16)
         self._vad = detector
         self._recognizer = recognizer
@@ -57,6 +57,7 @@ class VadAudioChannel:
         max_frames = self._vad_config.max_utterance_seconds * 1000 // frame_ms
         pre_roll: deque[NDArray[np.float32]] = deque(maxlen=pre_roll_frames)
         utterance: list[NDArray[np.float32]] = []
+        recognition_frames: list[NDArray[np.float32]] = []
         speech_run = 0
         silence_run = 0
         speaking = False
@@ -71,6 +72,7 @@ class VadAudioChannel:
                 self._vad.reset()
                 pre_roll.clear()
                 utterance = []
+                recognition_frames = []
                 speaking = False
                 speech_run = silence_run = 0
             if self._overflow:
@@ -98,14 +100,20 @@ class VadAudioChannel:
                         await self.events.put(SpeechEvent(EventKind.BARGE_IN))
                     else:
                         await self.events.put(SpeechEvent(EventKind.SPEECH_STARTED))
-                    await self._recognizer.accept(np.concatenate(utterance))
+                    recognition_frames.extend(utterance)
                 continue
 
             utterance.append(frame)
-            await self._recognizer.accept(frame)
+            recognition_frames.append(frame)
+            if len(recognition_frames) >= 8:
+                await self._recognizer.accept(np.concatenate(recognition_frames))
+                recognition_frames.clear()
             if epoch != self._capture_epoch:
                 continue
             if silence_run >= end_frames or len(utterance) >= max_frames:
+                if recognition_frames:
+                    await self._recognizer.accept(np.concatenate(recognition_frames))
+                    recognition_frames.clear()
                 text = await self._recognizer.finish()
                 if epoch != self._capture_epoch:
                     continue

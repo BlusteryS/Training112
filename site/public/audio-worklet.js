@@ -38,7 +38,8 @@ class Pcm16CaptureProcessor extends AudioWorkletProcessor {
       sample = Math.max(-1, Math.min(1, sample));
       this.frame[this.length++] = Math.round(sample * (sample < 0 ? 32768 : 32767));
       if (this.length === 512) {
-        this.port.postMessage(this.frame.buffer, [this.frame.buffer]);
+        const frame = this.frame.buffer;
+        this.port.postMessage({ frame, capturedAt: currentTime }, [frame]);
         this.frame = new Int16Array(512);
         this.length = 0;
       }

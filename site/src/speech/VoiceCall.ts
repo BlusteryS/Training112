@@ -110,12 +110,13 @@ export class VoiceCall {
       }
     };
 
-    this.capture.port.onmessage = ({ data }: MessageEvent<ArrayBuffer>) => {
+    this.capture.port.onmessage = ({ data }: MessageEvent<{ frame: ArrayBuffer; capturedAt: number }>) => {
       const socket = this.socket;
       if (!this.ready || this.closed || !socket) return;
-      if (socket.bufferedAmount > 8192) {
+      if (this.context && this.context.currentTime - data.capturedAt > 0.5) return;
+      if (socket.bufferedAmount > 32768) {
         this.reconnect();
-      } else if (socket.readyState === WebSocket.OPEN) socket.send(data);
+      } else if (socket.readyState === WebSocket.OPEN) socket.send(data.frame);
     };
     this.connect();
   }

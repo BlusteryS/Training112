@@ -16,6 +16,7 @@ import plusIcon from '../assets/workspace/plus.svg';
 import closeIcon from '../assets/workspace/close.svg';
 import { incidentClassifier, matchingCard, servicesForCard,
   type ClassifierCard } from './incidentClassifier';
+import type { MapSelection } from '../components/call/IncidentMap';
 import styles from './CallWorkspace.module.css';
 
 const IncidentMap = lazy(() => import('../components/call/IncidentMap')
@@ -403,8 +404,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       </div>
 
       {mapOpen && <Suspense fallback={null}><IncidentMap latitude={draft.location_lat} longitude={draft.location_lon}
-        onClose={() => setMapOpen(false)} onSelect={(lat, lon) => {
-          setDraft((current) => ({ ...current, location_lat: lat, location_lon: lon }));
+        onClose={() => setMapOpen(false)} onSelect={({ latitude, longitude, address }: MapSelection) => {
+          setDraft((current) => ({ ...current,
+            location_lat: latitude, location_lon: longitude,
+            ...(address && { address: address.label, country: 'Россия', city: 'Москва',
+              district: address.district || current.district, street: address.street, house: address.house }),
+          }));
           setMapOpen(false);
         }} /></Suspense>}
 

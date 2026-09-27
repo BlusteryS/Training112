@@ -1,5 +1,3 @@
-import hangupIcon from '../../assets/call/hangup.svg';
-import messageIcon from '../../assets/call/message-muted.svg';
 import globeIcon from '../../assets/call/globe.svg';
 import styles from './PhoneCard.module.css';
 
@@ -14,10 +12,6 @@ export function PhoneCard({ id, label, value, placeholder, onChange, onCopy, for
   onForeignChange?: (value: boolean) => void;
 }) {
   return <div className={styles.card}>
-    <div className={styles.rail}>
-      <div><img src={hangupIcon} alt="" /></div>
-      <div><img src={messageIcon} alt="" /></div>
-    </div>
     <div className={styles.content}>
       <div className={styles.head}>
         <span>{label}</span>

@@ -2,11 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl, { type StyleSpecification } from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 import { ModalForm } from '../ModalForm';
+import { api } from '../../api';
+import type { FiasAddress } from './AddressLookup';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import styles from './IncidentMap.module.css';
 
 const protocol = new Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
+
+export type MapSelection = { latitude: string; longitude: string; address: FiasAddress | null };
+type NearestAddress = FiasAddress & { distance_m: number };
 
 const style: StyleSpecification = {
   version: 8,
@@ -48,14 +53,19 @@ export function IncidentMap({ latitude, longitude, onClose, onSelect }: {
   latitude: string;
   longitude: string;
   onClose: () => void;
-  onSelect: (latitude: string, longitude: string) => void;
+  onSelect: (selection: MapSelection) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const lookup = useRef(0);
   const [point, setPoint] = useState<[number, number] | null>(() => {
     const lat = Number(latitude);
     const lon = Number(longitude);
     return latitude && longitude && Number.isFinite(lat) && Number.isFinite(lon) ? [lon, lat] : null;
   });
+  const [address, setAddress] = useState<FiasAddress | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [findingAddress, setFindingAddress] = useState(false);
+  const [lookupFailed, setLookupFailed] = useState(false);
 
   useEffect(() => {
     if (!container.current) return;
@@ -68,12 +78,31 @@ export function IncidentMap({ latitude, longitude, onClose, onSelect }: {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     const marker = new maplibregl.Marker({ color: '#be3a32' });
     if (point) marker.setLngLat(point).addTo(map);
+    async function resolveAddress(position: [number, number]) {
+      setAddress(null);
+      setDistance(null);
+      setLookupFailed(false);
+      setFindingAddress(true);
+      const request = ++lookup.current;
+      try {
+        const nearest = await api<NearestAddress>(`training/addresses/nearest?latitude=${position[1]}&longitude=${position[0]}`);
+        if (request !== lookup.current) return;
+        setAddress(nearest);
+        setDistance(nearest.distance_m);
+      } catch {
+        if (request === lookup.current) setLookupFailed(true);
+      } finally {
+        if (request === lookup.current) setFindingAddress(false);
+      }
+    }
+    if (point) void resolveAddress(point);
     map.on('click', (event) => {
       const position: [number, number] = [event.lngLat.lng, event.lngLat.lat];
       marker.setLngLat(position).addTo(map);
       setPoint(position);
+      void resolveAddress(position);
     });
-    return () => map.remove();
+    return () => { lookup.current++; map.remove(); };
   }, []);
 
   return <ModalForm label="Карта происшествия" onClose={onClose}>
@@ -84,9 +113,13 @@ export function IncidentMap({ latitude, longitude, onClose, onSelect }: {
       </div>
       <div ref={container} className={styles.map} />
       <div className={styles.footer}>
-        <span>{point ? `${point[1].toFixed(6)}, ${point[0].toFixed(6)}` : 'Нажмите на карте, чтобы отметить место происшествия'}</span>
-        <button type="button" disabled={!point} onClick={() => {
-          if (point) onSelect(point[1].toFixed(6), point[0].toFixed(6));
+        <span>{point ? <>{point[1].toFixed(6)}, {point[0].toFixed(6)} · {
+          findingAddress ? 'Определяем адрес…' : address
+            ? `Ближайший адрес (${distance} м): ${address.label}`
+            : lookupFailed ? 'Не удалось определить адрес. Координаты можно сохранить.' : ''
+        }</> : 'Нажмите на карте, чтобы отметить место происшествия'}</span>
+        <button type="button" disabled={!point || findingAddress} onClick={() => {
+          if (point) onSelect({ latitude: point[1].toFixed(6), longitude: point[0].toFixed(6), address });
         }}>Указать точку</button>
       </div>
     </div>

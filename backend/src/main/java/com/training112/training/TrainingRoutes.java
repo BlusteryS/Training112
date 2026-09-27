@@ -63,6 +63,21 @@ public final class TrainingRoutes {
       String query = c.request().getParam("q", "");
       json(c, vertx.executeBlocking(() -> FiasAddresses.search(query)));
     });
+    router.get("/api/training/addresses/nearest").handler(c -> {
+      double latitude;
+      double longitude;
+      try {
+        latitude = Double.parseDouble(c.request().getParam("latitude"));
+        longitude = Double.parseDouble(c.request().getParam("longitude"));
+      } catch (NumberFormatException | NullPointerException error) {
+        throw invalid();
+      }
+      if (!Double.isFinite(latitude) || !Double.isFinite(longitude)
+          || latitude < 55.1 || latitude > 56.05 || longitude < 36.6 || longitude > 38.1) {
+        throw invalid();
+      }
+      json(c, vertx.executeBlocking(() -> GeoAddresses.nearest(latitude, longitude)));
+    });
     router.get("/api/training/operator-cards")
         .handler(c -> json(c, repository.operatorCards(actor(c))));
     router.get("/api/training/learners").handler(c -> json(c, repository.learners(actor(c))));

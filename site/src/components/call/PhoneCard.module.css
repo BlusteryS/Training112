@@ -5,29 +5,6 @@
   background: #fff;
 }
 
-.rail {
-  display: grid;
-  width: 38px;
-  flex: 0 0 38px;
-  grid-template-rows: 54px 1fr;
-  border-right: 1px solid #ebecec;
-}
-
-.rail div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.rail div:first-child {
-  border-bottom: 1px solid #ebecec;
-}
-
-.rail img {
-  width: 20px;
-  height: 20px;
-}
-
 .content {
   display: flex;
   min-width: 0;
