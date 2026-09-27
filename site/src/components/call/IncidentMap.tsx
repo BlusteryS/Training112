@@ -11,7 +11,6 @@ const protocol = new Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
 
 export type MapSelection = { latitude: string; longitude: string; address: FiasAddress | null };
-type NearestAddress = FiasAddress & { distance_m: number };
 
 const style: StyleSpecification = {
   version: 8,
@@ -63,7 +62,6 @@ export function IncidentMap({ latitude, longitude, onClose, onSelect }: {
     return latitude && longitude && Number.isFinite(lat) && Number.isFinite(lon) ? [lon, lat] : null;
   });
   const [address, setAddress] = useState<FiasAddress | null>(null);
-  const [distance, setDistance] = useState<number | null>(null);
   const [findingAddress, setFindingAddress] = useState(false);
   const [lookupFailed, setLookupFailed] = useState(false);
 
@@ -80,15 +78,13 @@ export function IncidentMap({ latitude, longitude, onClose, onSelect }: {
     if (point) marker.setLngLat(point).addTo(map);
     async function resolveAddress(position: [number, number]) {
       setAddress(null);
-      setDistance(null);
       setLookupFailed(false);
       setFindingAddress(true);
       const request = ++lookup.current;
       try {
-        const nearest = await api<NearestAddress>(`training/addresses/nearest?latitude=${position[1]}&longitude=${position[0]}`);
+        const nearest = await api<FiasAddress>(`training/addresses/nearest?latitude=${position[1]}&longitude=${position[0]}`);
         if (request !== lookup.current) return;
         setAddress(nearest);
-        setDistance(nearest.distance_m);
       } catch {
         if (request === lookup.current) setLookupFailed(true);
       } finally {
@@ -115,7 +111,7 @@ export function IncidentMap({ latitude, longitude, onClose, onSelect }: {
       <div className={styles.footer}>
         <span>{point ? <>{point[1].toFixed(6)}, {point[0].toFixed(6)} · {
           findingAddress ? 'Определяем адрес…' : address
-            ? `Ближайший адрес (${distance} м): ${address.label}`
+            ? address.label
             : lookupFailed ? 'Не удалось определить адрес. Координаты можно сохранить.' : ''
         }</> : 'Нажмите на карте, чтобы отметить место происшествия'}</span>
         <button type="button" disabled={!point || findingAddress} onClick={() => {
