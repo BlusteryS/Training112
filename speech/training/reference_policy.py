@@ -10,9 +10,9 @@ from typing import Protocol
 import numpy as np
 
 from speech112.runtime.bundle import ScenarioBundle, render
+from speech112.runtime.conversation_controls import CONTACT_REPLY
 from speech112.runtime.scheduler import InferenceScheduler
 
-CONTACT_REPLY = ("Да, я вас слышу.",)
 CONTACT = frozenset(
     {
         "алло",

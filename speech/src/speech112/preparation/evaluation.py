@@ -2,20 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import re
+from importlib.resources import files
 
 
 def normalize(value: str) -> str:
     return " ".join(re.findall(r"\w+", value.casefold().replace("ё", "е")))
 
 
-_ADVICE = {
-    "address": "Уточняйте улицу, номер дома и место происшествия до сохранения карточки.",
-    "caller_name": "Спросите имя заявителя и запишите его ответ.",
-    "incident_code": "Выбирайте тип происшествия по описанной заявителем обстановке.",
-    "description": "Перед сохранением сопоставьте описание с тем, что сообщил заявитель.",
-    "accepted": "Сохраняйте заполненную карточку в отведённое время.",
-}
+_ADVICE = json.loads(
+    files("speech112.contracts").joinpath("evaluation-advice.json").read_text()
+)
 
 
 def evaluate(
@@ -85,7 +83,7 @@ def evaluate(
         if check["status"] == "failed":
             recommendations.append(_ADVICE.get(check["id"], check["description"]))
         elif check["status"] == "review":
-            recommendations.append(f"Попросите преподавателя проверить: {check['description']}")
+            recommendations.append(_ADVICE["review"].format(description=check["description"]))
     return {
         "schema_version": 1,
         "checks": checks,
