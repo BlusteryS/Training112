@@ -5,6 +5,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -37,15 +38,24 @@ public final class ScenarioDraft {
     facts.put("caller_name", caller);
     facts.put("address", location);
     facts.put("incident", description);
-    facts.put("victims", "Я пока не знаю, есть ли пострадавшие.");
+    String lower = description.toLowerCase(Locale.ROOT);
+    boolean noVictims = lower.contains("без пострадавших") || lower.contains("без раненых");
+    boolean reportedVictims = !noVictims && lower.matches(
+        ".*(?:пострадавш[а-яё]*|ранен[а-яё]*|травм[а-яё]*|ожог[а-яё]*|боль[а-яё]*|"
+            + "отравл[а-яё]*|кровотеч[а-яё]*|задыха[а-яё]*|судорог[а-яё]*|"
+            + "без сознания|умира[а-яё]*).*");
+    facts.put("victims", noVictims ? "Пострадавших нет." : reportedVictims
+        ? "Да, есть пострадавшие." : "Я пока не знаю, есть ли пострадавшие.");
     facts.put("phone", "+7 999 000-" + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
-    facts.put("victim_count", "Количество пострадавших пока неизвестно.");
+    facts.put("victim_count", noVictims ? "Пострадавших нет."
+        : "Точное число пострадавших пока неизвестно.");
     facts.put("age", "Возраст неизвестен.");
     facts.put("consciousness", "Не могу проверить, в сознании ли человек.");
     facts.put("breathing", "Не могу проверить, дышит ли он.");
     facts.put("danger", "Непосредственной опасности для меня нет.");
-    facts.put("fire", description.toLowerCase(java.util.Locale.ROOT).matches(".*(пожар|возгорание|огонь|пламя).*")
-        ? "Вижу огонь." : "Огня не вижу.");
+    facts.put("fire", lower.matches(".*(?:пожар|возгоран[а-яё]*|огонь|пламя).*")
+        ? "Вижу огонь." : lower.matches(".*(?:дым|задымлен[а-яё]*).*")
+        ? "Вижу дым." : "Огня не вижу.");
     facts.put("weapon", "Оружия не видел.");
     facts.put("description_details", "Других примет я не заметил.");
     facts.put("vehicle", "Ничего о машине сказать не могу.");

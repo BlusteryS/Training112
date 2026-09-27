@@ -18,6 +18,9 @@ class AudioPreparer:
         self.recognizer = make_understanding(self.config.runtime, None)
 
     def __call__(self, bundle):
+        unsupported = {item["id"] for item in bundle.document["intents"]} - set(self.recognizer.labels)
+        if unsupported:
+            raise ValueError(f"Scenario contains unsupported questions: {sorted(unsupported)}")
         if self.voice is None:
             self.voice = CachedVoice(
                 self.engines.load(self.config.voice, 1),

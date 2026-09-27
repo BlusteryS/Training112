@@ -133,6 +133,9 @@ def run(args):
     torch.manual_seed(112)
     np.random.seed(112)
     random.seed(112)
+    device = torch.device(args.device)
+    if device.type == "cuda" and not torch.cuda.is_available():
+        raise ValueError("CUDA training requested but no GPU is available")
     out = args.output
     out.mkdir(parents=True, exist_ok=True)
     if bool(args.train_file) != bool(args.dev_file):
@@ -208,6 +211,9 @@ def run(args):
                     )
                     head.bias[len(LABELS) + count].copy_(torch.tensor(trained["head_bias"][j]))
 
+    model.to(device)
+    head.to(device)
+
     def targets(rows):
         y = np.zeros((len(rows), len(LABELS)), np.float32)
         for i, r in enumerate(rows):
@@ -217,7 +223,8 @@ def run(args):
 
     ty, dy = targets(train), targets(dev)
     pos_weight = torch.tensor(
-        np.clip(np.sqrt((len(train) - ty.sum(0)) / np.maximum(ty.sum(0), 1)), 1, 8)
+        np.clip(np.sqrt((len(train) - ty.sum(0)) / np.maximum(ty.sum(0), 1)), 1, 8),
+        device=device,
     )
     params = [{"params": head.parameters(), "lr": args.head_learning_rate}]
     tuned = [p for p in model.parameters() if p.requires_grad]
@@ -227,8 +234,8 @@ def run(args):
 
     def forward(rows):
         data, mask = tokenizer.batch(rows)
-        hidden = model(**{k: torch.from_numpy(v) for k, v in data.items()}).last_hidden_state
-        mask = torch.from_numpy(mask).unsqueeze(-1)
+        hidden = model(**{k: torch.from_numpy(v).to(device) for k, v in data.items()}).last_hidden_state
+        mask = torch.from_numpy(mask).to(device).unsqueeze(-1)
         vector = nn.functional.normalize((hidden * mask).sum(1) / mask.sum(1), dim=1)
         return head(vector), vector
 
@@ -238,7 +245,7 @@ def run(args):
         pred = []
         with torch.no_grad():
             for i in range(0, len(dev), args.batch):
-                pred.append(forward(dev[i : i + args.batch])[0].numpy())
+                pred.append(forward(dev[i : i + args.batch])[0].cpu().numpy())
         return calibrate(np.concatenate(pred), dy, dev, args.objective == "structured")
 
     sample_probabilities = None
@@ -295,7 +302,7 @@ def run(args):
             batch = [train[i] for i in ix]
             output, vector = forward(batch)
             logits = output[:, : len(LABELS)]
-            labels = torch.from_numpy(ty[ix])
+            labels = torch.from_numpy(ty[ix]).to(device)
             bce = nn.functional.binary_cross_entropy_with_logits(
                 logits, labels, pos_weight=pos_weight
             )
@@ -307,11 +314,11 @@ def run(args):
             )
             mask = anchor_rows[ix]
             preserve = (
-                (1 - (vector[mask] * torch.from_numpy(anchors[ix][mask])).sum(1)).mean()
+                (1 - (vector[mask] * torch.from_numpy(anchors[ix][mask]).to(device)).sum(1)).mean()
                 if mask.any()
                 else 0
             )
-            actions = torch.tensor([ACTIONS.index(frame(r)[0]) for r in batch])
+            actions = torch.tensor([ACTIONS.index(frame(r)[0]) for r in batch], device=device)
             if args.objective == "structured":
                 structured = frame_nll(output, labels, actions)
                 loss = structured + 0.3 * bce + 0.3 * ce + 2.0 * preserve
@@ -341,8 +348,8 @@ def run(args):
             overrides = export_overrides(model, arrays, mapping)
             np.savez_compressed(
                 out / "context.npz",
-                head_weight=head.weight.detach().numpy(),
-                head_bias=head.bias.detach().numpy(),
+                head_weight=head.weight.detach().cpu().numpy(),
+                head_bias=head.bias.detach().cpu().numpy(),
                 **overrides,
             )
             metadata = dict(
@@ -396,6 +403,7 @@ if __name__ == "__main__":
     p.add_argument("--balanced-sampling", action="store_true")
     p.add_argument("--objective", choices=("structured", "independent"), default="structured")
     p.add_argument("--input-format", default=CONTEXT_FORMAT)
+    p.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     p.add_argument("--train-file", type=Path)
     p.add_argument("--dev-file", type=Path)
     run(p.parse_args())

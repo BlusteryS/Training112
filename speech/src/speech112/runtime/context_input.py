@@ -26,17 +26,59 @@ _NEW_TOPIC = (
     r"|адрес|телефон|пострадавшие|раненые|возраст)\b"
 )
 _CLAUSE_BREAK = re.compile(
-    rf"[;.!?]+\s*|,\s*(?={_NEW_TOPIC})|\s+(?:затем|потом|после этого|а также)\s+"
+    rf"[;.!?]+\s*|,\s*(?={_NEW_TOPIC})|\s+(?:затем|потом|после этого|а также|теперь|или хотя бы)\s+"
     rf"|\s+(?:и|или)\s+(?={_NEW_TOPIC})",
     re.IGNORECASE,
 )
+_SPOKEN_QUESTION = re.compile(
+    r"\b(?:кто|что|где|куда|кому|сколько|какой|какая|какие|какое|"
+    r"есть ли|дышит ли|в сознании ли|можете ли|видите ли|остались ли|"
+    r"(?:он|она|человек) может (?:ли )?(?:говорить|отвечать)|"
+    r"(?:он|она) дышит)\b",
+    re.IGNORECASE,
+)
+_BARE_PROMPT = frozenset(("скажите", "уточните", "сообщите", "подскажите", "расскажите"))
+
+
+def _spoken_parts(piece: str) -> list[str]:
+    """Find question boundaries in ASR text without relying on punctuation."""
+    parts = []
+    start = 0
+    for match in _SPOKEN_QUESTION.finditer(piece):
+        before = piece[start:match.start()].strip()
+        after = piece[match.start():].strip()
+        if match.group().lower() == "кто" and after.lower().startswith("кто то"):
+            continue
+        if match.group().lower() == "где" and re.search(
+            r"\b(?:горени\w*|пламя|дым|огонь|место)\s*$", before, re.IGNORECASE
+        ):
+            continue
+        if match.group().lower() == "кому" and re.search(r"\bврач нужен\s*$", before, re.IGNORECASE):
+            continue
+        if match.group().lower() == "сколько" and re.search(
+            r"\b(?:ранен\w*|пострадавш\w*) всего\s*$", before, re.IGNORECASE
+        ):
+            continue
+        if re.search(r"\b(?:на|по|в|для)\s*$", before, re.IGNORECASE):
+            continue
+        if len(before.split()) < 2 or len(after.split()) < 2:
+            continue
+        first = before.split()[0].lower()
+        if first in _BARE_PROMPT and len(before.split()) < 4:
+            continue
+        if not _QUESTION_WORD.search(before):
+            continue
+        parts.append(before)
+        start = match.start()
+    parts.append(piece[start:].strip())
+    return parts
 
 
 def question_parts(text: str) -> tuple[str, ...]:
     """Keep every part of a spoken multi-question, including unpunctuated ASR text."""
     clauses: list[str] = []
     prefix = ""
-    for piece in _CLAUSE_BREAK.split(text):
+    for piece in (part for clause in _CLAUSE_BREAK.split(text) for part in _spoken_parts(clause)):
         piece = piece.strip()
         if not piece:
             continue

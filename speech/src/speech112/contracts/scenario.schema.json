@@ -130,6 +130,9 @@
           "variants": {
             "$ref": "#/$defs/variants"
           },
+          "compact_variants": {
+            "$ref": "#/$defs/variants"
+          },
           "next_state": {
             "$ref": "#/$defs/id"
           },

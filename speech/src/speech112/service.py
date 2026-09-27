@@ -40,10 +40,15 @@ class Peer:
 
 
 class Observer:
-    def __init__(self, send):
+    def __init__(self, send, understanding_sha256: str, scenario_sha256: str):
         self.send = send
+        self.understanding_sha256 = understanding_sha256
+        self.scenario_sha256 = scenario_sha256
 
     async def emit(self, event, **payload):
+        if event == "ready":
+            payload.update(understanding_sha256=self.understanding_sha256,
+                           scenario_sha256=self.scenario_sha256)
         await self.send({"type": event, **payload})
 
 
@@ -152,7 +157,7 @@ class SpeechService:
             audio,
             dialogue,
             self.voice,
-            Observer(event),
+            Observer(event, self.intent.version, peer.bundle.digest),
         )
         tasks = set()
         try:

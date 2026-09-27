@@ -58,6 +58,8 @@ def validate_document(document: dict[str, Any]) -> None:
             raise ValueError("Unknown next state")
         for variant in response["variants"]:
             render(variant, document["facts"])
+        for variant in response.get("compact_variants", ()):
+            render(variant, document["facts"])
     for kind in ("greeting", "clarification", "check_in", "contact"):
         for variant in document.get(kind, CONTACT_REPLY):
             render(variant, document["facts"])
@@ -91,7 +93,8 @@ class ScenarioBundle:
 
     def utterances(self) -> tuple[str, ...]:
         document = self.document
-        templates = [v for r in document["responses"] for v in r["variants"]]
+        templates = [v for r in document["responses"]
+                     for v in (*r["variants"], *r.get("compact_variants", ()))]
         templates += [v for k in ("greeting", "clarification", "check_in") for v in document[k]]
         templates += list(document.get("contact", CONTACT_REPLY))
         return tuple(dict.fromkeys(render(v, document["facts"]) for v in templates))

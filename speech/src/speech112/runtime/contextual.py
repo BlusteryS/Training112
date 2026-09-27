@@ -131,7 +131,11 @@ class ContextualUnderstanding:
             whole = decode_frame(self.logits([{"text": text, "history": history}])[0], self.targets)
         except OperatorUtteranceTooLong:
             whole = None
-        if stated and set(stated) <= {"help_sent", "not_sent", "hold", "reassure", "dismissal", "goodbye"}:
+        if stated == ("goodbye",) or (
+            len(parts) == 1
+            and stated
+            and set(stated) <= {"help_sent", "not_sent", "hold", "reassure", "dismissal", "goodbye"}
+        ):
             return self._ground(text, whole or SemanticFrame("reject", (), 0.0), stated)
         if len(parts) == 1 or (
             whole is not None

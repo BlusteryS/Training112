@@ -54,6 +54,12 @@ class ScenarioDialogue:
             alternatives = [t for t in texts if t != self._last_choices.get(key)]
         return self._rng.choice(alternatives or texts)
 
+    @staticmethod
+    def _variants(response: dict, compound: bool) -> list[str]:
+        if not compound:
+            return response["variants"]
+        return response.get("compact_variants") or response["variants"][:1]
+
     def initiative(self, kind: str) -> Reply:
         if kind not in ("greeting", "check_in", "clarification", "contact"):
             raise ValueError("Unknown initiative")
@@ -95,7 +101,7 @@ class ScenarioDialogue:
                         fragments.append(self._answered[intent])
                     else:
                         route = routes[intent]
-                        value = self._choose(route["id"], route["variants"])
+                        value = self._choose(route["id"], self._variants(route, len(intents) > 1))
                         choices.append((route["id"], value))
                         fragments.append(value)
                 return Reply(" ".join(fragments), "repeat", self.revision, self.state,
@@ -116,7 +122,10 @@ class ScenarioDialogue:
         next_states = {r["next_state"] for r in responses if "next_state" in r}
         if len(next_states) > 1:
             return replace(self.initiative("clarification"), operator_text=text)
-        choices = tuple((r["id"], self._choose(r["id"], r["variants"])) for r in responses)
+        choices = tuple(
+            (response["id"], self._choose(response["id"], self._variants(response, len(responses) > 1)))
+            for response in responses
+        )
         fragments = tuple(value for _, value in choices)
         return Reply(
             " ".join(fragments),

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from speech112.runtime.bundle import ScenarioBundle
 from speech112.runtime.dialogue import ScenarioDialogue
+from speech112.runtime.context_input import question_parts
 from speech112.runtime.semantic_frame import SemanticFrame
 
 
@@ -50,6 +51,29 @@ class DialogueRegression(unittest.TestCase):
                 self.assertEqual(len(reply.choices), 3)
                 self.assertFalse(reply.end_call)
                 self.assertEqual(reply.text, " ".join(reply.fragments))
+
+    def test_compound_reply_uses_prepared_short_answers(self):
+        reply = self.answer(("incident", "address", "name"))
+        self.assertEqual(len(reply.fragments), 3)
+        for intent, fragment in zip(("incident", "address", "name"), reply.fragments):
+            route = self.routes[intent]
+            self.assertIn(fragment, [v.format_map(self.document["facts"])
+                                     for v in route["compact_variants"]])
+            self.assertIn(fragment, self.bundle.utterances())
+
+    def test_existing_scenarios_use_their_first_prepared_answer(self):
+        legacy = json.loads(TEMPLATE.read_text())
+        for route in legacy["responses"]:
+            route.pop("compact_variants", None)
+        dialogue = ScenarioDialogue(ScenarioBundle.compile(legacy), self.recognizer, 112)
+        self.recognizer.frame = SemanticFrame("request", ("incident", "address"), 1.0)
+        reply = asyncio.run(dialogue.respond("что случилось где вы"))
+        self.assertEqual(reply.fragments[0], legacy["facts"]["incident"])
+        self.assertEqual(reply.fragments[1], legacy["facts"]["address"] + ".")
+
+    def test_unpunctuated_questions_are_separate(self):
+        self.assertEqual(question_parts("что произошло где вы находитесь сколько пострадавших"),
+                         ("что произошло", "где вы находитесь", "сколько пострадавших"))
 
     def test_repeat_reuses_answer_after_state_change(self):
         first = self.answer(("address",))
