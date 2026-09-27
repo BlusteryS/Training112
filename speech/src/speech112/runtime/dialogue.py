@@ -40,6 +40,7 @@ class ScenarioDialogue:
         self._used_choices: dict[str, set[str]] = {}
         self._choice_catalog: dict[str, set[str]] = {}
         self._last_reply: Reply | None = None
+        self._answered: dict[str, str] = {}
         self._history: list[str] = []
         unsupported = {i["id"] for i in self._document["intents"]} - set(recognizer.labels)
         if unsupported:
@@ -80,6 +81,25 @@ class ScenarioDialogue:
                 fragments=previous.fragments,
                 operator_text=text,
             )
+        if plan.action == "repeat" and intents:
+            routes = {
+                response["intent"]: response
+                for response in self._document["responses"]
+                if self.state in response["states"]
+            }
+            if all(intent in self._answered or intent in routes for intent in intents):
+                choices = []
+                fragments = []
+                for intent in intents:
+                    if intent in self._answered:
+                        fragments.append(self._answered[intent])
+                    else:
+                        route = routes[intent]
+                        value = self._choose(route["id"], route["variants"])
+                        choices.append((route["id"], value))
+                        fragments.append(value)
+                return Reply(" ".join(fragments), "repeat", self.revision, self.state,
+                             fragments=tuple(fragments), choices=tuple(choices), operator_text=text)
         if not intents or set(intents) & {"other", "contact", "repeat"} or len(intents) > 6:
             return replace(self.initiative("clarification"), operator_text=text)
         routes = {
@@ -90,9 +110,9 @@ class ScenarioDialogue:
         if any(intent not in routes for intent in intents):
             return replace(self.initiative("clarification"), operator_text=text)
         responses = [routes[intent] for intent in intents]
-        # A hangup mixed with a question must never terminate an unfinished exchange.
+        # Answer the questions before accepting a mixed farewell.
         if len(responses) > 1 and any(r.get("end_call", False) for r in responses):
-            return replace(self.initiative("clarification"), operator_text=text)
+            responses = [r for r in responses if not r.get("end_call", False)]
         next_states = {r["next_state"] for r in responses if "next_state" in r}
         if len(next_states) > 1:
             return replace(self.initiative("clarification"), operator_text=text)
@@ -120,6 +140,10 @@ class ScenarioDialogue:
             if used >= self._choice_catalog[key]:
                 used.clear()
             used.add(value)
+        routes = {r["id"]: r["intent"] for r in self._document["responses"]}
+        for key, value in reply.choices:
+            if key in routes:
+                self._answered[routes[key]] = value
         if reply.operator_text is not None:
             self._history.extend((reply.operator_text, reply.text))
             self._history = self._history[-4:]

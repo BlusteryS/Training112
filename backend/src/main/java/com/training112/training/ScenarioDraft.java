@@ -37,18 +37,18 @@ public final class ScenarioDraft {
     facts.put("caller_name", caller);
     facts.put("address", location);
     facts.put("incident", description);
-    facts.put("victims", "Неизвестно");
+    facts.put("victims", "Я пока не знаю, есть ли пострадавшие.");
     facts.put("phone", "+7 999 000-" + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
     facts.put("victim_count", "Количество пострадавших пока неизвестно.");
     facts.put("age", "Возраст неизвестен.");
-    facts.put("consciousness", "Сведения о сознании отсутствуют.");
-    facts.put("breathing", "Сведения о дыхании отсутствуют.");
+    facts.put("consciousness", "Не могу проверить, в сознании ли человек.");
+    facts.put("breathing", "Не могу проверить, дышит ли он.");
     facts.put("danger", "Непосредственной опасности для меня нет.");
     facts.put("fire", description.toLowerCase(java.util.Locale.ROOT).matches(".*(пожар|возгорание|огонь|пламя).*")
         ? "Вижу огонь." : "Огня не вижу.");
     facts.put("weapon", "Оружия не видел.");
-    facts.put("description_details", "Других подробностей пока нет.");
-    facts.put("vehicle", "О транспорте сведений нет.");
+    facts.put("description_details", "Других примет я не заметил.");
+    facts.put("vehicle", "Ничего о машине сказать не могу.");
 
     JsonArray rubric = document.getJsonArray("rubric");
     for (int i = 0; i < rubric.size(); i++) {

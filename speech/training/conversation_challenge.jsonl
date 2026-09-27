@@ -1,0 +1,45 @@
+{"text":"скажите где именно это случилось и как вас зовут","targets":["address","name"]}
+{"text":"какой номер телефона по которому вам можно перезвонить и сколько человек пострадало","targets":["phone","victim_count"]}
+{"text":"что произошло есть ли пострадавшие где вы находитесь","targets":["incident","victims","address"]}
+{"text":"человек в сознании дышит он сам и сколько ему лет","targets":["consciousness","breathing","age"]}
+{"text":"вы видите огонь и есть ли у кого нибудь оружие","targets":["fire","weapon"]}
+{"text":"какая улица и дом и сколько человек пострадало вы знаете","targets":["address","victim_count"]}
+{"text":"можете назвать имя по которому к вам обращаться а также номер телефона","targets":["name","phone"]}
+{"text":"не могли бы вы уточнить место где случилось и что произошло","targets":["address","incident"]}
+{"text":"опишите обстановку и скажите есть ли там пострадавшие","targets":["incident","victims"]}
+{"text":"кто пострадал сколько всего людей и дышат ли они","targets":["victims","victim_count","breathing"]}
+{"text":"мне нужно знать ваш адрес и телефон чтобы мы могли связаться","targets":["address","phone"]}
+{"text":"куда ехать есть ли огонь и остались ли люди внутри","targets":["address","fire","victims"]}
+{"text":"скажите свою фамилию и где вы сейчас находитесь","targets":["name","address"]}
+{"text":"где произошло сколько пострадавших и в сознании ли они","targets":["address","victim_count","consciousness"]}
+{"text":"машина какая и есть ли у водителя травмы","targets":["vehicle","victims"]}
+{"text":"вы в безопасности или рядом есть огонь","targets":["danger","fire"]}
+{"text":"как давно это произошло и где вы сейчас","targets":["incident","address"]}
+{"text":"пострадавший дышит есть ли сознание и сколько ему лет","targets":["breathing","consciousness","age"]}
+{"text":"что за машина можете описать людей которые были рядом","targets":["vehicle","description"]}
+{"text":"какой у вас номер и как к вам обращаться","targets":["phone","name"]}
+{"text":"нужно понять горит ли дом и есть ли люди которым нужна помощь","targets":["fire","victims"]}
+{"text":"я записываю улицу дом подъезд и что именно произошло","targets":["address","incident"]}
+{"text":"сколько лет человеку и он может разговаривать","targets":["age","consciousness"]}
+{"text":"вы видели нож или пистолет и кто нибудь получил ранение","targets":["weapon","victims"]}
+{"text":"подскажите где это и видите ли вы дым или пламя","targets":["address","fire"]}
+{"text":"не отправляйте никого пока я не уточню адрес","action":"reject","targets":[]}
+{"text":"не надо высылать бригаду я ошибся","action":"reject","targets":[]}
+{"text":"я вас слышу говорите","action":"contact","targets":[]}
+{"text":"алло вы меня слышите","action":"contact","targets":[]}
+{"text":"пожалуйста повторите адрес я не расслышал","action":"repeat","targets":["address"]}
+{"text":"скажите еще раз сколько пострадавших","action":"repeat","targets":["victim_count"]}
+{"text":"повторите пожалуйста что произошло","action":"repeat","targets":["incident"]}
+{"text":"не расслышал как вас зовут повторите","action":"repeat","targets":["name"]}
+{"text":"повторите пожалуйста последние слова","action":"repeat","targets":[]}
+{"text":"помощь уже выехала оставайтесь на линии","action":"inform","targets":["help_sent","hold"]}
+{"text":"я пока никого не отправлял мне нужен адрес","targets":["not_sent","address"]}
+{"text":"я отправил пожарных и скорую помощь","action":"inform","targets":["help_sent"]}
+{"text":"подождите на линии я запишу ваши данные","action":"inform","targets":["hold"]}
+{"text":"пожалуйста не волнуйтесь помощь уже едет","action":"inform","targets":["reassure","help_sent"]}
+{"text":"всё понял до свидания можете положить трубку","action":"end","targets":["goodbye"]}
+{"text":"до свидания и скажите еще раз ваш адрес","action":"repeat","targets":["address"]}
+{"text":"скажите где вы сейчас находитесь и можете ли выйти на улицу","targets":["address","danger"]}
+{"text":"есть ли пострадавшие если да сколько их и в каком они состоянии","targets":["victims","victim_count"]}
+{"text":"если машина горит назовите место и номер автомобиля","targets":["fire","address","vehicle"]}
+{"text":"расскажите что случилось и где именно и кому нужна помощь","targets":["incident","address","victims"]}

@@ -15,16 +15,19 @@ def operator_text(text: str) -> str:
 
 
 _QUESTION_WORD = re.compile(
-    r"\b(?:кто|что|где|сколько|какой|какая|какие|какое|есть ли|можно ли"
-    r"|назовите|скажите|уточните|сообщите|опишите)\b",
+    r"\b(?:кто|что|где|куда|кому|сколько|какой|какая|какие|какое|как|есть ли|можно ли"
+    r"|назовите|скажите|уточните|сообщите|опишите|расскажите|подскажите|видите ли"
+    r"|можете ли|остались ли|дышит ли)\b",
     re.IGNORECASE,
 )
 _NEW_TOPIC = (
-    r"(?:кто|что|где|сколько|какой|какая|какие|какое|есть|назовите|скажите|уточните"
-    r"|сообщите|опишите|дышит|в сознании|адрес|телефон|пострадавшие|раненые|возраст)\b"
+    r"(?:кто|что|где|куда|кому|как|сколько|какой|какая|какие|какое|есть|назовите|скажите"
+    r"|уточните|сообщите|опишите|можете|видите|остались|дышит|в сознании|рядом есть"
+    r"|адрес|телефон|пострадавшие|раненые|возраст)\b"
 )
 _CLAUSE_BREAK = re.compile(
-    rf"[;.!?]+\s*|,\s*(?={_NEW_TOPIC})|\s+(?:и|а также|затем|потом)\s+(?={_NEW_TOPIC})",
+    rf"[;.!?]+\s*|,\s*(?={_NEW_TOPIC})|\s+(?:затем|потом|после этого|а также)\s+"
+    rf"|\s+(?:и|или)\s+(?={_NEW_TOPIC})",
     re.IGNORECASE,
 )
 
@@ -32,38 +35,24 @@ _CLAUSE_BREAK = re.compile(
 def question_parts(text: str) -> tuple[str, ...]:
     """Keep every part of a spoken multi-question, including unpunctuated ASR text."""
     clauses: list[str] = []
+    prefix = ""
     for piece in _CLAUSE_BREAK.split(text):
         piece = piece.strip()
         if not piece:
             continue
-        if len(piece.split()) < 2 and clauses:
+        if prefix:
+            piece = prefix + " " + piece
+            prefix = ""
+        if len(piece.split()) < 2 and not clauses and piece.lower() not in ("адрес", "телефон"):
+            prefix = piece
+            continue
+        if len(piece.split()) < 2 and clauses and piece.lower() not in ("адрес", "телефон"):
             clauses[-1] += " " + piece
         else:
             clauses.append(piece)
-    parts: list[str] = []
-    for clause in clauses:
-        start = 0
-        for match in _QUESTION_WORD.finditer(clause):
-            if match.group().lower() in ("что", "кто") and re.match(
-                r"[-\s]+(?:то|нибудь)\b", clause[match.end():], re.IGNORECASE
-            ):
-                continue
-            before = clause[start:match.start()].strip()
-            after = clause[match.start():].strip()
-            if len(before.split()) >= 2 and len(after.split()) >= 2:
-                parts.append(before)
-                start = match.start()
-            elif (
-                parts
-                and before
-                and len(before.split()) <= 2
-                and not starts_question(before)
-                and len(after.split()) >= 2
-            ):
-                parts[-1] += " " + before
-                start = match.start()
-        parts.append(clause[start:].strip())
-    return tuple(part for part in parts if part)
+    if prefix:
+        clauses.append(prefix)
+    return tuple(clauses)
 
 
 def starts_question(text: str) -> bool:

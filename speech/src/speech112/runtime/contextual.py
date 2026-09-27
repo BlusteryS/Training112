@@ -19,6 +19,7 @@ from speech112.runtime.context_input import (
 )
 from speech112.runtime.learned import file_digest
 from speech112.runtime.scheduler import InferenceScheduler
+from speech112.runtime.semantic_evidence import evidence, explicit_action, strip_known
 from speech112.runtime.semantic_frame import ACTIONS, FRAME_SCHEMA, SemanticFrame, decode_frame
 
 _INFORMED_INTENTS = frozenset(
@@ -108,8 +109,21 @@ class ContextualUnderstanding:
         return 1 / (1 + np.exp(-np.clip(self.logits(rows), -60, 60)))
 
     def predict(self, text, history=()):
-        if _NO_DISPATCH_COMMAND.search(operator_text(text)):
+        normalized = operator_text(text)
+        if _NO_DISPATCH_COMMAND.search(normalized):
             return SemanticFrame("reject", (), 1.0)
+        if re.fullmatch(r"(?:а )?сколько их(?: там)?", normalized):
+            context = operator_text(" ".join(history[-2:]))
+            if not re.search(r"\b(?:люд\w*|человек\w*|пострадавш\w*|ранен\w*|"
+                             r"двое|трое|четверо|пятеро|шестеро|семеро|восьмеро|"
+                             r"девятеро|десятеро)\b", context):
+                return SemanticFrame("reject", (), 1.0)
+        if re.fullmatch(r"(?:тогда )?(?:сообщите|расскажите) подробнее", normalized) and len(history) >= 2:
+            referred = evidence(history[-2])
+            if len(referred) == 1:
+                return SemanticFrame("request", referred, 1.0)
+        text = strip_known(text) or text
+        stated = evidence(text)
         parts = question_parts(text)
         if not parts or len(parts) > 8:
             return SemanticFrame("reject", (), 0.0)
@@ -117,21 +131,24 @@ class ContextualUnderstanding:
             whole = decode_frame(self.logits([{"text": text, "history": history}])[0], self.targets)
         except OperatorUtteranceTooLong:
             whole = None
+        if stated and set(stated) <= {"help_sent", "not_sent", "hold", "reassure", "dismissal", "goodbye"}:
+            return self._ground(text, whole or SemanticFrame("reject", (), 0.0), stated)
         if len(parts) == 1 or (
             whole is not None
             and whole.action in ("inform", "end")
             and "?" not in text
             and not any(starts_question(part) for part in parts[1:])
         ):
-            return whole or SemanticFrame("reject", (), 0.0)
+            return self._ground(text, whole or SemanticFrame("reject", (), 0.0), stated)
         try:
             logits = self.logits([{"text": part, "history": history} for part in parts])
         except OperatorUtteranceTooLong:
-            return SemanticFrame("reject", (), 0.0)
-        frames = [decode_frame(row, self.targets) for row in logits]
+            return self._ground(text, whole or SemanticFrame("reject", (), 0.0), stated)
+        frames = [self._ground(part, decode_frame(row, self.targets), evidence(part))
+                  for part, row in zip(parts, logits, strict=True)]
         targets = []
         for frame in frames:
-            if frame.action == "request":
+            if frame.action in ("request", "repeat"):
                 eligible = frame.targets
             elif frame.action in ("inform", "end"):
                 eligible = (target for target in frame.targets if target in _INFORMED_INTENTS)
@@ -141,9 +158,30 @@ class ContextualUnderstanding:
                 if target not in targets:
                     targets.append(target)
         if not targets or len(targets) > 6:
-            return whole or SemanticFrame("reject", (), 0.0)
+            return self._ground(text, whole or SemanticFrame("reject", (), 0.0), stated)
+        if len(targets) > 1 and "goodbye" in targets:
+            targets.remove("goodbye")
         action = "inform" if all(frame.action in ("inform", "end") for frame in frames) else "request"
+        if explicit_action(text, tuple(targets)) == "repeat":
+            action = "repeat"
         return SemanticFrame(action, tuple(targets), min(frame.confidence for frame in frames))
+
+    @staticmethod
+    def _ground(text: str, frame: SemanticFrame, stated: tuple[str, ...]) -> SemanticFrame:
+        if stated:
+            targets = tuple(target for target in stated if target != "goodbye") if len(stated) > 1 else stated
+            action = explicit_action(text, targets)
+            if frame.action in ("reject", "contact", "end"):
+                if action is not None:
+                    return SemanticFrame(action, targets, frame.confidence)
+                return frame
+            if frame.action == "repeat":
+                return SemanticFrame("repeat", targets, frame.confidence)
+            return SemanticFrame(action or frame.action, targets, frame.confidence)
+        action = explicit_action(text, ())
+        if action == "contact":
+            return SemanticFrame("contact", (), frame.confidence)
+        return frame
 
     async def understand(self, text, history):
         return await self.scheduler.run(self.predict, text, history)
