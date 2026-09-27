@@ -201,6 +201,8 @@ public final class TrainingRoutes {
         .handler(c -> json(c, repository.attempt(actor(c), id(c))));
     router.get("/api/training/attempts/:id/links")
         .handler(c -> json(c, repository.cardLinks().chain(actor(c), id(c))));
+    router.get("/api/training/attempts/:id/services")
+        .handler(c -> json(c, repository.serviceStatuses(actor(c), id(c))));
     router.get("/api/training/attempts/:id/link-candidates")
         .handler(c -> json(c, repository.cardLinks().candidates(actor(c), id(c),
             c.request().getParam("q", ""), c.request().getParam("phone", ""),
@@ -284,8 +286,15 @@ public final class TrainingRoutes {
         .handler(
             c -> {
               JsonObject result = body(c).getJsonObject("result");
-              if (result == null || result.toBuffer().length() > 8192) throw invalid();
-              empty(c, repository.review(actor(c), id(c), result, text(c, "reason", 2000)));
+              String reason = text(c, "reason", 2000);
+              Object score = result == null ? null : result.getValue("score");
+              Object recommendation = result == null ? null : result.getValue("recommendation");
+              if (result == null || !result.fieldNames().equals(java.util.Set.of("score", "recommendation"))
+                  || !(score instanceof Number number) || number.intValue() < 0
+                  || number.intValue() > 100 || number.doubleValue() != number.intValue()
+                  || !(recommendation instanceof String advice) || advice.length() > 1000
+                  || reason.isBlank()) throw invalid();
+              empty(c, repository.review(actor(c), id(c), result, reason));
             });
   }
 

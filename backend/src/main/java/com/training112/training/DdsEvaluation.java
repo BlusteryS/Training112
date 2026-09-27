@@ -11,8 +11,9 @@ public final class DdsEvaluation {
     String expected = template == null ? "accepted" : template.getString("expected_primary", "accepted");
     String outcome = template == null ? "completed" : template.getString("outcome", "completed");
     JsonObject first = null;
+    JsonObject opened = null;
     boolean crew = false;
-    boolean accepted = false;
+    boolean supervisorRefusal = false;
     boolean dispatched = false;
     boolean arrived = false;
     boolean working = false;
@@ -21,29 +22,31 @@ public final class DdsEvaluation {
       JsonObject event = (JsonObject) item;
       String type = event.getString("type");
       JsonObject payload = event.getJsonObject("payload", new JsonObject());
+      if (opened == null && "card.status".equals(type)
+          && "received".equals(payload.getString("status"))) opened = event;
       if ("dds.crew.select".equals(type)) crew = true;
+      if ("dds.phone.report".equals(type) && "supervisor".equals(payload.getString("party"))
+          && "refused".equals(payload.getString("report_status"))) supervisorRefusal = true;
       if (!"card.status".equals(type)) continue;
       String status = payload.getString("status", "");
       if (first == null && ("accepted".equals(status) || "rejected".equals(status))) first = event;
-      if ("accepted".equals(status)) accepted = true;
       if ("dispatched".equals(status)) dispatched = true;
       if ("arrived".equals(status)) arrived = true;
       if ("working".equals(status)) working = true;
       if (outcome.equals(status) && !payload.getString("comment", "").isBlank()) terminal = true;
     }
     JsonArray checks = new JsonArray();
-    add(checks, "primary", "Первичный статус соответствует полномочиям службы", 25,
+    boolean rejected = "rejected".equals(expected);
+    add(checks, "primary", "Первичный статус соответствует полномочиям службы", rejected ? 50 : 25,
         first != null && expected.equals(first.getJsonObject("payload").getString("status")));
-    add(checks, "deadline", "Первичный статус установлен в течение 30 секунд", 15,
-        first != null && first.getLong("elapsed_ms", Long.MAX_VALUE) <= 30_000);
-    if ("rejected".equals(expected)) {
-      add(checks, "reason", "Причина отказа указана в комментарии", 10,
-          first != null && "rejected".equals(first.getJsonObject("payload").getString("status"))
-              && !first.getJsonObject("payload").getString("comment", "").isBlank());
-    } else {
-      add(checks, "acceptance", "Карточка принята службой", 10, accepted);
-    }
-    add(checks, "crew", "Бригада выбрана диспетчером", 10, crew);
+    add(checks, "open_deadline", "Карточка открыта в течение 30 секунд после поступления",
+        rejected ? 20 : 15, opened != null && opened.getLong("elapsed_ms", Long.MAX_VALUE) <= 30_000);
+    add(checks, "first_record", "Первый статус с комментарием внесён в течение 3 минут",
+        rejected ? 30 : 10, first != null && first.getLong("elapsed_ms", Long.MAX_VALUE) <= 180_000
+            && !first.getJsonObject("payload").getString("comment", "").isBlank());
+    if (rejected) return result(checks, attemptStatus);
+    add(checks, "crew", "Бригада назначена либо отказ подтверждён руководителем", 10,
+        crew || "refused".equals(outcome) && supervisorRefusal);
     if ("refused".equals(outcome)) {
       add(checks, "result", "Отказ отмечен после доклада с указанием причины", 40, terminal);
     } else {
@@ -52,6 +55,10 @@ public final class DdsEvaluation {
       add(checks, "work", "Проведение работ отмечено после доклада", 10, working);
       add(checks, "result", "Итог работ сохранён с комментарием", 10, terminal);
     }
+    return result(checks, attemptStatus);
+  }
+
+  private static JsonObject result(JsonArray checks, String attemptStatus) {
     int earned = 0;
     JsonArray recommendations = new JsonArray();
     for (Object item : checks) {

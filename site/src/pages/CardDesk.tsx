@@ -23,6 +23,7 @@ export function CardDesk() {
   const [attempt, setAttempt] = useState<CardAttempt | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [events, setEvents] = useState<AttemptEvent[]>([]);
+  const [serviceStatuses, setServiceStatuses] = useState<{ service: string; status: string; started_at: string }[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [phoneEnabled, setPhoneEnabled] = useState(true);
@@ -42,14 +43,27 @@ export function CardDesk() {
   useEffect(() => {
     let cancelled = false;
     void openCardAttempt(user.id, assignmentId).then(async ({ assignment: next, attempt: opened }) => {
-      const history = await attemptEvents(opened.id);
+      const [history, statuses] = await Promise.all([attemptEvents(opened.id),
+        api<{ service: string; status: string; started_at: string }[]>(`training/attempts/${opened.id}/services`)]);
       if (cancelled) return;
       setAttempt(opened);
       setAssignment(next);
       setEvents(history);
+      setServiceStatuses(statuses);
     }).catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     return () => { cancelled = true; };
   }, [assignmentId, user.id]);
+
+  useEffect(() => {
+    if (!attempt?.id) return undefined;
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      void api<{ service: string; status: string; started_at: string }[]>(`training/attempts/${attempt.id}/services`)
+        .then((statuses) => { if (!cancelled) setServiceStatuses(statuses); })
+        .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
+    }, 5000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [attempt?.id]);
 
   if (!attempt || !assignment) {
     return <div className={shell.workspace}>
@@ -66,8 +80,12 @@ export function CardDesk() {
   const startedAt = attempt.started_at ? new Date(attempt.started_at).valueOf() : null;
   const elapsed = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
   const waiting = ['added', 'received'].includes(attempt.card_status);
-  const remaining = Math.max(0, 30 - elapsed);
+  const firstRecordRemaining = Math.max(0, 180 - elapsed);
   let pendingReport = '';
+  const discrepancy = events.some((event) => event.type === 'dds.phone.report'
+    && event.payload.party === 'crew' && event.payload.topic === 'card_error');
+  const notified112 = events.some((event) => event.type === 'dds.phone.report'
+    && event.payload.party === 'service112');
   for (const event of events) {
     if (event.type === 'card.status') pendingReport = '';
     if (event.type === 'dds.phone.report' && event.payload.report_status) {
@@ -76,12 +94,14 @@ export function CardDesk() {
   }
 
   async function refresh() {
-    const [current, history] = await Promise.all([
+    const [current, history, statuses] = await Promise.all([
       api<CardAttempt>(`training/attempts/${attemptId}`),
       attemptEvents(attemptId),
+      api<{ service: string; status: string; started_at: string }[]>(`training/attempts/${attemptId}/services`),
     ]);
     setAttempt(current);
     setEvents(history);
+    setServiceStatuses(statuses);
   }
 
   async function move(next: string, comment: string) {
@@ -109,14 +129,15 @@ export function CardDesk() {
       <div className={styles.phoneRail}>
         <div className={styles.caseHeader}>
           <strong>Происшествие {assignmentId.slice(0, 8).toUpperCase()}</strong>
-          <div className={waiting && elapsed > 30 ? styles.late : styles.clock}>
-            {waiting ? elapsed > 30 ? 'Не оповещено' : `Решение: ${remaining} с`
+          <div className={waiting && elapsed > 180 ? styles.late : styles.clock}>
+            {waiting ? `Первая запись: ${firstRecordRemaining} с`
               : `Прошло ${elapsed} с`}
           </div>
           <button type="button" onClick={() => navigate('/')}>К списку</button>
         </div>
         <DdsPhonePanel attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
           callerPhone={card.phone ?? ''} pendingReport={pendingReport || null} enabled={phoneEnabled}
+          discrepancy={discrepancy} notified112={notified112}
           onChange={refresh} onError={setError} />
       </div>
       <div className={styles.caseBody}>
@@ -130,7 +151,8 @@ export function CardDesk() {
         {error && <Notice error>{error}</Notice>}
       </div>
       <DdsServiceBar services={notified} ownService={ownService} ownStatus={attempt.card_status}
-        events={events} login={user.login} now={now} startedAt={startedAt} />
+        events={events} login={user.login} now={now} startedAt={startedAt}
+        serviceStatuses={serviceStatuses} />
     </div>
   </div>;
 }

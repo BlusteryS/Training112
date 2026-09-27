@@ -96,12 +96,14 @@ export function selectDdsCrew(id: string, crew: string) {
 export type PhoneReport = { party: string; direction: string; topic?: string;
   report_status?: string; audio: string; message: string };
 
-export function previewDdsPhone(id: string, party: 'crew' | 'caller', direction: 'incoming' | 'outgoing', topic?: string) {
+export type DdsPhoneParty = 'crew' | 'caller' | 'supervisor' | 'service112';
+
+export function previewDdsPhone(id: string, party: DdsPhoneParty, direction: 'incoming' | 'outgoing', topic?: string) {
   const query = new URLSearchParams({ party, direction });
   if (topic) query.set('topic', topic);
   return api<PhoneReport>(`training/attempts/${id}/phone?${query}`);
 }
 
-export function recordDdsPhone(id: string, party: 'crew' | 'caller', direction: 'incoming' | 'outgoing', topic?: string) {
+export function recordDdsPhone(id: string, party: DdsPhoneParty, direction: 'incoming' | 'outgoing', topic?: string) {
   return postDdsCommand(id, 'dds.phone.report', { party, direction, ...(topic ? { topic } : {}) });
 }

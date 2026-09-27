@@ -13,6 +13,8 @@ type ReportRow = {
   attempt_status: string | null;
   elapsed_ms: number | null;
   primary_elapsed_ms: number | null;
+  open_elapsed_ms: number | null;
+  open_delta_ms: number | null;
   deadline_seconds: number | null;
   delta_ms: number | null;
   grammar: { field: string; message: string }[];
@@ -32,11 +34,19 @@ function reportStatus(row: ReportRow) {
 }
 
 function reportElapsed(row: ReportRow) {
-  return seconds(row.mode === 'card' ? row.primary_elapsed_ms : row.elapsed_ms);
+  return row.mode === 'card'
+    ? `Открытие ${seconds(row.open_elapsed_ms) || '—'}; запись ${seconds(row.primary_elapsed_ms) || '—'}`
+    : seconds(row.elapsed_ms);
 }
 
 function reportDelta(row: ReportRow) {
-  return row.delta_ms == null ? '' : Math.round(row.delta_ms / 1000);
+  return row.mode === 'card'
+    ? `Открытие ${seconds(row.open_delta_ms) || '—'}; запись ${seconds(row.delta_ms) || '—'}`
+    : row.delta_ms == null ? '' : Math.round(row.delta_ms / 1000);
+}
+
+function reportNorm(row: ReportRow) {
+  return row.mode === 'card' ? 'Открытие 30; запись 180' : row.deadline_seconds ?? '';
 }
 
 function recommendation(item: Insight) {
@@ -69,7 +79,7 @@ export function Reports() {
   function download() {
     const header = ['Обучающийся', 'Карточка', 'Статус', 'Время, с', 'Норматив, с', 'Отклонение, с', 'Оценка', 'Ошибки', 'Грамматика', 'Действия', 'Замечания'];
     const lines = rows.map((row) => [
-      row.learner_login, row.card_title ?? '', reportStatus(row), reportElapsed(row), row.deadline_seconds ?? '',
+      row.learner_login, row.card_title ?? '', reportStatus(row), reportElapsed(row), reportNorm(row),
       reportDelta(row), row.evaluation?.score ?? '',
       (row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; '),
       row.grammar.map((note) => `${note.field}: ${note.message}`).join('; '),
@@ -104,7 +114,7 @@ export function Reports() {
         <span>{row.card_title ?? ''}</span>
         <span>{reportStatus(row)}</span>
         <span>{reportElapsed(row)}</span>
-        <span>{row.deadline_seconds ?? ''}</span>
+        <span>{reportNorm(row)}</span>
         <span>{reportDelta(row)}</span>
         <span>{row.evaluation?.score ?? ''}</span>
         <span>{(row.evaluation?.checks ?? []).filter((check) => check.status === 'failed').map((check) => check.description).join('; ')}</span>

@@ -1,26 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { previewDdsPhone, recordDdsPhone, selectDdsCrew, type PhoneReport } from '../../speech/trainingApi';
-import { SelectField } from '../ui/SelectField';
+import { previewDdsPhone, recordDdsPhone, selectDdsCrew, type DdsPhoneParty, type PhoneReport } from '../../speech/trainingApi';
+import { InputField } from '../ui/InputField';
+import { ddsPartyNames, ddsStatusNames } from './statuses';
 import styles from './DdsPhonePanel.module.css';
 
 const reports = ['accepted', 'dispatched', 'arrived', 'working'];
-const crews = ['Бригада 1', 'Бригада 2', 'Бригада 3'];
-const reportNames: Record<string, string> = {
-  dispatched: 'Начало реагирования', arrived: 'Прибытие',
-  working: 'Проведение работ', completed: 'Работы завершены', refused: 'Отказ от выполнения работ',
-};
 
-export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingReport, enabled, onChange, onError }: {
+export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingReport, discrepancy, notified112, enabled, onChange, onError }: {
   attemptId: string;
   status: string;
   crew: string | null;
   callerPhone: string;
   pendingReport: string | null;
+  discrepancy: boolean;
+  notified112: boolean;
   enabled: boolean;
   onChange: () => Promise<void>;
   onError: (message: string) => void;
 }) {
-  const [selected, setSelected] = useState('Бригада 1');
+  const [selected, setSelected] = useState('');
   const [active, setActive] = useState<PhoneReport | null>(null);
   const [incoming, setIncoming] = useState(false);
   const [callerActionsOpen, setCallerActionsOpen] = useState(false);
@@ -44,14 +42,14 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
     setBusy(true);
     onError('');
     try {
-      await selectDdsCrew(attemptId, selected);
+      await selectDdsCrew(attemptId, selected.trim());
       await onChange();
     } catch (cause) {
       onError(cause instanceof Error ? cause.message : 'Не удалось назначить бригаду.');
     } finally { setBusy(false); }
   }
 
-  async function call(party: 'crew' | 'caller', direction: 'incoming' | 'outgoing', topic?: string) {
+  async function call(party: DdsPhoneParty, direction: 'incoming' | 'outgoing', topic?: string) {
     if (!attemptId || active || busy) return;
     setBusy(true);
     setIncoming(false);
@@ -106,13 +104,12 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
       {crew && <div className={styles.crewName}>{crew}</div>}</div>
     {!enabled && <div>Телефон отключён администратором.</div>}
     {status === 'accepted' && !crew && <div className={styles.crewSelect}>
-      <SelectField label="Бригада" value={selected} onChange={(event) => setSelected(event.target.value)}>
-        {crews.map((name) => <option key={name} value={name}>{name}</option>)}
-      </SelectField>
-      <button type="button" disabled={busy} onClick={() => void chooseCrew()}>Назначить</button>
+      <InputField label="Бригада или номер расчёта" value={selected} maxLength={100}
+        onChange={(event) => setSelected(event.target.value)} />
+      <button type="button" disabled={busy || !selected.trim()} onClick={() => void chooseCrew()}>Назначить</button>
     </div>}
     {active ? <div className={styles.call}>
-      <div>Разговор: {active.party === 'crew' ? crew : 'заявитель'}</div>
+      <div>Разговор: {active.party === 'crew' ? crew || 'бригада' : ddsPartyNames[active.party] || active.party}</div>
       <div>{active.message}</div>
       <button type="button" onClick={hangUp}>Завершить</button>
     </div> : <>
@@ -121,13 +118,21 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
         <button type="button" disabled={busy} onClick={() => void call('crew', 'incoming')}>Ответить</button>
       </div>}
       <div className={styles.buttons}>
+        {enabled && status === 'accepted' && <button type="button" disabled={busy}
+          onClick={() => void call('supervisor', 'outgoing')}>Руководителю</button>}
+        {enabled && status === 'accepted' && !crew && <button type="button" disabled={busy}
+          onClick={() => void call('supervisor', 'outgoing', 'refused')}>Отказ руководителя</button>}
         {canCall && crew && !pendingReport && <button type="button" disabled={busy}
           aria-label="Позвонить бригаде" onClick={() => void call('crew', 'outgoing')}>Бригаде</button>}
+        {canCall && crew && !discrepancy && <button type="button" disabled={busy}
+          onClick={() => void call('crew', 'outgoing', 'card_error')}>Уточнить адрес</button>}
+        {canCall && discrepancy && !notified112 && <button type="button" disabled={busy}
+          onClick={() => void call('service112', 'outgoing')}>Сообщить в 112</button>}
         {canCallCaller && callerPhone && <button type="button" className={styles.callerToggle}
           aria-label="Позвонить заявителю" aria-expanded={callerActionsOpen}
           onClick={() => setCallerActionsOpen((open) => !open)}>Заявителю</button>}
       </div>
-      {pendingReport && <div className={styles.report}>Доклад: {reportNames[pendingReport] ?? pendingReport}</div>}
+      {pendingReport && <div className={styles.report}>Доклад: {ddsStatusNames[pendingReport] ?? pendingReport}</div>}
       {canCallCaller && callerPhone && callerActionsOpen && <div className={styles.caller}>
         <div className={styles.topicLabel}>Тема звонка</div>
         <div className={styles.actions}>

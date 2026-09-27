@@ -9,7 +9,6 @@ import java.util.Set;
 
 /** Fixed IP-phone reports for the universal DDS exercise. */
 public final class DdsPhone {
-  private static final Set<String> CREWS = Set.of("Бригада 1", "Бригада 2", "Бригада 3");
   private static final Map<String, String> NEXT = Map.of(
       "accepted", "dispatched", "dispatched", "arrived", "arrived", "working",
       "working", "completed");
@@ -18,7 +17,7 @@ public final class DdsPhone {
   private DdsPhone() {}
 
   public static boolean crewName(String name) {
-    return name != null && CREWS.contains(name);
+    return name != null && !name.isBlank() && name.length() <= 100;
   }
 
   public static JsonObject report(String status, String crew, JsonObject template, JsonObject request) {
@@ -28,6 +27,14 @@ public final class DdsPhone {
     if ("crew".equals(party)) {
       if (!NEXT.containsKey(status)) throw invalid("Сначала примите карточку службы.");
       if (crew == null || crew.isBlank()) throw invalid("Сначала выберите бригаду.");
+      if ("card_error".equals(request.getString("topic"))) {
+        if (!request.fieldNames().equals(Set.of("party", "direction", "topic")))
+          throw invalid("Лишние поля звонка.");
+        JsonObject reply = reply("card_error");
+        return new JsonObject().put("request", request.copy()).put("party", party)
+            .put("direction", direction).put("topic", "card_error").put("crew", crew)
+            .put("audio", reply.getString("audio")).put("message", reply.getString("message"));
+      }
       if (!request.fieldNames().equals(Set.of("party", "direction"))) throw invalid("Лишние поля звонка.");
       String next = template != null && "refused".equals(template.getString("outcome"))
           ? "refused" : NEXT.get(status);
@@ -35,6 +42,27 @@ public final class DdsPhone {
       return new JsonObject().put("request", request.copy()).put("party", party)
           .put("direction", direction).put("crew", crew).put("report_status", next)
           .put("audio", reply.getString("audio")).put("message", reply.getString("message"));
+    }
+    if ("supervisor".equals(party) && "outgoing".equals(direction)
+        && "accepted".equals(status)) {
+      String topic = request.getString("topic", "");
+      if (!(topic.isEmpty() && request.fieldNames().equals(Set.of("party", "direction")))
+          && !("refused".equals(topic)
+              && request.fieldNames().equals(Set.of("party", "direction", "topic"))))
+        throw invalid("Неизвестный вопрос руководителю.");
+      JsonObject reply = reply(topic.isEmpty() ? "supervisor" : "supervisor_refused");
+      JsonObject report = new JsonObject().put("request", request.copy()).put("party", party)
+          .put("direction", direction).put("audio", reply.getString("audio"))
+          .put("message", reply.getString("message"));
+      if ("refused".equals(topic)) report.put("report_status", "refused");
+      return report;
+    }
+    if ("service112".equals(party) && "outgoing".equals(direction)
+        && NEXT.containsKey(status) && request.fieldNames().equals(Set.of("party", "direction"))) {
+      JsonObject reply = reply("service112");
+      return new JsonObject().put("request", request.copy()).put("party", party)
+          .put("direction", direction).put("audio", reply.getString("audio"))
+          .put("message", reply.getString("message"));
     }
     if ("caller".equals(party) && "outgoing".equals(direction)) {
       if (!Set.of("received", "rejected", "accepted", "dispatched", "arrived", "working")

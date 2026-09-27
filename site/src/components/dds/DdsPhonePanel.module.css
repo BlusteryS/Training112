@@ -14,17 +14,18 @@
 
 .heading,
 .buttons {
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 6px;
 }
 
 .heading {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
 }
 
 .buttons button {
-  flex: 1;
+  width: 100%;
   min-height: 36px;
   padding: 6px;
   text-align: center;

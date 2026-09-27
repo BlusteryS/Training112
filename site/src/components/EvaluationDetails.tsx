@@ -19,10 +19,14 @@ const statusNames: Record<string, string> = {
 
 export function EvaluationDetails({ evaluation }: { evaluation: Evaluation }) {
   const { result, reviews } = evaluation;
+  const latestReview = reviews.at(-1);
   return <div className={styles.details}>
-    <div className={styles.score}>{result.attempt_status === 'failed' ? 'Попытка прервана'
+    <div className={styles.score}>{latestReview?.result.score !== undefined
+      ? `Итоговая оценка преподавателя: ${latestReview.result.score} / 100`
+      : result.attempt_status === 'failed' ? 'Попытка прервана'
       : result.score === null ? 'Оценка требует проверки преподавателя'
       : `Автоматическая оценка: ${result.score} / 100`}</div>
+    {latestReview && result.score !== null && <div>Автоматическая оценка: {result.score} / 100</div>}
     {result.attempt_status !== 'failed' && <div>{result.earned} из {result.possible} баллов по критериям</div>}
     {result.attempt_status !== 'failed' && result.passed !== undefined && <div>{result.passed === null ? 'Итог требует проверки' : result.passed ? 'Требования выполнены' : 'Требования не выполнены'}</div>}
     {result.attempt_status !== 'failed' && result.checks.map((check) => <div className={styles.check} key={check.id}>

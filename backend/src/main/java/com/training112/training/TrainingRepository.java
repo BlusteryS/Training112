@@ -690,19 +690,42 @@ public final class TrainingRepository {
                     Tuple.of(id, after)));
   }
 
+  public Future<JsonArray> serviceStatuses(Account actor, UUID id) {
+    return accessibleAttempt(pool, actor, id, false).compose(row -> {
+      if (!"card".equals(row.getString("mode"))) throw forbidden();
+      JsonObject template = row.getJsonObject("card_template");
+      String caseId = template == null ? null : template.getString("case_id");
+      if (caseId == null || caseId.isBlank()) return Future.succeededFuture(new JsonArray());
+      return list(pool, """
+          SELECT to_jsonb(latest) AS value FROM (
+            SELECT DISTINCT ON (lower(g.service_code)) g.service_code AS service,
+              a.card_status AS status,a.started_at
+            FROM training_attempt a
+            JOIN lesson_assignment la ON la.id=a.assignment_id
+            JOIN lesson l ON l.id=la.lesson_id
+            JOIN training_group g ON g.id=l.group_id
+            WHERE a.card_template->>'case_id'=$1 AND l.mode='card'
+            ORDER BY lower(g.service_code),a.created_at DESC,a.id DESC
+          ) latest
+          """, Tuple.of(caseId));
+    });
+  }
+
   public Future<JsonObject> phonePreview(Account actor, UUID id, JsonObject request) {
     return PlatformSettings.enabled(pool, "dds_phone_enabled")
         .compose(enabled -> enabled ? accessibleAttempt(pool, actor, id, false)
             : Future.failedFuture(new ApiException(503, "phone_disabled", "Учебный телефон временно отключён.")))
-        .map(row -> {
+        .compose(row -> {
       if (!"user".equals(actor.role()) || !actor.id().equals(row.getUUID("learner_id"))
           || !"card".equals(row.getString("mode"))
           || !"active".equals(row.getString("status"))) throw forbidden();
       JsonObject card = row.getJsonObject("card");
       if ("caller".equals(request.getString("party")) && card.getString("phone", "").isBlank())
         throw conflict("В карточке нет номера заявителя.");
-      return DdsPhone.report(row.getString("card_status"), row.getString("dds_crew"),
+      JsonObject report = DdsPhone.report(row.getString("card_status"), row.getString("dds_crew"),
           row.getJsonObject("card_template"), request);
+      return "service112".equals(request.getString("party"))
+          ? requireDiscrepancy(pool, id).map(report) : Future.succeededFuture(report);
     });
   }
 
@@ -799,6 +822,16 @@ public final class TrainingRepository {
             : Future.failedFuture(conflict("Сначала получите доклад старшего бригады по телефону.")));
   }
 
+  private Future<Void> requireDiscrepancy(SqlClient db, UUID attempt) {
+    return one(db, """
+        SELECT EXISTS (SELECT 1 FROM attempt_event WHERE attempt_id=$1
+          AND type='dds.phone.report' AND payload->>'party'='crew'
+          AND payload->>'topic'='card_error') AS reported
+        """, Tuple.of(attempt)).compose(row -> row.getBoolean("reported")
+            ? Future.succeededFuture()
+            : Future.failedFuture(conflict("Сначала получите уточнение от бригады.")));
+  }
+
   private Future<JsonObject> ddsCommand(SqlClient db, Row row, Account actor, UUID attempt,
       UUID eventId, String type, JsonObject payload) {
     String status = row.getString("card_status");
@@ -823,7 +856,9 @@ public final class TrainingRepository {
         return Future.failedFuture(conflict("В карточке нет номера заявителя."));
       JsonObject report = DdsPhone.report(status, row.getString("dds_crew"),
           row.getJsonObject("card_template"), payload);
-      return append(db, attempt, eventId, actor.id(), "operator", type, report);
+      Future<Void> evidence = "service112".equals(payload.getString("party"))
+          ? requireDiscrepancy(db, attempt) : Future.succeededFuture();
+      return evidence.compose(ignored -> append(db, attempt, eventId, actor.id(), "operator", type, report));
     }
     return Future.failedFuture(new ApiException(400, "invalid_dds_command", "Неизвестное действие ДДС."));
   }
@@ -1097,7 +1132,7 @@ public final class TrainingRepository {
                 list(
                         pool,
                         "SELECT to_jsonb(r) AS value FROM evaluation_review r WHERE attempt_id=$1"
-                            + " ORDER BY created_at",
+                            + " ORDER BY created_at,id",
                         Tuple.of(id))
                     .map(reviews -> row.getJsonObject("value").put("reviews", reviews)));
   }

@@ -31,15 +31,15 @@ public final class CardCommands {
           "Заблокированы люди", "Есть возгорание", "Без пострадавших", "Травма",
           "Затруднено дыхание", "Боль", "Отравление", "Другое", "Да", "Нет", "Запах газа",
           "Повреждение оборудования", "Прорыв", "Отключение", "Затопление", "Повреждение");
-  private static final Set<String> COMMENT_REQUIRED = Set.of("rejected", "refused", "completed");
+  private static final Set<String> COMMENT_REQUIRED = Set.of("accepted", "rejected", "refused", "completed");
   private static final Map<String, Set<String>> TRANSITIONS =
       Map.of(
           "added", Set.of("received"),
           "received", Set.of("accepted", "rejected"),
           "rejected", Set.of("accepted"),
-          "accepted", Set.of("dispatched", "arrived", "working", "completed", "refused"),
-          "dispatched", Set.of("arrived", "working", "completed", "refused"),
-          "arrived", Set.of("working", "completed", "refused"),
+          "accepted", Set.of("dispatched", "refused"),
+          "dispatched", Set.of("arrived", "refused"),
+          "arrived", Set.of("working", "refused"),
           "working", Set.of("completed", "refused"));
 
   public record Applied(JsonObject card, String status) {}

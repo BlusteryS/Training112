@@ -35,8 +35,14 @@ final class TrainingReports {
           'elapsed_ms', CASE WHEN a.started_at IS NULL OR a.finished_at IS NULL THEN NULL ELSE
             GREATEST(0, (EXTRACT(EPOCH FROM (a.finished_at - a.started_at)) * 1000)::bigint - a.paused_ms) END,
           'card', a.card,
-          'evaluation', CASE WHEN a.status='failed' THEN NULL ELSE e.result END,
-          'deadline_seconds', CASE WHEN l.mode='card' THEN 30 ELSE deadline.seconds END,
+          'evaluation', CASE WHEN latest_review.result IS NULL AND a.status='failed' THEN NULL
+            WHEN latest_review.result IS NULL THEN e.result
+            ELSE COALESCE(e.result,'{}'::jsonb) || jsonb_build_object('score',latest_review.result->'score') END,
+          'deadline_seconds', CASE WHEN l.mode='card' THEN 180 ELSE deadline.seconds END,
+          'open_elapsed_ms', CASE WHEN l.mode='card' THEN (
+            SELECT min(ev.elapsed_ms) FROM attempt_event ev WHERE ev.attempt_id=a.id
+              AND ev.type='card.status' AND ev.payload->>'status'='received')
+            ELSE NULL END,
           'primary_elapsed_ms', CASE WHEN l.mode='card' THEN (
             SELECT min(ev.elapsed_ms) FROM attempt_event ev WHERE ev.attempt_id=a.id
               AND ev.type='card.status' AND ev.payload->>'status' IN ('accepted','rejected'))
@@ -53,6 +59,8 @@ final class TrainingReports {
         JOIN app_user u ON u.id = la.learner_id
         LEFT JOIN training_attempt a ON a.assignment_id = la.id
         LEFT JOIN attempt_evaluation e ON e.attempt_id = a.id
+        LEFT JOIN LATERAL (SELECT r.result FROM evaluation_review r WHERE r.attempt_id=a.id
+          ORDER BY r.created_at DESC,r.id DESC LIMIT 1) latest_review ON true
         LEFT JOIN LATERAL (
           SELECT min((criterion->>'seconds')::integer) AS seconds
           FROM jsonb_array_elements(COALESCE(s.document->'rubric','[]'::jsonb)) criterion
@@ -77,6 +85,8 @@ final class TrainingReports {
             Integer deadline = row.getInteger("deadline_seconds");
             row.put("delta_ms", elapsed != null && deadline != null
                 ? elapsed - deadline * 1000L : null);
+            Long opened = row.getLong("open_elapsed_ms");
+            row.put("open_delta_ms", opened == null ? null : opened - 30_000L);
           }
           return rows;
         });
@@ -116,7 +126,8 @@ final class TrainingReports {
           'attempts', count(a.id),
           'completed', count(a.id) FILTER (WHERE a.status = 'completed'),
           'failed', count(a.id) FILTER (WHERE a.status = 'failed'),
-          'average_score', round(avg((e.result->>'score')::numeric), 2)
+          'average_score', round(avg(COALESCE((latest_review.result->>'score')::numeric,
+            (e.result->>'score')::numeric)), 2)
         ) AS value
         FROM lesson_assignment la
         JOIN lesson l ON l.id = la.lesson_id
@@ -124,6 +135,8 @@ final class TrainingReports {
         JOIN app_user u ON u.id = la.learner_id
         LEFT JOIN training_attempt a ON a.assignment_id = la.id
         LEFT JOIN attempt_evaluation e ON e.attempt_id = a.id
+        LEFT JOIN LATERAL (SELECT r.result FROM evaluation_review r WHERE r.attempt_id=a.id
+          ORDER BY r.created_at DESC,r.id DESC LIMIT 1) latest_review ON true
         WHERE g.instructor_id = $1
         GROUP BY u.id, u.login
         ORDER BY u.login
@@ -136,7 +149,8 @@ final class TrainingReports {
         SELECT jsonb_build_object(
           'attempt_id',a.id,'title',COALESCE(a.card_template->>'title',l.card_template->>'title',s.title),
           'mode',l.mode,'status',a.status,'finished_at',a.finished_at,
-          'score',CASE WHEN a.status='failed' THEN NULL ELSE e.result->'score' END,
+          'score',CASE WHEN a.status='failed' AND latest_review.result IS NULL THEN NULL
+            ELSE COALESCE(latest_review.result->'score',e.result->'score') END,
           'checks',CASE WHEN a.status='failed' THEN '[]'::jsonb ELSE COALESCE(e.result->'checks','[]'::jsonb) END,
           'recommendations',CASE WHEN a.status='failed' THEN '[]'::jsonb ELSE COALESCE(e.result->'recommendations','[]'::jsonb) END
         ) AS value
@@ -145,6 +159,8 @@ final class TrainingReports {
         JOIN lesson l ON l.id=la.lesson_id
         LEFT JOIN scenario s ON s.id=l.scenario_id
         LEFT JOIN attempt_evaluation e ON e.attempt_id=a.id
+        LEFT JOIN LATERAL (SELECT r.result FROM evaluation_review r WHERE r.attempt_id=a.id
+          ORDER BY r.created_at DESC,r.id DESC LIMIT 1) latest_review ON true
         WHERE la.learner_id=$1 AND a.status IN ('completed','failed')
         ORDER BY a.finished_at DESC LIMIT 200
         """, Tuple.of(actor.id()));

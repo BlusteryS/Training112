@@ -7,6 +7,7 @@ import { WorkspaceSwitch } from '../components/WorkspaceSwitch';
 import { api } from '../api';
 import type { Assignment } from '../management/types';
 import type { IncidentSearch } from './IncidentSearch';
+import { ddsStatusNames } from '../components/dds/statuses';
 import boltIcon from '../assets/workspace/bolt.svg';
 import bookmarkIcon from '../assets/workspace/bookmark.svg';
 import checkedIcon from '../assets/workspace/checked.svg';
@@ -28,16 +29,11 @@ function assignmentStatus(assignment: Assignment) {
   return assignment.status === 'active' ? 'В очереди' : 'Закрыта';
 }
 
-const cardStatusNames: Record<string, string> = {
-  added: 'Добавлена', received: 'Получена', accepted: 'Принята', rejected: 'Не принята',
-  dispatched: 'Начало реагирования', arrived: 'Прибытие', working: 'Проведение работ',
-};
-
 function rowStatus(assignment: Assignment) {
   if (assignment.mode !== 'card' || assignment.attempt_status !== 'active') return assignmentStatus(assignment);
-  if (['added', 'received'].includes(assignment.card_status ?? '') && assignment.attempt_started_at
+  if (assignment.card_status === 'added' && assignment.attempt_started_at
       && Date.now() - new Date(assignment.attempt_started_at).valueOf() > 30_000) return 'Не оповещено';
-  return cardStatusNames[assignment.card_status ?? ''] ?? 'В работе';
+  return ddsStatusNames[assignment.card_status ?? ''] ?? 'В работе';
 }
 
 function incidentType(assignment: Assignment) {
