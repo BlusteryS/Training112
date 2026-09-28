@@ -729,6 +729,20 @@ public final class TrainingRepository {
     });
   }
 
+  public Future<Void> phoneAdmission(Account actor, UUID id) {
+    return PlatformSettings.enabled(pool, "dds_phone_enabled").compose(enabled -> {
+      if (!enabled) return Future.failedFuture(
+          new ApiException(503, "phone_disabled", "Учебный телефон временно отключён."));
+      return accessibleAttempt(pool, actor, id, false);
+    }).compose(row -> {
+      if (!"user".equals(actor.role()) || !actor.id().equals(row.getUUID("learner_id"))
+          || !"card".equals(row.getString("mode"))
+          || !"active".equals(row.getString("status"))
+          || !"active".equals(row.getString("lesson_status"))) throw forbidden();
+      return Future.succeededFuture();
+    });
+  }
+
   public Future<Boolean> ddsPhoneEnabled() {
     return PlatformSettings.enabled(pool, "dds_phone_enabled");
   }

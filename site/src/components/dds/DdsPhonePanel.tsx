@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { previewDdsPhone, recordDdsPhone, selectDdsCrew, type DdsPhoneParty, type PhoneReport } from '../../speech/trainingApi';
+import { previewDdsPhone, recognizeDdsPhone, recordDdsPhone, selectDdsCrew,
+  type DdsPhoneParty, type PhoneReport } from '../../speech/trainingApi';
+import { startDdsRecording, type DdsRecording } from '../../speech/recordDdsUtterance';
 import { InputField } from '../ui/InputField';
 import { ddsPartyNames, ddsStatusNames } from './statuses';
 import styles from './DdsPhonePanel.module.css';
@@ -20,10 +22,14 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
 }) {
   const [selected, setSelected] = useState('');
   const [active, setActive] = useState<PhoneReport | null>(null);
+  const [recordingFor, setRecordingFor] = useState('');
+  const [spokenText, setSpokenText] = useState('');
   const [incoming, setIncoming] = useState(false);
   const [callerActionsOpen, setCallerActionsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recordingRef = useRef<{ capture: DdsRecording; party: DdsPhoneParty;
+    direction: 'incoming' | 'outgoing'; topic?: string } | null>(null);
   const canCall = enabled && reports.includes(status) && !!attemptId;
   const canCallCaller = enabled && ['received', 'rejected', ...reports].includes(status) && !!attemptId;
 
@@ -34,6 +40,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   }, [canCall, crew, pendingReport, active, incoming, status]);
 
   useEffect(() => () => {
+    recordingRef.current?.capture.cancel();
     if (audioRef.current) { audioRef.current.onended = null; audioRef.current.pause(); }
   }, []);
 
@@ -50,25 +57,48 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   }
 
   async function call(party: DdsPhoneParty, direction: 'incoming' | 'outgoing', topic?: string) {
-    if (!attemptId || active || busy) return;
+    if (!attemptId || active || recordingRef.current || busy) return;
     setBusy(true);
     setIncoming(false);
     onError('');
     try {
-      const report = await previewDdsPhone(attemptId, party, direction, topic);
+      const capture = await startDdsRecording(() => void finishRecording());
+      recordingRef.current = { capture, party, direction, topic };
+      setRecordingFor(party === 'crew' ? crew || 'бригадой' : ddsPartyNames[party] || party);
+    } catch (cause) {
+      onError(cause instanceof Error ? cause.message : 'Не удалось включить микрофон.');
+    } finally { setBusy(false); }
+  }
+
+  async function finishRecording() {
+    const current = recordingRef.current;
+    if (!current || busy) return;
+    recordingRef.current = null;
+    setRecordingFor('');
+    setBusy(true);
+    try {
+      const pcm16 = await current.capture.finish();
+      if (pcm16.length < 10_000) throw new Error('Реплика слишком короткая. Повторите звонок.');
+      const { text } = await recognizeDdsPhone(attemptId, pcm16);
+      const utterance = text.trim();
+      if (!utterance) throw new Error('Речь не распознана. Повторите звонок.');
+      const { party, direction, topic } = current;
+      const report = await previewDdsPhone(attemptId, party, direction, utterance, topic);
       const audio = new Audio(`/dds/${report.audio}.wav`);
       audioRef.current = audio;
       setActive(report);
+      setSpokenText(utterance);
       audio.onended = () => {
         void (async () => {
           try {
-            await recordDdsPhone(attemptId, party, direction, topic);
+            await recordDdsPhone(attemptId, party, direction, utterance, topic);
             await onChange();
           } catch (cause) {
             onError(cause instanceof Error ? cause.message : 'Не удалось сохранить доклад.');
           } finally {
             audioRef.current = null;
             setActive(null);
+            setSpokenText('');
             setBusy(false);
           }
         })();
@@ -76,6 +106,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
       audio.onerror = () => {
         audioRef.current = null;
         setActive(null);
+        setSpokenText('');
         setBusy(false);
         onError('Не удалось воспроизвести телефонный доклад.');
       };
@@ -83,12 +114,18 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
     } catch (cause) {
       audioRef.current = null;
       setActive(null);
+      setSpokenText('');
       setBusy(false);
-      onError(cause instanceof Error ? cause.message : 'Не удалось начать звонок.');
+      onError(cause instanceof Error ? cause.message : 'Не удалось обработать реплику.');
     }
   }
 
   function hangUp() {
+    if (recordingRef.current) {
+      recordingRef.current.capture.cancel();
+      recordingRef.current = null;
+      setRecordingFor('');
+    }
     const audio = audioRef.current;
     if (!audio) return;
     audio.onended = null;
@@ -96,6 +133,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
     audio.pause();
     audioRef.current = null;
     setActive(null);
+    setSpokenText('');
     setBusy(false);
   }
 
@@ -108,8 +146,14 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
         onChange={(event) => setSelected(event.target.value)} />
       <button type="button" disabled={busy || !selected.trim()} onClick={() => void chooseCrew()}>Назначить</button>
     </div>}
-    {active ? <div className={styles.call}>
+    {recordingFor ? <div className={styles.call}>
+      <div>Разговор: {recordingFor}</div>
+      <div>Говорите в микрофон.</div>
+      <button type="button" disabled={busy} onClick={() => void finishRecording()}>Закончить реплику</button>
+      <button type="button" onClick={hangUp}>Завершить звонок</button>
+    </div> : active ? <div className={styles.call}>
       <div>Разговор: {active.party === 'crew' ? crew || 'бригада' : ddsPartyNames[active.party] || active.party}</div>
+      <div>Вы: {spokenText}</div>
       <div>{active.message}</div>
       <button type="button" onClick={hangUp}>Завершить</button>
     </div> : <>
@@ -120,8 +164,6 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
       <div className={styles.buttons}>
         {enabled && status === 'accepted' && <button type="button" disabled={busy}
           onClick={() => void call('supervisor', 'outgoing')}>Руководителю</button>}
-        {enabled && status === 'accepted' && !crew && <button type="button" disabled={busy}
-          onClick={() => void call('supervisor', 'outgoing', 'refused')}>Отказ руководителя</button>}
         {canCall && crew && !pendingReport && <button type="button" disabled={busy}
           aria-label="Позвонить бригаде" onClick={() => void call('crew', 'outgoing')}>Бригаде</button>}
         {canCall && crew && !discrepancy && <button type="button" disabled={busy}

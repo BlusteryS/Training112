@@ -21,6 +21,9 @@ public final class DdsPhone {
   }
 
   public static JsonObject report(String status, String crew, JsonObject template, JsonObject request) {
+    Object spoken = request.getValue("utterance");
+    if (!(spoken instanceof String utterance) || utterance.isBlank()
+        || utterance.length() > 500) throw invalid("Произнесите реплику в микрофон.");
     String party = request.getString("party", "");
     String direction = request.getString("direction", "");
     if (!Set.of("incoming", "outgoing").contains(direction)) throw invalid("Неизвестный тип звонка.");
@@ -28,14 +31,15 @@ public final class DdsPhone {
       if (!NEXT.containsKey(status)) throw invalid("Сначала примите карточку службы.");
       if (crew == null || crew.isBlank()) throw invalid("Сначала выберите бригаду.");
       if ("card_error".equals(request.getString("topic"))) {
-        if (!request.fieldNames().equals(Set.of("party", "direction", "topic")))
+        if (!request.fieldNames().equals(Set.of("party", "direction", "topic", "utterance")))
           throw invalid("Лишние поля звонка.");
         JsonObject reply = reply("card_error");
         return new JsonObject().put("request", request.copy()).put("party", party)
             .put("direction", direction).put("topic", "card_error").put("crew", crew)
             .put("audio", reply.getString("audio")).put("message", reply.getString("message"));
       }
-      if (!request.fieldNames().equals(Set.of("party", "direction"))) throw invalid("Лишние поля звонка.");
+      if (!request.fieldNames().equals(Set.of("party", "direction", "utterance")))
+        throw invalid("Лишние поля звонка.");
       String next = template != null && "refused".equals(template.getString("outcome"))
           ? "refused" : NEXT.get(status);
       JsonObject reply = reply(next);
@@ -45,20 +49,19 @@ public final class DdsPhone {
     }
     if ("supervisor".equals(party) && "outgoing".equals(direction)
         && "accepted".equals(status)) {
-      String topic = request.getString("topic", "");
-      if (!(topic.isEmpty() && request.fieldNames().equals(Set.of("party", "direction")))
-          && !("refused".equals(topic)
-              && request.fieldNames().equals(Set.of("party", "direction", "topic"))))
+      if (!request.fieldNames().equals(Set.of("party", "direction", "utterance")))
         throw invalid("Неизвестный вопрос руководителю.");
-      JsonObject reply = reply(topic.isEmpty() ? "supervisor" : "supervisor_refused");
+      boolean refused = template != null && "refused".equals(template.getString("outcome"));
+      JsonObject reply = reply(refused ? "supervisor_refused" : "supervisor");
       JsonObject report = new JsonObject().put("request", request.copy()).put("party", party)
           .put("direction", direction).put("audio", reply.getString("audio"))
           .put("message", reply.getString("message"));
-      if ("refused".equals(topic)) report.put("report_status", "refused");
+      if (refused) report.put("report_status", "refused");
       return report;
     }
     if ("service112".equals(party) && "outgoing".equals(direction)
-        && NEXT.containsKey(status) && request.fieldNames().equals(Set.of("party", "direction"))) {
+        && NEXT.containsKey(status)
+        && request.fieldNames().equals(Set.of("party", "direction", "utterance"))) {
       JsonObject reply = reply("service112");
       return new JsonObject().put("request", request.copy()).put("party", party)
           .put("direction", direction).put("audio", reply.getString("audio"))
@@ -69,7 +72,7 @@ public final class DdsPhone {
           .contains(status)) throw invalid("Карточка недоступна для звонка заявителю.");
       String topic = request.getString("topic", "");
       if (!Set.of("address", "situation", "victims").contains(topic)
-          || !request.fieldNames().equals(Set.of("party", "direction", "topic")))
+          || !request.fieldNames().equals(Set.of("party", "direction", "topic", "utterance")))
         throw invalid("Неизвестный вопрос заявителю.");
       JsonObject reply = reply(topic);
       return new JsonObject().put("request", request.copy()).put("party", party)

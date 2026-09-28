@@ -148,7 +148,8 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       draft.law_violation === 'true')))],
   [selectedCards, draft.address, draft.district, draft.okrug, draft.victims, draft.law_violation]);
   const serviceOptions = useMemo(() => [...new Set(['101', '102', '103', '104',
-    ...classifier.flatMap((card) => card.services), ...classifier.flatMap((card) => card.victim_services),
+    ...classifier.flatMap((card) => card.services),
+    ...classifier.flatMap((card) => card.victim_services),
     ...classifier.flatMap((card) => card.law_services),
     ...suggestedServices, ...services])].sort((a, b) => a.localeCompare(b, 'ru')),
   [classifier, suggestedServices, services]);

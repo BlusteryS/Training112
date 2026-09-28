@@ -98,12 +98,18 @@ export type PhoneReport = { party: string; direction: string; topic?: string;
 
 export type DdsPhoneParty = 'crew' | 'caller' | 'supervisor' | 'service112';
 
-export function previewDdsPhone(id: string, party: DdsPhoneParty, direction: 'incoming' | 'outgoing', topic?: string) {
-  const query = new URLSearchParams({ party, direction });
-  if (topic) query.set('topic', topic);
-  return api<PhoneReport>(`training/attempts/${id}/phone?${query}`);
+export function recognizeDdsPhone(id: string, pcm16: string) {
+  return api<{ text: string }>(`training/attempts/${id}/phone/recognize`, { pcm16 });
 }
 
-export function recordDdsPhone(id: string, party: DdsPhoneParty, direction: 'incoming' | 'outgoing', topic?: string) {
-  return postDdsCommand(id, 'dds.phone.report', { party, direction, ...(topic ? { topic } : {}) });
+export function previewDdsPhone(id: string, party: DdsPhoneParty, direction: 'incoming' | 'outgoing',
+  utterance: string, topic?: string) {
+  return api<PhoneReport>(`training/attempts/${id}/phone`, { party, direction, utterance,
+    ...(topic ? { topic } : {}) });
+}
+
+export function recordDdsPhone(id: string, party: DdsPhoneParty, direction: 'incoming' | 'outgoing',
+  utterance: string, topic?: string) {
+  return postDdsCommand(id, 'dds.phone.report', { party, direction, utterance,
+    ...(topic ? { topic } : {}) });
 }

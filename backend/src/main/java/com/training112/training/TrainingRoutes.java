@@ -6,6 +6,7 @@ import com.training112.auth.AuthRepository;
 import com.training112.auth.AuthRepository.Account;
 import com.training112.auth.AuthSession;
 import com.training112.auth.RequestGuard;
+import com.training112.speech.SpeechConfig;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -21,6 +22,7 @@ public final class TrainingRoutes {
   private final TrainingRepository repository;
   private final AuthRepository auth;
   private final AppConfig config;
+  private final DdsTranscription transcription;
 
   public TrainingRoutes(
       Vertx vertx, TrainingRepository repository, AuthRepository auth, AppConfig config) {
@@ -28,6 +30,7 @@ public final class TrainingRoutes {
     this.repository = repository;
     this.auth = auth;
     this.config = config;
+    this.transcription = new DdsTranscription(vertx, SpeechConfig.fromEnvironment());
   }
 
   public void mount(Router router) {
@@ -39,9 +42,14 @@ public final class TrainingRoutes {
     BodyHandler materialBody = BodyHandler.create()
         .setBodyLimit(12L * 1024 * 1024)
         .setHandleFileUploads(false);
+    BodyHandler audioBody = BodyHandler.create()
+        .setBodyLimit(450_000)
+        .setHandleFileUploads(false);
     router.route("/api/training/*").handler(ctx -> {
       if (ctx.request().method() == HttpMethod.POST
           && "/api/training/materials".equals(ctx.request().path())) materialBody.handle(ctx);
+      else if (ctx.request().method() == HttpMethod.POST
+          && ctx.request().path().endsWith("/phone/recognize")) audioBody.handle(ctx);
       else standardBody.handle(ctx);
     });
     router.route("/api/training/*").handler(ctx -> {
@@ -214,14 +222,12 @@ public final class TrainingRoutes {
         .handler(c -> empty(c, repository.cardLinks().detach(actor(c), id(c))));
     router.post("/api/training/attempts/:id/links/promote")
         .handler(c -> empty(c, repository.cardLinks().promote(actor(c), id(c))));
-    router.get("/api/training/attempts/:id/phone")
+    router.post("/api/training/attempts/:id/phone/recognize")
+        .handler(c -> json(c, repository.phoneAdmission(actor(c), id(c))
+            .compose(ignored -> transcription.recognize(body(c)))));
+    router.post("/api/training/attempts/:id/phone")
         .handler(c -> {
-          JsonObject request = new JsonObject()
-              .put("party", c.request().getParam("party", ""))
-              .put("direction", c.request().getParam("direction", ""));
-          String topic = c.request().getParam("topic");
-          if (topic != null) request.put("topic", topic);
-          json(c, repository.phonePreview(actor(c), id(c), request));
+          json(c, repository.phonePreview(actor(c), id(c), body(c)));
         });
     router
         .get("/api/training/attempts/:id/events")

@@ -7,6 +7,8 @@ export type ClassifierCard = {
   sign3: string;
   result: string;
   services: string[];
+  police_without_signs: boolean;
+  medical_without_victims: boolean;
   victim_services: string[];
   law_services: string[];
   district_dds: boolean;
@@ -38,7 +40,11 @@ export function servicesForCard(card: ClassifierCard | undefined, address: strin
   okrug: string, victims: string, lawViolation: boolean) {
   if (!card || !address.trim()) return [];
   const services = [...card.services];
-  if (victims.trim() && !['нет', 'неизвестно'].includes(victims.trim().toLocaleLowerCase('ru')))
+  const hasVictims = Boolean(victims.trim())
+    && !['нет', 'неизвестно'].includes(victims.trim().toLocaleLowerCase('ru'));
+  if (!hasVictims && !lawViolation && card.police_without_signs) services.push('102');
+  if (!hasVictims && card.medical_without_victims) services.push('103');
+  if (hasVictims)
     services.push(...card.victim_services);
   if (lawViolation) services.push(...card.law_services);
   const local = okrug === 'ТиНАО' ? card.tinao_dds : card.district_dds;

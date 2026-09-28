@@ -21,10 +21,12 @@ MAIN_SERVICES = {
     "ZEMP": "ЦЭМП", "МСР": "МСР",
 }
 OTHER_SERVICES = {
+    "P": "ОДС ПСЦ", "T": "МГПСС",
     "AL": "Мосгортранс", "AO": "Городское хозяйство", "AP": "Гормост",
     "AX": "Мосводоканал", "AY": "МОЭК", "AZ": "Россети", "BA": "ОЭК",
     "BB": "Мослифт", "BC": "ЦОДД", "BJ": "ДДС департамента образования",
-    "BH": "Москоллектор", "BI": "РЖД", "BN": "Мосводосток",
+    "BH": "Москоллектор", "BI": "РЖД",
+    "BN": "Мосводосток",
 }
 
 
@@ -61,14 +63,11 @@ def convert(source):
             if not code.isdigit() or len(code) < 6 or not first or first == "Не отображается оператору 112":
                 continue
             main = [MAIN_SERVICES.get(part.strip(), part.strip()) for part in row.get("M", "").split(",")]
-            base = main + [service for column, service in OTHER_SERVICES.items() if row.get(column)]
-            if any(row.get(column) for column in ("N", "P", "T")):
+            base = main + [service for column, service in OTHER_SERVICES.items()
+                           if row.get(column) and "условие оповещения" not in row[column].lower()]
+            if row.get("N") and "условие оповещения" not in row["N"].lower():
                 base.append("101")
-            if row.get("U"):
-                base.append("102")
-            if row.get("X"):
-                base.append("103")
-            if row.get("AA"):
+            if row.get("AA") and "условие оповещения" not in row["AA"].lower():
                 base.append("104")
             victims = [service for column, service in (("W", "102"), ("Y", "103"))
                        if row.get(column)]
@@ -80,6 +79,8 @@ def convert(source):
                 "sign3": row.get("I", ""),
                 "result": row.get("K", "") or first,
                 "services": unique(base),
+                "police_without_signs": bool(row.get("U")),
+                "medical_without_victims": bool(row.get("X")),
                 "victim_services": unique(victims),
                 "law_services": law,
                 "district_dds": bool(row.get("BW")),

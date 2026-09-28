@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import json
 import logging
 import os
@@ -13,6 +15,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
 import zmq
 import zmq.asyncio
 
@@ -57,6 +60,7 @@ class SpeechService:
         self.socket, self.config, self.recordings = socket, config, recordings
         self.scheduler, self.vad, self.asr, self.intent, self.voice = models
         self.peers: dict[bytes, Peer] = {}
+        self.recognitions: dict[bytes, asyncio.Task] = {}
 
     async def event(self, identity, value):
         await self.socket.send_multipart(
@@ -107,6 +111,16 @@ class SpeechService:
                             },
                         )
                         continue
+                    if command.get("type") == "recognize":
+                        if identity in self.recognitions or set(command) != {"type", "pcm16"}:
+                            raise ValueError("Invalid recognition request")
+                        pcm = base64.b64decode(command["pcm16"], validate=True)
+                        if not 16_000 <= len(pcm) <= 330_000 or len(pcm) % 2:
+                            raise ValueError("Invalid recognition audio")
+                        task = asyncio.create_task(self.recognize(identity, pcm))
+                        self.recognitions[identity] = task
+                        task.add_done_callback(lambda done, key=identity: self.recognitions.pop(key, None))
+                        continue
                     if command.get("type") != "start" or command.get("version") != 2:
                         raise ValueError("Unsupported protocol")
                     attempt = str(uuid.UUID(command["attempt_id"]))
@@ -119,7 +133,7 @@ class SpeechService:
                     peer.task.add_done_callback(
                         lambda task, key=identity: self.peers.pop(key, None)
                     )
-                except (ValueError, KeyError, TypeError) as error:
+                except (ValueError, KeyError, TypeError, binascii.Error) as error:
                     LOG.warning("Rejected speech command: %s", error)
                     with suppress(zmq.ZMQError):
                         await self.event(
@@ -131,9 +145,37 @@ class SpeechService:
                     LOG.warning("Gateway transport unavailable")
         finally:
             tasks = [p.task for p in self.peers.values()]
+            tasks.extend(self.recognitions.values())
             for task in tasks:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def recognize(self, identity: bytes, pcm: bytes) -> None:
+        try:
+            samples = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
+            if (float(np.sqrt(np.mean(samples * samples))) < 0.004
+                    or not await self.scheduler.run(self.has_speech, samples)):
+                await self.event(identity, {"type": "transcript", "text": ""})
+                return
+            stream = self.asr.stream()
+            await stream.accept(samples)
+            result = await stream.finish()
+            await self.event(identity, {"type": "transcript", "text": result.strip()[:500]})
+        except Exception as error:
+            LOG.exception("DDS recognition failed")
+            with suppress(zmq.ZMQError):
+                await self.event(identity, {"type": "unavailable",
+                                            "code": "overloaded" if isinstance(error, Overloaded)
+                                            else "runtime_failed"})
+
+    def has_speech(self, samples: np.ndarray) -> bool:
+        detector = OnnxVad(self.vad)
+        continuous = 0
+        for offset in range(0, len(samples) - 511, 512):
+            continuous = continuous + 1 if detector.probability(samples[offset:offset + 512]) >= 0.5 else 0
+            if continuous >= 3:
+                return True
+        return False
 
     async def conversation(self, identity, peer):
         async def event(value):

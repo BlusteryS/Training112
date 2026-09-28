@@ -65,10 +65,16 @@ public final class CardSnapshot {
     if (survey != null) {
       add(names, survey.getJsonArray("services"));
       String victims = text(facts, "victims").trim();
-      if (!victims.isEmpty() && !victims.equalsIgnoreCase("нет")
-          && !victims.equalsIgnoreCase("неизвестно"))
+      boolean hasVictims = !victims.isEmpty() && !victims.equalsIgnoreCase("нет")
+          && !victims.equalsIgnoreCase("неизвестно");
+      boolean lawViolation = "true".equalsIgnoreCase(text(facts, "law_violation"));
+      if (!hasVictims && !lawViolation && survey.getBoolean("police_without_signs", false))
+        names.add("102");
+      if (!hasVictims && survey.getBoolean("medical_without_victims", false))
+        names.add("103");
+      if (hasVictims)
         add(names, survey.getJsonArray("victim_services"));
-      if ("true".equalsIgnoreCase(text(facts, "law_violation")))
+      if (lawViolation)
         add(names, survey.getJsonArray("law_services"));
       String district = text(facts, "district").trim();
       String okrug = text(facts, "okrug").trim();
