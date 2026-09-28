@@ -699,7 +699,13 @@ public final class TrainingRepository {
       return list(pool, """
           SELECT to_jsonb(latest) AS value FROM (
             SELECT DISTINCT ON (lower(g.service_code)) g.service_code AS service,
-              a.card_status AS status,a.started_at
+              a.card_status AS status,a.started_at,
+              (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                  'status',e.payload->>'status',
+                  'comment',e.payload->>'comment',
+                  'created_at',e.created_at) ORDER BY e.sequence),'[]'::jsonb)
+               FROM attempt_event e WHERE e.attempt_id=a.id AND e.type='card.status'
+                 AND e.payload->>'status'<>'received') AS history
             FROM training_attempt a
             JOIN lesson_assignment la ON la.id=a.assignment_id
             JOIN lesson l ON l.id=la.lesson_id
