@@ -127,11 +127,14 @@ export class VoiceCall {
     const socket = new WebSocket(`${protocol}://${location.host}/api/speech/session?attempt_id=${encodeURIComponent(this.attemptId)}`);
     this.socket = socket;
     socket.binaryType = 'arraybuffer';
-    this.connectionTimer = setTimeout(() => this.reconnect(), 10_000);
+    this.connectionTimer = setTimeout(() => {
+      if (this.socket === socket) this.reconnect();
+    }, 10_000);
     socket.onopen = () => {
-      if (this.closed) return;
+      if (this.closed || this.socket !== socket) return;
       this.lastServerActivity = Date.now();
       this.heartbeat = setInterval(() => {
+        if (this.socket !== socket) return;
         if (Date.now() - this.lastServerActivity > 20_000) {
           this.reconnect();
         } else if (socket.readyState === WebSocket.OPEN) {
@@ -139,10 +142,14 @@ export class VoiceCall {
         }
       }, 5_000);
     };
-    socket.onerror = () => socket.close();
-    socket.onclose = () => this.reconnect();
+    socket.onerror = () => {
+      if (this.socket === socket) socket.close();
+    };
+    socket.onclose = () => {
+      if (this.socket === socket) this.reconnect();
+    };
     socket.onmessage = ({ data }: MessageEvent<string | ArrayBuffer>) => {
-      if (this.closed) return;
+      if (this.closed || this.socket !== socket) return;
       this.lastServerActivity = Date.now();
       try {
         if (typeof data === 'string') this.event(JSON.parse(data) as SpeechEvent);
@@ -161,8 +168,9 @@ export class VoiceCall {
     clearInterval(this.heartbeat);
     clearTimeout(this.reconnectTimer);
     if (this.socket) {
-      this.socket.onclose = this.socket.onerror = this.socket.onmessage = null;
+      this.socket.onopen = this.socket.onclose = this.socket.onerror = this.socket.onmessage = null;
       this.socket.close();
+      this.socket = undefined;
     }
     if (!this.reconnectUntil) this.reconnectUntil = Date.now() + 25_000;
     if (Date.now() >= this.reconnectUntil) {
@@ -255,9 +263,7 @@ export class VoiceCall {
     clearInterval(this.heartbeat);
     window.removeEventListener('pagehide', this.onPageHide);
     if (this.socket) {
-      this.socket.onclose = null;
-      this.socket.onerror = null;
-      this.socket.onmessage = null;
+      this.socket.onopen = this.socket.onclose = this.socket.onerror = this.socket.onmessage = null;
       if (this.socket.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: 'end', failed }));
       this.socket.close();
     }

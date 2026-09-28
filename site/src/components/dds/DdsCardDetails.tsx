@@ -81,8 +81,8 @@ export function DdsCardDetails({ card, assignment, statusEditor }: {
           {card.incident_details && <Field label="Подробности" text={card.incident_details} />}
           <Field label="Источник обращения" text={card.origin || assignment?.origin} />
         </div>
-        {statusEditor}
       </div>
     </div>
+    {statusEditor}
   </>;
 }

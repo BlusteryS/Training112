@@ -44,13 +44,21 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
     if (audioRef.current) { audioRef.current.onended = null; audioRef.current.pause(); }
   }, []);
 
+  async function refreshAfterSave(action: string) {
+    try {
+      await onChange();
+    } catch {
+      onError(`${action}, но карточка не обновилась. Обновите страницу.`);
+    }
+  }
+
   async function chooseCrew() {
     if (!attemptId || busy) return;
     setBusy(true);
     onError('');
     try {
       await selectDdsCrew(attemptId, selected.trim());
-      await onChange();
+      await refreshAfterSave('Бригада назначена');
     } catch (cause) {
       onError(cause instanceof Error ? cause.message : 'Не удалось назначить бригаду.');
     } finally { setBusy(false); }
@@ -92,7 +100,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
         void (async () => {
           try {
             await recordDdsPhone(attemptId, party, direction, utterance, topic);
-            await onChange();
+            await refreshAfterSave('Доклад сохранён');
           } catch (cause) {
             onError(cause instanceof Error ? cause.message : 'Не удалось сохранить доклад.');
           } finally {

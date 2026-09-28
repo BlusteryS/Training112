@@ -6,6 +6,7 @@ export type AssignedAttempt = {
   phone: string;
   card: Record<string, string> | null;
   deadlineSeconds: number | null;
+  startedAt: number | null;
 };
 
 type AttemptState = {
@@ -21,14 +22,16 @@ export async function startAssignedAttempt(learnerId: string, assignmentId: stri
     && item.mode === 'call' && item.status === 'active');
   if (!assignment) throw new Error('Задание недоступно. Возможно, преподаватель уже завершил занятие.');
   if (assignment.attempt_id && assignment.attempt_status && ['created', 'active', 'suspended'].includes(assignment.attempt_status)) {
+    const startedAt = assignment.attempt_started_at ? Date.parse(assignment.attempt_started_at) : null;
     return { id: assignment.attempt_id, phone: assignment.caller_phone?.trim() ?? '',
-      card: assignment.card, deadlineSeconds: assignment.card_deadline_seconds };
+      card: assignment.card, deadlineSeconds: assignment.card_deadline_seconds,
+      startedAt: startedAt !== null && Number.isFinite(startedAt) ? startedAt : null };
   }
   const attempt = await api<AttemptState>('training/attempts', {
     id: crypto.randomUUID(), assignment_id: assignment.id,
   });
   return { id: attempt.id, phone: assignment.caller_phone?.trim() ?? '',
-    card: attempt.card, deadlineSeconds: assignment.card_deadline_seconds };
+    card: attempt.card, deadlineSeconds: assignment.card_deadline_seconds, startedAt: null };
 }
 
 export async function saveAttemptCard(id: string, card: Record<string, string>) {

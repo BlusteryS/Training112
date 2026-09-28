@@ -68,8 +68,10 @@ function Accounts() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<(User & { blocked: boolean }) | null>(null);
   const [error, setError] = useState('');
-  const refresh = () => api<(User & { blocked: boolean })[]>('admin/users').then(setUsers);
-  useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
+  const refresh = () => api<(User & { blocked: boolean })[]>('admin/users')
+    .then((rows) => { setUsers(rows); setError(''); })
+    .catch((cause: Error) => setError(cause.message));
+  useEffect(() => { void refresh(); }, []);
   return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
     {users.length === 0 ? <DeskEmpty>Пользователей нет</DeskEmpty> : <DeskTable head={<><span>Логин</span><span>Роль</span><span>Доступ</span><span /></>}>
       {users.map((entry) => <DeskRow key={entry.id}>
@@ -151,7 +153,10 @@ function Status() {
         const next = await api<StatusData>('admin/status', undefined, controller.signal);
         if (!cancelled) { setRow(next); setError(''); }
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Комплекс не ответил.');
+        if (!cancelled) {
+          setRow(null);
+          setError(cause instanceof Error ? cause.message : 'Комплекс не ответил.');
+        }
       } finally {
         if (!cancelled) timer = window.setTimeout(() => void load(), 5000);
       }

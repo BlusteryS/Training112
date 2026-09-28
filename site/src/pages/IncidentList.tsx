@@ -102,8 +102,8 @@ function IncidentRow({ assignment, onViewResult, onViewLinks }: {
       <div className={`${styles.cell} ${styles.darkCell}`}>{created.time}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{incidentType(assignment)}</div>
       <div className={styles.cell}>{assignment.card?.victims ?? ''}</div>
-      <div className={`${styles.cell} ${styles.statusCell}`}>{rowStatus(assignment)}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{assignment.card?.address ?? ''}</div>
+      <div className={`${styles.cell} ${styles.statusCell}`}>{rowStatus(assignment)}</div>
       {assignment.attempt_id && ['completed', 'failed'].includes(assignment.attempt_status ?? '')
         ? <button type="button" className={styles.cellButton} title="Посмотреть результат"
           onClick={() => onViewResult(assignment)}><img src={detailsIcon} alt="" /></button>
@@ -308,7 +308,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
         <div className={styles.tableHead}>
           <span /><span>Связи</span><span /><span>ЧС</span><span />
           <span>Опер.</span><span>АРМ</span><span>Номер</span><span>Дата</span><span>Время</span>
-          <span>Тип происшествия</span><span>Постр.</span><span>Статус</span><span>Адрес</span><span /><span>Проверено</span>
+          <span>Тип происшествия</span><span>Постр.</span><span>Адрес</span><span>Статус службы</span><span /><span>Проверено</span>
         </div>
         <div className={styles.rows}>
           {rows.map((assignment) => <IncidentRow assignment={assignment} onViewResult={viewResult}

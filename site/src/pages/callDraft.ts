@@ -23,6 +23,7 @@ export type IncidentDraft = {
   city: string;
   okrug: string;
   district: string;
+  object: string;
   street: string;
   house: string;
   entrance: string;
@@ -42,7 +43,7 @@ export function initialDraft(phone: string, card?: Record<string, string> | null
     incident_sign_2: '', incident_sign_3: '', incident_details: '',
     address: '', address_description: '', location_lat: '', location_lon: '',
     country: 'Россия', city: 'Москва', okrug: '',
-    district: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Неизвестно',
+    district: '', object: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Неизвестно',
     law_violation: 'false', services: '', comment: '',
   };
   if (card) {

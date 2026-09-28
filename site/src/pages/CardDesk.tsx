@@ -121,7 +121,11 @@ export function CardDesk() {
     setError('');
     try {
       await postCardStatus(attemptId, next, comment);
-      await refresh();
+      try {
+        await refresh();
+      } catch {
+        setError('Статус сохранён, но карточка не обновилась. Обновите страницу.');
+      }
       if (['completed', 'refused'].includes(next)) navigate('/');
       return true;
     } catch (cause) {

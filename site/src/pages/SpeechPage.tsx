@@ -55,6 +55,7 @@ export function SpeechPage() {
     let admitted = false;
     let disposed = false;
     let failedAttempt = false;
+    let originalStartedAt: number | null = null;
 
     savedRef.current = false;
     leavingRef.current = false;
@@ -82,7 +83,7 @@ export function SpeechPage() {
       ready: () => {
         if (call.current !== current) return;
         admitted = true;
-        setStartedAt(Date.now());
+        setStartedAt(originalStartedAt ?? Date.now());
         setPhase('active');
       },
       text: () => undefined,
@@ -110,6 +111,7 @@ export function SpeechPage() {
         setPhone(assigned.phone);
         setCard(assigned.card);
         setDeadlineSeconds(assigned.deadlineSeconds);
+        originalStartedAt = assigned.startedAt;
         current = new VoiceCall(callbacks, assigned.id);
         call.current = current;
         await current.start();

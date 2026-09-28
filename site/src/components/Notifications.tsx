@@ -15,13 +15,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!text) return;
     setItems((current) => [...current, { id: nextId++, kind, message: text }]);
   }, []);
+  const firstId = items[0]?.id;
   useEffect(() => {
-    if (!items.length) return;
+    if (firstId === undefined) return;
     const timer = window.setTimeout(() => {
-      setItems((current) => current.slice(1));
+      setItems((current) => current[0]?.id === firstId ? current.slice(1) : current);
     }, 5_000);
     return () => window.clearTimeout(timer);
-  }, [items]);
+  }, [firstId]);
 
   return <NotificationContext.Provider value={notify}>
     {children}

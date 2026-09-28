@@ -249,11 +249,6 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           onChange={(value) => change('scene_phone', value)} onCopy={() => change('scene_phone', phone)} />
       </div>
       <div className={styles.incidentMeta}>
-        <div className={styles.timer}>
-          <span className={styles.timerCaption}><span>Время</span><span>решения</span></span>
-          <span className={styles.timerValue}>{time.minutes}</span>
-          <span className={styles.timerSeconds}>:{time.seconds}</span>
-        </div>
         <div className={styles.metaText}>
           <span className={styles.incidentName}>Происшествие {incidentNumber}</span>
           <span className={styles.metaLines}>
@@ -261,6 +256,10 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
             <span>Опер.{operatorNumber ? ` ${operatorNumber}` : ''}, АРМ {arm}</span>
           </span>
         </div>
+      </div>
+      <div className={styles.timer}>
+        <span className={styles.timerValue}>{time.minutes}</span>
+        <span className={styles.timerSeconds}>:{time.seconds}</span>
       </div>
     </div>
 
@@ -308,6 +307,8 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         <button type="button" onClick={() => setConfirm('dropped')}>Срыв звонка</button>
       </div>
 
+      <div className={styles.caseColumns}>
+      <div className={styles.leftColumn}>
       <div className={styles.addressPanel}>
         <div className={styles.panelTitle}>Адрес
           <button className={styles.mapButton} type="button" onClick={() => setMapOpen(true)}
@@ -321,6 +322,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         <div className={styles.addressGrid}>
           <label>Страна<input value={draft.country} onChange={(event) => change('country', event.target.value)} /></label>
           <label>Город<input value={draft.city} onChange={(event) => change('city', event.target.value)} /></label>
+          <label>Объект<input value={draft.object} onChange={(event) => change('object', event.target.value)} /></label>
           <label>Округ<select required value={draft.okrug} onChange={(event) => change('okrug', event.target.value)}>
             <option value=""></option>
             {moscowOkrugs.map((okrug) => <option key={okrug} value={okrug}>{okrug}</option>)}
@@ -336,22 +338,16 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
             onChange={(event) => change('address_description', event.target.value)}
             placeholder="Опишите место, если точного адреса нет" />
         </label>
+      </div>
+
+      <div className={styles.descriptionPanel}>
         <label className={styles.description}>Описание со слов заявителя
           <AutosizeTextarea id="card-description" required maxLength={1999} value={draft.description}
             onChange={(event) => change('description', event.target.value)} placeholder="Введите описание происшествия" />
           <span>{draft.description.length} / 1999</span>
         </label>
       </div>
-
-      {mapOpen && <Suspense fallback={null}><IncidentMap latitude={draft.location_lat} longitude={draft.location_lon}
-        onClose={() => setMapOpen(false)} onSelect={({ latitude, longitude, address }: MapSelection) => {
-          setDraft((current) => ({ ...current,
-            location_lat: latitude, location_lon: longitude,
-            ...(address && { address: address.label, country: 'Россия', city: 'Москва',
-              district: address.district || current.district, street: address.street, house: address.house }),
-          }));
-          setMapOpen(false);
-        }} /></Suspense>}
+      </div>
 
       <div className={styles.incidentPanel}>
         <div className={styles.panelTitle}>Что случилось?</div>
@@ -381,6 +377,17 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         </label>
         <div className={styles.callState}><img src={helpIcon} alt="" /><span>{message}</span></div>
       </div>
+      </div>
+
+      {mapOpen && <Suspense fallback={null}><IncidentMap latitude={draft.location_lat} longitude={draft.location_lon}
+        onClose={() => setMapOpen(false)} onSelect={({ latitude, longitude, address }: MapSelection) => {
+          setDraft((current) => ({ ...current,
+            location_lat: latitude, location_lon: longitude,
+            ...(address && { address: address.label, country: 'Россия', city: 'Москва',
+              district: address.district || current.district, street: address.street, house: address.house }),
+          }));
+          setMapOpen(false);
+        }} /></Suspense>}
     </form>
 
     <div className={styles.serviceBar}>

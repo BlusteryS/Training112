@@ -45,13 +45,15 @@ export function Groups() {
       : previous.filter((learner) => learner.id !== learnerId));
     setBusy(true);
     setError('');
+    let saved = false;
     try {
       await api(on ? `training/groups/${group.id}/members` : `training/groups/${group.id}/members/remove`, { learner_id: learnerId });
-      setMembers(await api<Learner[]>(`training/groups/${group.id}/members`));
+      saved = true;
       await refresh();
     } catch (cause) {
-      setMembers(previous);
-      setError(cause instanceof Error ? cause.message : 'Не удалось изменить состав.');
+      if (!saved) setMembers(previous);
+      setError(saved ? 'Состав изменён, но список не обновился. Откройте группу снова.'
+        : cause instanceof Error ? cause.message : 'Не удалось изменить состав.');
     } finally {
       setBusy(false);
     }
@@ -69,7 +71,13 @@ export function Groups() {
     {creating && <GroupCreate busy={busy} onClose={() => setCreating(false)} onSubmit={(name, service) => {
       setBusy(true); setError('');
       void api<Group>('training/groups', { name, service_code: service })
-        .then(async (created) => { await refresh(); setGroup(created); setCreating(false); })
+        .then((created) => {
+          const next = { ...created, member_count: 0 };
+          setGroups((current) => [next, ...current]);
+          setGroup(next);
+          setCreating(false);
+          void refresh().catch(() => setError('Группа создана, но список не обновился.'));
+        })
         .catch((cause: Error) => setError(cause.message))
         .finally(() => setBusy(false));
     }} />}
