@@ -14,7 +14,7 @@ public final class CardCommands {
           "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code", "incident_types",
           "law_violation",
           "incident_sign_2", "incident_sign_3", "incident_details",
-          "okrug", "phone", "provided_phone", "scene_phone", "services", "street", "victims",
+          "object", "okrug", "phone", "provided_phone", "scene_phone", "services", "street", "victims",
           "location_lat", "location_lon");
   private static final Set<String> OKRUGS =
       Set.of("ЦАО", "САО", "СВАО", "ВАО", "ЮВАО", "ЮАО", "ЮЗАО", "ЗАО", "СЗАО", "ЗелАО", "ТиНАО");
