@@ -16,6 +16,11 @@ _PATTERNS = {
 _REPEAT = re.compile(_LANGUAGE["repeat"])
 _CONTACT = re.compile(_LANGUAGE["contact"])
 _KNOWN = re.compile(_LANGUAGE["known"])
+_NEGATED_GOODBYE = re.compile(_LANGUAGE["negated_goodbye"])
+
+
+def negated_goodbye(text: str) -> bool:
+    return _NEGATED_GOODBYE.search(operator_text(text)) is not None
 
 
 def strip_known(text: str) -> str:
@@ -33,6 +38,13 @@ def evidence(text: str) -> tuple[str, ...]:
         if start is not None:
             matches.append((start, label))
     labels = [label for _, label in sorted(matches)]
+    if "weapon" in labels and "danger" in labels and re.search(
+        r"\bчем (?:он|она|они) угрожа\w*\b", words
+    ) and not re.search(
+        r"\b(?:безопасн\w*|опасн\w*|опасност\w*|угроз\w*|угрожают|можете (?:ли )?(?:выйти|отойти))\b",
+        words,
+    ):
+        labels.remove("danger")
     if "fire" in labels and "address" in labels and re.search(
         r"\b(?:горени\w*|пламя|огонь|дым) где именно (?:наблюда\w*|видн\w*|идет)", words
     ) and not re.search(r"\b(?:адрес\w*|улиц\w*|дом\w*|населенн\w* пункт|местоположени\w*|"
@@ -44,7 +56,11 @@ def evidence(text: str) -> tuple[str, ...]:
         labels.remove("address")
     if "victim_count" in labels or "age" in labels:
         # A count or age question alone does not also ask whether anyone was hurt.
-        if not re.search(r"\b(?:есть ли|кто|кому|врач нужен)\b.{0,35}\b(?:пострад|ранен|травм|люди|кому)", words):
+        if not re.search(
+            r"\b(?:есть ли|кто|кому|врач нужен)\b.{0,35}\b(?:пострад|ранен|травм|люди|кому|нужна помощь)"
+            r"|\bлюди там целы\b|\bтравмированн\w* люди\b",
+            words,
+        ):
             labels = [label for label in labels if label != "victims"]
     if "help_sent" in labels or "not_sent" in labels:
         labels = [label for label in labels if label != "vehicle"]

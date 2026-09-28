@@ -18,26 +18,25 @@ public final class ScenarioDraft {
   private static final JsonObject TEMPLATE = loadJson("demo-scenario.json");
   private static final JsonObject PROFILE = loadJson("draft-profile.json");
   private static final JsonObject SIGNALS = PROFILE.getJsonObject("signals");
-  private static final Pattern NO_VICTIMS = Pattern.compile(SIGNALS.getString("no_victims"));
-  private static final Pattern VICTIMS = Pattern.compile(SIGNALS.getString("victims"));
   private static final Pattern FLAMES = Pattern.compile(SIGNALS.getString("flames"));
   private static final Pattern SMOKE = Pattern.compile(SIGNALS.getString("smoke"));
 
   private ScenarioDraft() {}
 
-  public static JsonObject build(String classifierCode, String location,
-      String difficulty, int seconds, String origin, String caller) {
+  public static JsonObject build(String classifierCode, String location, String victimsState,
+      String difficulty, int seconds, String origin) {
     JsonObject incident = IncidentClassifier.card(classifierCode);
     if (incident == null || !DIFFICULTIES.contains(difficulty)
+        || !Set.of("absent", "present", "unknown").contains(victimsState)
         || !IncidentOrigin.SOURCES.contains(origin) || seconds < 1 || seconds > 86_400
-        || location.isBlank() || location.length() > 1000
-        || caller.isBlank() || caller.length() > 200) {
+        || location.isBlank() || location.length() > 1000) {
       throw new ApiException(400, "invalid_scenario", "Проверьте тип, место, сложность, источник и норматив.");
     }
 
-    String description = incident.getString("result");
+    String description = incident.getString("result").replaceAll("\\s+", " ").trim();
+    JsonObject label = PROFILE.getJsonObject("incident_labels").getJsonObject(classifierCode);
     JsonObject document = TEMPLATE.copy();
-    document.put("title", PROFILE.getString("title_prefix") + description);
+    document.put("title", label == null ? description : label.getString("title"));
     document.put("classifier_code", classifierCode);
     document.put("origin", origin);
     document.put("difficulty", difficulty);
@@ -46,19 +45,17 @@ public final class ScenarioDraft {
     JsonObject facts = document.getJsonObject("facts");
     JsonObject defaults = PROFILE.getJsonObject("facts");
     Map<String, JsonArray> answers = new HashMap<>();
-    facts.put("caller_name", caller);
+    facts.put("caller_name", choose(PROFILE.getJsonArray("caller_names")));
     facts.put("address", location);
-    facts.put("incident", description);
+    facts.put("incident", label == null ? description : label.getString("incident"));
     String lower = description.toLowerCase(Locale.ROOT);
-    boolean noVictims = NO_VICTIMS.matcher(lower).find();
-    boolean reportedVictims = !noVictims && VICTIMS.matcher(lower).find();
+    facts.put("victims_state", victimsState);
     JsonObject victims = defaults.getJsonObject("victims");
-    answers.put("victims", victims.getJsonArray(
-        noVictims ? "absent" : reportedVictims ? "present" : "unknown"));
+    answers.put("victims", victims.getJsonArray(victimsState));
     facts.put("victims", choose(answers.get("victims")));
     facts.put("phone", "+7 999 000-" + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
     answers.put("victim_count", defaults.getJsonObject("victim_count")
-        .getJsonArray(noVictims ? "absent" : "unknown"));
+        .getJsonArray("absent".equals(victimsState) ? "absent" : "unknown"));
     facts.put("victim_count", choose(answers.get("victim_count")));
     for (String field : Set.of("age", "consciousness", "breathing", "danger", "weapon",
         "description_details", "vehicle")) {

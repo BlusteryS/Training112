@@ -1,13 +1,13 @@
 package com.training112.speech;
 
 import com.training112.AppConfig;
+import com.training112.ApiRequest;
 import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository;
 import com.training112.auth.AuthRepository.Account;
 import com.training112.auth.AuthSession;
 import com.training112.auth.PlatformSettings;
 import com.training112.training.TrainingRepository;
-import com.training112.training.TrainingRoutes;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -78,7 +78,7 @@ public final class SpeechRoutes {
                     new ApiException(403, "forbidden_origin", "Запрос с этого сайта запрещён."));
                 return;
               }
-              UUID attempt = TrainingRoutes.uuid(context.request().getParam("attempt_id"));
+              UUID attempt = ApiRequest.uuid(context.request().getParam("attempt_id"));
               if (!attaching.add(attempt)) {
                 context.fail(
                     new ApiException(409, "already_attaching", "Подключение уже выполняется."));

@@ -58,7 +58,7 @@ class ScenarioDialogue:
     def _variants(response: dict, compound: bool) -> list[str]:
         if not compound:
             return response["variants"]
-        return response.get("compact_variants") or response["variants"][:1]
+        return response.get("compact_variants") or response["variants"]
 
     def initiative(self, kind: str) -> Reply:
         if kind not in ("greeting", "check_in", "clarification", "contact"):

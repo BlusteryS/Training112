@@ -20,6 +20,9 @@ import java.util.HexFormat;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.training112.ApiRequest.body;
+import static com.training112.ApiRequest.id;
+
 public final class AdminRoutes {
   private static final Set<String> ROLES = Set.of("admin", "instructor", "user");
 
@@ -315,16 +318,11 @@ public final class AdminRoutes {
   private static void saveSettings(RoutingContext context, Pool pool) {
     AuthRepository.Account actor = context.get("actor");
     JsonObject body = body(context);
-    int passwordMin = requiredInt(body, "password_min_length", 8, 64);
-    int sessionHours = requiredInt(body, "session_hours", 1, 24 * 30);
-    pool.withTransaction(database -> database.preparedQuery(
-            "UPDATE platform_setting SET value=$2, updated_at=now(), updated_by=$3 WHERE key=$1")
-        .execute(Tuple.of("password_min_length", Integer.toString(passwordMin), actor.id()))
-        .compose(ignored -> database.preparedQuery(
-            "UPDATE platform_setting SET value=$2, updated_at=now(), updated_by=$3 WHERE key=$1")
-            .execute(Tuple.of("session_hours", Integer.toString(sessionHours), actor.id())))
-        .compose(ignored -> audit(database, actor.id(), "settings.updated", actor.id(),
-            new JsonObject().put("password_min_length", passwordMin).put("session_hours", sessionHours))))
+    JsonObject values = new JsonObject()
+        .put("password_min_length", requiredInt(body, "password_min_length", 8, 64))
+        .put("session_hours", requiredInt(body, "session_hours", 1, 24 * 30));
+    pool.withTransaction(database -> updateSettings(database, actor.id(), values)
+        .compose(ignored -> audit(database, actor.id(), "settings.updated", actor.id(), values)))
         .onSuccess(ignored -> context.response().setStatusCode(204).end())
         .onFailure(context::fail);
   }
@@ -348,15 +346,22 @@ public final class AdminRoutes {
         .put("audit_retention_days", requiredInt(body, "audit_retention_days", 186, 3650))
         .put("backup_interval_hours", requiredInt(body, "backup_interval_hours", 1, 24))
         .put("backup_retention_count", requiredInt(body, "backup_retention_count", 1, 30));
-    pool.withTransaction(database -> {
-      Future<Void> changes = Future.succeededFuture();
-      for (String key : values.fieldNames()) {
-        changes = changes.compose(ignored -> database.preparedQuery(
-            "UPDATE platform_setting SET value=$2,updated_at=now(),updated_by=$3 WHERE key=$1")
-            .execute(Tuple.of(key, Integer.toString(values.getInteger(key)), actor.id())).mapEmpty());
-      }
-      return changes.compose(ignored -> audit(database, actor.id(), "operations.updated", actor.id(), values));
-    }).onSuccess(ignored -> context.response().setStatusCode(204).end()).onFailure(context::fail);
+    pool.withTransaction(database -> updateSettings(database, actor.id(), values)
+        .compose(ignored -> audit(database, actor.id(), "operations.updated", actor.id(), values)))
+        .onSuccess(ignored -> context.response().setStatusCode(204).end()).onFailure(context::fail);
+  }
+
+  private static Future<Void> updateSettings(SqlClient database, UUID actor, JsonObject values) {
+    Future<Void> changes = Future.succeededFuture();
+    for (String key : values.fieldNames()) {
+      changes = changes.compose(ignored -> database.preparedQuery(
+          "UPDATE platform_setting SET value=$2,updated_at=now(),updated_by=$3 WHERE key=$1")
+          .execute(Tuple.of(key, Integer.toString(values.getInteger(key)), actor))
+          .compose(rows -> rows.rowCount() == 1 ? Future.succeededFuture()
+              : Future.failedFuture(new ApiException(500, "settings_missing",
+                  "Не задан параметр «" + key + "»."))));
+    }
+    return changes;
   }
 
   private static void backups(RoutingContext context, Pool pool) {
@@ -440,32 +445,12 @@ public final class AdminRoutes {
         .mapEmpty();
   }
 
-  private static JsonObject body(RoutingContext context) {
-    try {
-      JsonObject body = context.body().asJsonObject();
-      if (body == null) throw new IllegalArgumentException();
-      return body;
-    } catch (RuntimeException error) {
-      throw new ApiException(400, "invalid_request", "Некорректный запрос.");
-    }
-  }
-
   private static String role(JsonObject body) {
-    String role = body.getString("role");
-    if (!ROLES.contains(role == null ? "" : role)) {
+    Object value = body.getValue("role");
+    if (!(value instanceof String role) || !ROLES.contains(role)) {
       throw new ApiException(400, "invalid_role", "Неизвестная роль.");
     }
     return role;
   }
 
-  private static UUID id(RoutingContext context) {
-    try {
-      String value = context.pathParam("id");
-      UUID id = UUID.fromString(value);
-      if (!id.toString().equalsIgnoreCase(value)) throw new IllegalArgumentException();
-      return id;
-    } catch (IllegalArgumentException | NullPointerException error) {
-      throw new ApiException(400, "invalid_request", "Некорректный запрос.");
-    }
-  }
 }

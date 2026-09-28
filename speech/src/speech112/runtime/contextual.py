@@ -19,7 +19,7 @@ from speech112.runtime.context_input import (
 )
 from speech112.runtime.learned import file_digest
 from speech112.runtime.scheduler import InferenceScheduler
-from speech112.runtime.semantic_evidence import evidence, explicit_action, strip_known
+from speech112.runtime.semantic_evidence import evidence, explicit_action, negated_goodbye, strip_known
 from speech112.runtime.semantic_frame import ACTIONS, FRAME_SCHEMA, SemanticFrame, decode_frame
 
 _INFORMED_INTENTS = frozenset(
@@ -110,6 +110,8 @@ class ContextualUnderstanding:
 
     def predict(self, text, history=()):
         normalized = operator_text(text)
+        if negated_goodbye(text) and not set(evidence(text)) - {"goodbye"}:
+            return SemanticFrame("reject", (), 1.0)
         if _NO_DISPATCH_COMMAND.search(normalized):
             return SemanticFrame("reject", (), 1.0)
         if re.fullmatch(r"(?:а )?сколько их(?: там)?", normalized):
@@ -161,6 +163,11 @@ class ContextualUnderstanding:
             for target in eligible:
                 if target not in targets:
                     targets.append(target)
+        # An ASR truncation can split one explicit question across two clauses
+        # ("пострадавшие и сколько и"). Keep evidence from the whole utterance.
+        for target in stated:
+            if target != "goodbye" and target not in targets:
+                targets.append(target)
         if not targets or len(targets) > 6:
             return self._ground(text, whole or SemanticFrame("reject", (), 0.0), stated)
         if len(targets) > 1 and "goodbye" in targets:
@@ -180,7 +187,8 @@ class ContextualUnderstanding:
                     return SemanticFrame(action, targets, frame.confidence)
                 return frame
             if frame.action == "repeat":
-                return SemanticFrame("repeat", targets, frame.confidence)
+                return SemanticFrame("repeat" if action == "repeat" else action or "request",
+                                     targets, frame.confidence)
             return SemanticFrame(action or frame.action, targets, frame.confidence)
         action = explicit_action(text, ())
         if action == "contact":

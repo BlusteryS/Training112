@@ -26,8 +26,8 @@ public final class DdsCardTemplate {
       java.util.UUID source) {
     JsonObject input = card.copy();
     input.put("description", CardSnapshot.descriptionForService(input.getString("description", ""), service));
-    input.put("expected_primary", options.getString("expected_primary", "accepted"));
-    input.put("outcome", options.getString("outcome", "completed"));
+    input.put("expected_primary", option(options, "expected_primary", "accepted"));
+    input.put("outcome", option(options, "outcome", "completed"));
     return build(input, service, true).put("case_id", source.toString());
   }
 
@@ -59,8 +59,8 @@ public final class DdsCardTemplate {
       throw new ApiException(400, "wrong_dds", "Карточка оператора не направлена этой ДДС.");
     if (!forwarded) services.add(service);
     if (services.isEmpty() || services.size() > 20) throw invalid();
-    String expected = input.getString("expected_primary", "accepted");
-    String outcome = input.getString("outcome", "completed");
+    String expected = option(input, "expected_primary", "accepted");
+    String outcome = option(input, "outcome", "completed");
     if (!Set.of("accepted", "rejected").contains(expected)
         || !Set.of("completed", "refused").contains(outcome)) throw invalid();
     return new JsonObject()
@@ -78,6 +78,13 @@ public final class DdsCardTemplate {
       if (service.length() > 100) throw invalid();
       services.add(service);
     }
+  }
+
+  static String option(JsonObject source, String key, String defaultValue) {
+    Object value = source.getValue(key);
+    if (value == null) return defaultValue;
+    if (value instanceof String text) return text;
+    throw invalid();
   }
 
   private static boolean sameService(String left, String right) {

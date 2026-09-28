@@ -11,6 +11,8 @@ import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.Tuple;
 import java.util.UUID;
 
+import static com.training112.training.TrainingDb.list;
+
 /** Parent-child links between saved operator cards. Each chain has one main card. */
 public final class CardLinks {
   private final Pool pool;
@@ -147,19 +149,9 @@ public final class CardLinks {
         """).execute(Tuple.of(attempt)).map(rows -> rows.iterator().next().getUUID("id"));
   }
 
-  private static Future<JsonArray> list(SqlClient db, String sql, Tuple values) {
-    return db.preparedQuery(sql).execute(values).map(rows -> {
-      JsonArray result = new JsonArray();
-      for (Row row : rows) result.add(row.getJsonObject("value"));
-      return result;
-    });
-  }
-
   private static Future<Void> audit(SqlClient db, UUID actor, String action, UUID card, UUID related) {
-    return db.preparedQuery("""
-        INSERT INTO audit_event(actor_id,action,entity_id,detail) VALUES ($1,$2,$3,$4)
-        """).execute(Tuple.of(actor, action, card, new JsonObject().put("related_card", related.toString())))
-        .mapEmpty();
+    return TrainingDb.audit(db, actor, action, card,
+        new JsonObject().put("related_card", related.toString()));
   }
 
   private static void requireSavedCall(Row row) {

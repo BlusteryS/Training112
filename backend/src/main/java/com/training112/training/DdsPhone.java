@@ -24,13 +24,13 @@ public final class DdsPhone {
     Object spoken = request.getValue("utterance");
     if (!(spoken instanceof String utterance) || utterance.isBlank()
         || utterance.length() > 500) throw invalid("Произнесите реплику в микрофон.");
-    String party = request.getString("party", "");
-    String direction = request.getString("direction", "");
+    String party = text(request, "party");
+    String direction = text(request, "direction");
     if (!Set.of("incoming", "outgoing").contains(direction)) throw invalid("Неизвестный тип звонка.");
     if ("crew".equals(party)) {
       if (!NEXT.containsKey(status)) throw invalid("Сначала примите карточку службы.");
       if (crew == null || crew.isBlank()) throw invalid("Сначала выберите бригаду.");
-      if ("card_error".equals(request.getString("topic"))) {
+      if ("card_error".equals(text(request, "topic"))) {
         if (!request.fieldNames().equals(Set.of("party", "direction", "topic", "utterance")))
           throw invalid("Лишние поля звонка.");
         JsonObject reply = reply("card_error");
@@ -70,7 +70,7 @@ public final class DdsPhone {
     if ("caller".equals(party) && "outgoing".equals(direction)) {
       if (!Set.of("received", "rejected", "accepted", "dispatched", "arrived", "working")
           .contains(status)) throw invalid("Карточка недоступна для звонка заявителю.");
-      String topic = request.getString("topic", "");
+      String topic = text(request, "topic");
       if (!Set.of("address", "situation", "victims").contains(topic)
           || !request.fieldNames().equals(Set.of("party", "direction", "topic", "utterance")))
         throw invalid("Неизвестный вопрос заявителю.");
@@ -84,6 +84,13 @@ public final class DdsPhone {
 
   private static ApiException invalid(String message) {
     return new ApiException(400, "invalid_dds_phone", message);
+  }
+
+  private static String text(JsonObject request, String key) {
+    Object value = request.getValue(key);
+    if (value == null) return "";
+    if (value instanceof String text) return text;
+    throw invalid("Неверные данные звонка.");
   }
 
   private static JsonObject reply(String key) {

@@ -1,10 +1,10 @@
 package com.training112.auth;
 
 import com.training112.AppConfig;
+import com.training112.ApiRequest;
 import io.vertx.core.Future;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
-import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -40,10 +40,7 @@ public final class AuthRoutes {
     private void login(RoutingContext context) {
         Credentials credentials;
         try {
-            credentials = Credentials.parse(context.body().asJsonObject());
-        } catch (DecodeException e) {
-            context.fail(new ApiException(400, "invalid_json", "Некорректный JSON."));
-            return;
+            credentials = Credentials.parse(ApiRequest.body(context));
         } catch (ApiException e) {
             context.fail(e);
             return;
@@ -61,9 +58,11 @@ public final class AuthRoutes {
                                 if (!valid || account == null) {
                                     return Future.failedFuture(new ApiException(401, "invalid_credentials", "Неверный логин или пароль."));
                                 }
-                                return repository.createSession(account.id(), tokenHash, expiresAt, previousTokenHash,
-                                        credentials.workstation()).map(new AuthRepository.Account(account.id(), account.login(),
-                                        account.passwordHash(), account.role(), credentials.workstation()));
+                                AuthRepository.Account identity = account.identity();
+                                return repository.createSession(identity.id(), tokenHash, expiresAt, previousTokenHash,
+                                        credentials.workstation(), identity.login())
+                                        .map(new AuthRepository.Account(identity.id(), identity.login(),
+                                                identity.role(), credentials.workstation()));
                             }))
                             .onSuccess(account -> {
                                 context.response().addCookie(cookie(token, hours * 3600L));

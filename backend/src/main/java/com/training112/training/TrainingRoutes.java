@@ -16,6 +16,11 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import java.util.UUID;
 
+import static com.training112.ApiRequest.body;
+import static com.training112.ApiRequest.id;
+import static com.training112.ApiRequest.text;
+import static com.training112.ApiRequest.uuid;
+
 /** Public learning API. Student responses never include scenario facts or rubrics. */
 public final class TrainingRoutes {
   private final Vertx vertx;
@@ -101,7 +106,7 @@ public final class TrainingRoutes {
     router.get("/api/training/groups/:id/members")
         .handler(c -> json(c, repository.members(actor(c), id(c))));
     router.post("/api/training/groups/:id/members/remove")
-        .handler(c -> empty(c, repository.removeMember(actor(c), id(c), uuid(body(c).getString("learner_id")))));
+        .handler(c -> empty(c, repository.removeMember(actor(c), id(c), uuid(body(c), "learner_id"))));
     router.post("/api/training/scenarios/:id/archive")
         .handler(c -> empty(c, repository.archiveScenario(actor(c), id(c))));
     router
@@ -110,7 +115,7 @@ public final class TrainingRoutes {
             c ->
                 empty(
                     c,
-                    repository.addMember(actor(c), id(c), uuid(body(c).getString("learner_id")))));
+                    repository.addMember(actor(c), id(c), uuid(body(c), "learner_id"))));
     router.get("/api/training/scenarios").handler(c -> json(c, repository.scenarios(actor(c))));
     router
         .post("/api/training/scenarios")
@@ -124,7 +129,8 @@ public final class TrainingRoutes {
           if (!(seconds instanceof Number number) || number.intValue() < 1 || number.intValue() > 86_400
               || number.doubleValue() != number.intValue()) throw invalid();
           JsonObject document = ScenarioDraft.build(text(c, "classifier_code", 32), text(c, "location", 1000),
-              text(c, "difficulty", 32), number.intValue(), text(c, "origin", 80), text(c, "caller_name", 200));
+              text(c, "victims_state", 16),
+              text(c, "difficulty", 32), number.intValue(), text(c, "origin", 80));
           json(c, Future.succeededFuture(document));
         });
     router
@@ -144,7 +150,7 @@ public final class TrainingRoutes {
       byte[] content;
       try {
         content = java.util.Base64.getDecoder().decode(text(c, "content_base64",
-            ((TrainingRepository.MAX_MATERIAL_BYTES + 2) / 3) * 4));
+            ((TrainingMaterials.MAX_BYTES + 2) / 3) * 4));
       } catch (IllegalArgumentException error) {
         throw invalid();
       }
@@ -166,11 +172,11 @@ public final class TrainingRoutes {
         .handler(c -> {
           JsonObject request = body(c);
           String mode = text(c, "mode", 16);
-          UUID group = uuid(request.getString("group_id"));
+          UUID group = uuid(request, "group_id");
           json(c, "card".equals(mode)
               ? repository.createCardLesson(actor(c), group, request)
               : repository.createLesson(actor(c), group,
-                  uuid(request.getString("scenario_id")), mode));
+                  uuid(request, "scenario_id"), mode));
         });
     router
         .post("/api/training/lessons/:id/start")
@@ -202,8 +208,8 @@ public final class TrainingRoutes {
                     c,
                     repository.createAttempt(
                         actor(c),
-                        uuid(body(c).getString("assignment_id")),
-                        uuid(body(c).getString("id")))));
+                        uuid(body(c), "assignment_id"),
+                        uuid(body(c), "id"))));
     router
         .get("/api/training/attempts/:id")
         .handler(c -> json(c, repository.attempt(actor(c), id(c))));
@@ -217,7 +223,7 @@ public final class TrainingRoutes {
             c.request().getParam("address", ""))));
     router.post("/api/training/attempts/:id/links")
         .handler(c -> empty(c, repository.cardLinks().attach(actor(c), id(c),
-            uuid(body(c).getString("parent_id")))));
+            uuid(body(c), "parent_id"))));
     router.post("/api/training/attempts/:id/links/detach")
         .handler(c -> empty(c, repository.cardLinks().detach(actor(c), id(c))));
     router.post("/api/training/attempts/:id/links/promote")
@@ -256,12 +262,12 @@ public final class TrainingRoutes {
               String type = text(c, "type", 64);
               Future<JsonObject> allowed = "dds.phone.report".equals(type)
                   ? repository.ddsPhoneEnabled().compose(enabled -> enabled
-                      ? repository.command(actor(c), id(c), uuid(b.getString("event_id")), n.longValue(), type, b.getJsonObject("payload"))
+                      ? repository.command(actor(c), id(c), uuid(b, "event_id"), n.longValue(), type, b.getJsonObject("payload"))
                       : Future.failedFuture(new ApiException(503, "phone_disabled", "Учебный телефон временно отключён.")))
                   : repository.command(
                       actor(c),
                       id(c),
-                      uuid(b.getString("event_id")),
+                      uuid(b, "event_id"),
                       n.longValue(),
                       type,
                       b.getJsonObject("payload"));
@@ -291,7 +297,8 @@ public final class TrainingRoutes {
         .post("/api/training/attempts/:id/reviews")
         .handler(
             c -> {
-              JsonObject result = body(c).getJsonObject("result");
+              Object submitted = body(c).getValue("result");
+              JsonObject result = submitted instanceof JsonObject object ? object : null;
               String reason = text(c, "reason", 2000);
               Object score = result == null ? null : result.getValue("score");
               Object recommendation = result == null ? null : result.getValue("recommendation");
@@ -306,36 +313,6 @@ public final class TrainingRoutes {
 
   private static Account actor(RoutingContext c) {
     return c.get("actor");
-  }
-
-  private static UUID id(RoutingContext c) {
-    return uuid(c.pathParam("id"));
-  }
-
-  public static UUID uuid(String value) {
-    try {
-      UUID id = UUID.fromString(value);
-      if (!id.toString().equalsIgnoreCase(value)) throw invalid();
-      return id;
-    } catch (IllegalArgumentException | NullPointerException error) {
-      throw invalid();
-    }
-  }
-
-  private static JsonObject body(RoutingContext c) {
-    try {
-      JsonObject b = c.body().asJsonObject();
-      if (b == null) throw invalid();
-      return b;
-    } catch (RuntimeException error) {
-      throw invalid();
-    }
-  }
-
-  private static String text(RoutingContext c, String key, int max) {
-    Object value = body(c).getValue(key);
-    if (!(value instanceof String s) || s.isBlank() || s.length() > max) throw invalid();
-    return s;
   }
 
   private static ApiException invalid() {

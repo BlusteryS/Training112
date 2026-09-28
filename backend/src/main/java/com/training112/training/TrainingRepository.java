@@ -4,28 +4,37 @@ import com.training112.auth.ApiException;
 import com.training112.auth.AuthRepository.Account;
 import com.training112.auth.PlatformSettings;
 import io.vertx.core.Future;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.Tuple;
-import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
-/** Business transactions own scenarios, attempts and events; Speech never owns a DB connection. */
+import static com.training112.training.TrainingDb.audit;
+import static com.training112.training.TrainingDb.list;
+import static com.training112.training.TrainingDb.one;
+
+/** Entry point for training data and attempt transactions. */
 public final class TrainingRepository {
-  static final int MAX_MATERIAL_BYTES = 8 * 1024 * 1024;
   private final Pool pool;
+  private final TrainingGroups trainingGroups;
+  private final TrainingScenarios trainingScenarios;
+  private final TrainingLessons trainingLessons;
   private final CardLinks cardLinks;
   private final TrainingReports reports;
+  private final TrainingMaterials materials;
 
   public TrainingRepository(Pool pool) {
     this.pool = pool;
+    this.trainingGroups = new TrainingGroups(pool);
+    this.trainingScenarios = new TrainingScenarios(pool);
+    this.trainingLessons = new TrainingLessons(pool);
     this.cardLinks = new CardLinks(pool);
     this.reports = new TrainingReports(pool);
+    this.materials = new TrainingMaterials(pool);
   }
 
   public CardLinks cardLinks() {
@@ -40,519 +49,88 @@ public final class TrainingRepository {
     return new ApiException(403, "forbidden", "Недостаточно прав.");
   }
 
-  private static ApiException missing() {
-    return new ApiException(404, "not_found", "Объект не найден.");
-  }
-
-  private static ApiException conflict(String text) {
+  static ApiException conflict(String text) {
     return new ApiException(409, "conflict", text);
   }
 
-  private static Future<Row> one(SqlClient client, String sql, Tuple parameters) {
-    return client
-        .preparedQuery(sql)
-        .execute(parameters)
-        .compose(
-            rows ->
-                rows.size() == 0
-                    ? Future.failedFuture(missing())
-                    : Future.succeededFuture(rows.iterator().next()));
-  }
-
-  static Future<JsonArray> list(SqlClient client, String sql, Tuple parameters) {
-    return client
-        .preparedQuery(sql)
-        .execute(parameters)
-        .map(
-            rows -> {
-              JsonArray values = new JsonArray();
-              for (Row row : rows) values.add(row.getJsonObject("value"));
-              return values;
-            });
-  }
-
-  private static Future<Void> audit(
-      SqlClient client, UUID actor, String action, UUID entity, JsonObject detail) {
-    return client
-        .preparedQuery(
-            "INSERT INTO audit_event(actor_id,action,entity_id,detail) VALUES ($1,$2,$3,$4)")
-        .execute(Tuple.of(actor, action, entity, detail))
-        .mapEmpty();
-  }
-
   public Future<JsonObject> createGroup(Account actor, String name, String service) {
-    instructor(actor);
-    UUID id = UUID.randomUUID();
-    return pool.withTransaction(
-        db ->
-            one(
-                    db,
-                    "INSERT INTO training_group(id,instructor_id,name,service_code) VALUES"
-                        + " ($1,$2,$3,$4) RETURNING to_jsonb(training_group) AS value",
-                    Tuple.of(id, actor.id(), name, service))
-                .compose(
-                    row ->
-                        audit(db, actor.id(), "group.created", id, new JsonObject())
-                            .map(row.getJsonObject("value"))));
+    return trainingGroups.createGroup(actor, name, service);
   }
 
   public Future<JsonArray> lessons(Account actor) {
-    instructor(actor);
-    return list(pool, """
-        SELECT to_jsonb(l) || jsonb_build_object('group_name',g.name,
-          'title',COALESCE(l.card_template->>'title',s.document->>'title')) AS value
-        FROM lesson l JOIN training_group g ON g.id=l.group_id
-        LEFT JOIN scenario s ON s.id=l.scenario_id
-        WHERE g.instructor_id=$1 ORDER BY l.created_at DESC LIMIT 100
-        """, Tuple.of(actor.id()));
+    return trainingLessons.lessons(actor);
   }
 
   public Future<JsonArray> learners(Account actor) {
-    instructor(actor);
-    return list(pool, "SELECT jsonb_build_object('id',id,'login',login) AS value FROM app_user WHERE role='user' AND NOT blocked ORDER BY login LIMIT 1000", Tuple.tuple());
+    return trainingGroups.learners(actor);
   }
 
   public Future<JsonArray> groups(Account actor) {
-    return list(
-        pool,
-        "SELECT to_jsonb(g) || jsonb_build_object('member_count', (SELECT count(*) FROM training_group_member WHERE group_id=g.id)) AS value FROM training_group g WHERE instructor_id=$1 OR EXISTS (SELECT 1"
-            + " FROM training_group_member m WHERE m.group_id=g.id AND m.user_id=$1) ORDER BY"
-            + " created_at DESC LIMIT 100",
-        Tuple.of(actor.id()));
+    return trainingGroups.groups(actor);
   }
 
   public Future<JsonArray> members(Account actor, UUID group) {
-    instructor(actor);
-    return one(pool, "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2",
-        Tuple.of(group, actor.id())).compose(ignored -> list(pool, """
-        SELECT jsonb_build_object('id',u.id,'login',u.login,'blocked',u.blocked) AS value
-        FROM training_group_member m JOIN app_user u ON u.id=m.user_id
-        WHERE m.group_id=$1 ORDER BY u.login
-        """, Tuple.of(group)));
+    return trainingGroups.members(actor, group);
   }
 
   public Future<Void> removeMember(Account actor, UUID group, UUID learner) {
-    instructor(actor);
-    return pool.withTransaction(db ->
-        one(db, "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
-            Tuple.of(group, actor.id()))
-        .compose(ignored -> db.preparedQuery(
-            "DELETE FROM training_group_member WHERE group_id=$1 AND user_id=$2")
-            .execute(Tuple.of(group, learner)))
-        .compose(ignored -> audit(db, actor.id(), "group.member_removed", group,
-            new JsonObject().put("learner_id", learner.toString()))));
+    return trainingGroups.removeMember(actor, group, learner);
   }
 
   public Future<Void> addMember(Account actor, UUID group, UUID learner) {
-    instructor(actor);
-    return pool.withTransaction(
-        db ->
-            one(
-                    db,
-                    "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
-                    Tuple.of(group, actor.id()))
-                .compose(
-                    ignored ->
-                        one(
-                            db,
-                            "SELECT id FROM app_user WHERE id=$1 AND role='user' AND NOT blocked",
-                            Tuple.of(learner)))
-                .compose(
-                    ignored ->
-                        db.preparedQuery(
-                                "INSERT INTO training_group_member VALUES ($1,$2) ON CONFLICT DO"
-                                    + " NOTHING")
-                            .execute(Tuple.of(group, learner)))
-                .compose(
-                    ignored ->
-                        audit(
-                            db,
-                            actor.id(),
-                            "group.member_added",
-                            group,
-                            new JsonObject().put("learner_id", learner.toString()))));
+    return trainingGroups.addMember(actor, group, learner);
   }
 
   public Future<JsonArray> scenarios(Account actor) {
-    instructor(actor);
-    return list(
-        pool,
-        "SELECT jsonb_build_object('id',id,'title',title,'status',status) AS value FROM"
-            + " scenario WHERE author_id=$1 AND NOT archived ORDER BY created_at DESC LIMIT 100",
-        Tuple.of(actor.id()));
+    return trainingScenarios.scenarios(actor);
   }
 
   public Future<JsonObject> createScenario(Account actor, JsonObject document) {
-    instructor(actor);
-    JsonObject validated = ScenarioDocuments.validate(document);
-    UUID scenario = UUID.randomUUID();
-    return pool.withTransaction(
-        db ->
-            db.preparedQuery(
-                    "INSERT INTO scenario(id,author_id,title,document,status)"
-                        + " VALUES ($1,$2,$3,$4,'preparing')")
-                .execute(Tuple.of(scenario, actor.id(), validated.getString("title"), validated))
-                .compose(ignored -> queueCompilation(db, scenario))
-                .compose(
-                    ignored ->
-                        audit(db, actor.id(), "scenario.created", scenario, new JsonObject()))
-                .map(
-                    new JsonObject()
-                        .put("id", scenario.toString())
-                        .put("scenario_id", scenario.toString())
-                        .put("status", "preparing")));
+    return trainingScenarios.createScenario(actor, document);
   }
 
   public Future<JsonObject> updateScenario(Account actor, UUID scenario, JsonObject document) {
-    instructor(actor);
-    JsonObject validated = ScenarioDocuments.validate(document);
-    return pool.withTransaction(
-        db ->
-            one(
-                    db,
-                    """
-                    SELECT s.id,
-                      EXISTS (SELECT 1 FROM lesson l WHERE l.scenario_id=s.id AND l.status='active') AS active_lesson,
-                      EXISTS (SELECT 1 FROM background_job j WHERE j.state IN ('queued','running') AND
-                        (j.scenario_id=s.id OR j.attempt_id IN (
-                          SELECT a.id FROM training_attempt a
-                          JOIN lesson_assignment la ON la.id=a.assignment_id
-                          JOIN lesson l ON l.id=la.lesson_id WHERE l.scenario_id=s.id))) AS busy
-                    FROM scenario s WHERE s.id=$1 AND s.author_id=$2 AND NOT s.archived FOR UPDATE OF s
-                    """,
-                    Tuple.of(scenario, actor.id()))
-                .compose(
-                    row -> {
-                      if (row.getBoolean("active_lesson"))
-                        return Future.failedFuture(
-                            conflict("Нельзя изменять сценарий во время занятия."));
-                      if (row.getBoolean("busy"))
-                        return Future.failedFuture(
-                            conflict("Дождитесь окончания обработки сценария или результатов занятия."));
-                      return db.preparedQuery(
-                              "UPDATE scenario SET title=$2,document=$3,status='preparing',"
-                                  + " artifact=NULL,artifact_sha256=NULL,approved_by=NULL,"
-                                  + " approved_at=NULL,updated_at=now() WHERE id=$1")
-                          .execute(Tuple.of(scenario, validated.getString("title"), validated));
-                    })
-                .compose(ignored -> queueCompilation(db, scenario))
-                .compose(
-                    ignored -> audit(db, actor.id(), "scenario.updated", scenario, new JsonObject()))
-                .map(
-                    new JsonObject()
-                        .put("id", scenario.toString())
-                        .put("scenario_id", scenario.toString())
-                        .put("status", "preparing")));
+    return trainingScenarios.updateScenario(actor, scenario, document);
   }
 
   public Future<Void> archiveScenario(Account actor, UUID scenario) {
-    instructor(actor);
-    return pool.withTransaction(db ->
-        one(db, "SELECT id FROM scenario WHERE id=$1 AND author_id=$2 FOR UPDATE",
-            Tuple.of(scenario, actor.id()))
-        .compose(ignored -> db.preparedQuery("UPDATE scenario SET archived=true WHERE id=$1")
-            .execute(Tuple.of(scenario)))
-        .compose(ignored -> audit(db, actor.id(), "scenario.archived", scenario, new JsonObject())));
-  }
-
-  private Future<Void> queueCompilation(SqlClient db, UUID scenario) {
-    return db.preparedQuery(
-            "INSERT INTO background_job(id,kind,scenario_id) VALUES ($1,'compile_scenario',$2)")
-        .execute(Tuple.of(UUID.randomUUID(), scenario))
-        .mapEmpty();
+    return trainingScenarios.archiveScenario(actor, scenario);
   }
 
   public Future<JsonObject> scenario(Account actor, UUID scenario) {
-    instructor(actor);
-    return one(
-            pool,
-            "SELECT to_jsonb(s)-'artifact'-'artifact_sha256' AS value FROM scenario s"
-                + " WHERE s.id=$1 AND s.author_id=$2 AND NOT s.archived",
-            Tuple.of(scenario, actor.id()))
-        .map(row -> row.getJsonObject("value"));
+    return trainingScenarios.scenario(actor, scenario);
   }
 
   public Future<Void> approve(Account actor, UUID scenario) {
-    instructor(actor);
-    return pool.withTransaction(
-        db ->
-            one(
-                    db,
-                    "SELECT status FROM scenario WHERE id=$1 AND author_id=$2 AND NOT archived"
-                        + " FOR UPDATE",
-                    Tuple.of(scenario, actor.id()))
-                .compose(
-                    row -> {
-                      if (!"prepared".equals(row.getString("status")))
-                        return Future.failedFuture(
-                            conflict("Сначала нужно успешно подготовить сценарий."));
-                      return db.preparedQuery(
-                              "UPDATE scenario SET"
-                                  + " status='approved',approved_by=$2,approved_at=now() WHERE"
-                                  + " id=$1")
-                          .execute(Tuple.of(scenario, actor.id()));
-                    })
-                .compose(
-                    ignored ->
-                        audit(db, actor.id(), "scenario.approved", scenario, new JsonObject())));
+    return trainingScenarios.approve(actor, scenario);
   }
 
   public Future<JsonArray> jobs(Account actor) {
-    instructor(actor);
-    return list(
-        pool,
-        """
-        SELECT jsonb_build_object('id',j.id,'kind',j.kind,'state',j.state,'tries',j.tries,'error',j.error,
-          'scenario_id',j.scenario_id,'attempt_id',j.attempt_id) AS value FROM background_job j
-        LEFT JOIN scenario s ON s.id=j.scenario_id
-        LEFT JOIN training_attempt a ON a.id=j.attempt_id LEFT JOIN lesson_assignment la ON la.id=a.assignment_id
-        LEFT JOIN lesson l ON l.id=la.lesson_id LEFT JOIN training_group g ON g.id=l.group_id
-        WHERE s.author_id=$1 OR g.instructor_id=$1 ORDER BY j.created_at DESC LIMIT 100
-        """,
-        Tuple.of(actor.id()));
+    return trainingScenarios.jobs(actor);
   }
 
   public Future<JsonObject> createLesson(Account actor, UUID group, UUID scenario, String mode) {
-    instructor(actor);
-    if (!"call".equals(mode))
-      throw new ApiException(400, "invalid_mode", "Неизвестный режим занятия.");
-    UUID id = UUID.randomUUID();
-    return pool.withTransaction(
-        db ->
-            one(
-                    db,
-                    "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
-                    Tuple.of(group, actor.id()))
-                .compose(
-                    ignored ->
-                        one(
-                            db,
-                            "SELECT id FROM scenario WHERE id=$1 AND author_id=$2 AND"
-                                + " status='approved' AND NOT archived FOR UPDATE",
-                            Tuple.of(scenario, actor.id())))
-                .compose(
-                    ignored ->
-                        one(
-                            db,
-                            "INSERT INTO lesson(id,group_id,scenario_id,mode) VALUES ($1,$2,$3,$4)"
-                                + " RETURNING to_jsonb(lesson) AS value",
-                            Tuple.of(id, group, scenario, mode)))
-                .compose(
-                    row ->
-                        audit(db, actor.id(), "lesson.created", id, new JsonObject())
-                            .map(row.getJsonObject("value"))));
+    return trainingLessons.createLesson(actor, group, scenario, mode);
   }
 
   public Future<JsonArray> operatorCards(Account actor) {
-    instructor(actor);
-    return list(pool, """
-        SELECT jsonb_build_object('id',a.id,'incident_code',a.card->>'incident_code',
-          'address',a.card->>'address','services',a.card->>'services',
-          'created_at',a.created_at) AS value
-        FROM training_attempt a
-        JOIN lesson_assignment la ON la.id=a.assignment_id
-        JOIN lesson l ON l.id=la.lesson_id
-        JOIN training_group g ON g.id=l.group_id
-        WHERE g.instructor_id=$1 AND l.mode='call' AND a.status='completed'
-          AND a.card->>'description' IS NOT NULL
-        ORDER BY a.created_at DESC LIMIT 100
-        """, Tuple.of(actor.id()));
+    return trainingLessons.operatorCards(actor);
   }
 
   public Future<JsonObject> createCardLesson(Account actor, UUID group, JsonObject body) {
-    instructor(actor);
-    UUID id = UUID.randomUUID();
-    return pool.withTransaction(db -> one(db,
-        "SELECT service_code FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
-        Tuple.of(group, actor.id())).compose(groupRow -> {
-      String service = groupRow.getString("service_code");
-      Object sourceValue = body.getValue("sources");
-      if (sourceValue != null && !(sourceValue instanceof JsonArray))
-        return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неверная подборка карточек."));
-      JsonArray sources = (JsonArray) sourceValue;
-      if (sources != null) {
-        if (sources.isEmpty() || sources.size() > 30)
-          return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Выберите от 1 до 30 карточек."));
-        Future<JsonArray> cards = Future.succeededFuture(new JsonArray());
-        Set<String> unique = new java.util.HashSet<>();
-        for (Object source : sources) {
-          if (!(source instanceof JsonObject item))
-            return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неверный источник карточки."));
-          if (!unique.add(item.getString("type", "") + ":" + item.getString("id", "")))
-            return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Карточка выбрана повторно."));
-          cards = cards.compose(items -> sourceCard(db, actor, item, body, service)
-              .map(card -> items.add(card)));
-        }
-        return cards.map(DdsCardPool::pack);
-      }
-      String source = body.getString("source_attempt_id", "");
-      if (source.isBlank()) return Future.succeededFuture(DdsCardTemplate.manual(body, service));
-      return sourceCard(db, actor, new JsonObject().put("type", "operator").put("id", source),
-          body, service);
-    }).compose(template -> one(db,
-        "INSERT INTO lesson(id,group_id,scenario_id,card_template,mode) "
-            + "VALUES ($1,$2,NULL,$3,'card') RETURNING to_jsonb(lesson) AS value",
-        Tuple.of(id, group, template)).compose(row ->
-            audit(db, actor.id(), "lesson.created", id, new JsonObject())
-                .map(row.getJsonObject("value")))));
-  }
-
-  private Future<JsonObject> sourceCard(SqlClient db, Account actor, JsonObject source,
-      JsonObject options, String service) {
-    String type = source.getString("type", "");
-    String value = source.getString("id", "");
-    UUID sourceId;
-    try { sourceId = UUID.fromString(value); }
-    catch (RuntimeException error) {
-      return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неизвестный источник карточки."));
-    }
-    if ("operator".equals(type)) return one(db, """
-          SELECT a.card FROM training_attempt a
-          JOIN lesson_assignment la ON la.id=a.assignment_id
-          JOIN lesson l ON l.id=la.lesson_id
-          JOIN training_group g ON g.id=l.group_id
-          WHERE a.id=$1 AND g.instructor_id=$2 AND l.mode='call' AND a.status='completed'
-          """, Tuple.of(sourceId, actor.id()))
-          .map(row -> DdsCardTemplate.fromOperator(row.getJsonObject("card"), options, service, sourceId));
-    if ("generated".equals(type)) return one(db,
-        "SELECT document FROM scenario WHERE id=$1 AND author_id=$2 AND status='approved' AND NOT archived",
-        Tuple.of(sourceId, actor.id())).map(row -> {
-          JsonObject document = row.getJsonObject("document");
-          JsonObject input = CardSnapshot.from(document, service);
-          for (Object rule : document.getJsonArray("rubric", new JsonArray())) {
-            JsonObject criterion = (JsonObject) rule;
-            if ("incident_code".equals(criterion.getString("field"))) {
-              input.put("incident_code", criterion.getString("expected", document.getString("title")));
-              break;
-            }
-          }
-          input.put("expected_primary", options.getString("expected_primary", "accepted"));
-          input.put("outcome", options.getString("outcome", "completed"));
-          return DdsCardTemplate.manual(input, service);
-        });
-    return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неизвестный источник карточки."));
+    return trainingLessons.createCardLesson(actor, group, body);
   }
 
   public Future<Void> startLesson(Account actor, UUID id) {
-    instructor(actor);
-    return pool.withTransaction(
-        db ->
-            one(
-                    db,
-                    "SELECT l.*,s.status AS scenario_status,s.document,g.service_code FROM lesson l"
-                        + " JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON"
-                        + " s.id=l.scenario_id WHERE l.id=$1 AND g.instructor_id=$2 FOR UPDATE OF l",
-                    Tuple.of(id, actor.id()))
-                .compose(
-                    row -> {
-                      if (!"planned".equals(row.getString("status")))
-                        return Future.failedFuture(conflict("Занятие уже запущено или завершено."));
-                      if (row.getUUID("scenario_id") != null
-                          && !"approved".equals(row.getString("scenario_status")))
-                        return Future.failedFuture(
-                            conflict("Сценарий нужно повторно утвердить перед началом занятия."));
-                      boolean card = "card".equals(row.getString("mode"));
-                      JsonObject template = row.getJsonObject("card_template");
-                      JsonObject legacyCard = card && template == null
-                          ? CardSnapshot.from(row.getJsonObject("document"), row.getString("service_code"))
-                          : null;
-                      return db.preparedQuery(
-                              "INSERT INTO lesson_assignment(id,lesson_id,learner_id) SELECT"
-                                  + " gen_random_uuid(),$1,m.user_id FROM training_group_member m"
-                                  + " JOIN app_user u ON u.id=m.user_id WHERE m.group_id=$2 AND NOT"
-                                  + " u.blocked AND u.role='user'")
-                          .execute(Tuple.of(id, row.getUUID("group_id")))
-                          .compose(
-                              rows -> {
-                                if (rows.rowCount() == 0)
-                                  return Future.failedFuture(conflict("В группе нет обучающихся."));
-                                Future<Void> seeded = card
-                                    ? seedCardAttempts(db, id, template, legacyCard, row.getString("service_code"))
-                                    : Future.succeededFuture();
-                                return seeded.compose(
-                                    ignored ->
-                                        db.preparedQuery("UPDATE lesson SET status='active' WHERE id=$1")
-                                            .execute(Tuple.of(id))
-                                            .mapEmpty());
-                              });
-                    })
-                .compose(ignored -> audit(db, actor.id(), "lesson.started", id, new JsonObject())));
-  }
-
-  private Future<Void> seedCardAttempts(SqlClient db, UUID lesson, JsonObject pool,
-      JsonObject legacyCard, String service) {
-    return db.preparedQuery("SELECT id FROM lesson_assignment WHERE lesson_id=$1")
-        .execute(Tuple.of(lesson)).compose(rows -> {
-          Future<Void> chain = Future.succeededFuture();
-          for (Row row : rows) {
-            UUID assignment = row.getUUID("id");
-            JsonObject selected = pool == null ? null : DdsCardPool.choose(pool, new JsonArray());
-            JsonObject card = selected == null ? legacyCard : CardSnapshot.fromTemplate(selected, service);
-            chain = chain.compose(ignored -> insertCardAttempt(db, assignment, selected, card));
-          }
-          return chain;
-        });
-  }
-
-  private Future<Void> insertCardAttempt(SqlClient db, UUID assignment,
-      JsonObject template, JsonObject card) {
-    return db.preparedQuery("""
-        INSERT INTO training_attempt(id,assignment_id,status,started_at,
-          incident_source,vis_operator,card,card_status,card_template)
-        VALUES ($1,$2,'active',now(),$3,NULL,$4,'added',$5)
-        """).execute(Tuple.of(UUID.randomUUID(), assignment, IncidentOrigin.SERVICE_112,
-            card, template)).mapEmpty();
+    return trainingLessons.startLesson(actor, id);
   }
 
   public Future<JsonArray> assignments(Account actor) {
-    return list(
-        pool,
-        """
-        SELECT jsonb_build_object('id',a.id,'lesson_id',l.id,'learner_id',a.learner_id,'mode',l.mode,
-           'status',l.status,'title',COALESCE(latest.card_template->>'title',l.card_template->>'title',s.document->>'title'),
-           'scenario_id',s.id,
-           'group_name',g.name,'learner_login',u.login,
-           'instructions',s.document->>'instructions','difficulty',s.document->>'difficulty',
-           'caller_phone',COALESCE(latest.card_template#>>'{facts,phone}',l.card_template#>>'{facts,phone}',s.document#>>'{facts,phone}'),
-           'service',g.service_code,'origin',COALESCE(latest.card_template->>'origin',l.card_template->>'origin',s.document->>'origin'),
-           'facts',COALESCE(latest.card_template->'facts',l.card_template->'facts',s.document->'facts','{}'::jsonb),
-           'card',latest.card,'card_deadline_seconds',deadline.seconds,'created_at',latest.created_at,
-           'attempt_started_at',latest.started_at,'card_status',latest.card_status,
-           'workstation',latest.workstation,'incident_source',latest.incident_source,
-           'vis_operator',latest.vis_operator,
-           'attempt_id',latest.id,'attempt_status',latest.status,
-           'link_count',(SELECT count(*) FROM card_link cl WHERE cl.parent_attempt_id=
-             COALESCE((SELECT parent_attempt_id FROM card_link WHERE child_attempt_id=latest.id),latest.id))) AS value
-        FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
-        JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON s.id=l.scenario_id
-        JOIN app_user u ON u.id=a.learner_id
-        LEFT JOIN LATERAL (SELECT t.id,t.status,t.card,t.card_template,t.created_at,t.started_at,t.card_status,t.workstation,
-          t.incident_source,t.vis_operator FROM training_attempt t
-          WHERE t.assignment_id=a.id ORDER BY t.created_at DESC LIMIT 1) latest ON true
-        LEFT JOIN LATERAL (SELECT min((criterion->>'seconds')::integer) AS seconds
-          FROM jsonb_array_elements(COALESCE(s.document->'rubric','[]'::jsonb)) criterion
-          WHERE criterion->>'kind'='deadline' AND criterion->>'action'='saved') deadline ON true
-        WHERE a.learner_id=$1 OR g.instructor_id=$1 ORDER BY latest.created_at DESC NULLS LAST,u.login LIMIT 1000
-        """,
-        Tuple.of(actor.id()));
+    return trainingLessons.assignments(actor);
   }
 
   public Future<JsonArray> completedAttempts(Account actor) {
-    instructor(actor);
-    return list(pool, """
-        SELECT jsonb_build_object('id',la.id,'attempt_id',a.id,'attempt_status',a.status,
-          'learner_login',u.login,'mode',l.mode,'title',
-          COALESCE(a.card_template->>'title',l.card_template->>'title',s.title),
-          'created_at',a.created_at) AS value
-        FROM training_attempt a
-        JOIN lesson_assignment la ON la.id=a.assignment_id
-        JOIN lesson l ON l.id=la.lesson_id
-        JOIN training_group g ON g.id=l.group_id
-        JOIN app_user u ON u.id=la.learner_id
-        LEFT JOIN scenario s ON s.id=l.scenario_id
-        WHERE g.instructor_id=$1 AND a.status IN ('completed','failed')
-        ORDER BY a.created_at DESC LIMIT 1000
-        """, Tuple.of(actor.id()));
+    return trainingLessons.completedAttempts(actor);
   }
 
   public Future<JsonObject> createAttempt(Account actor, UUID assignment, UUID attempt) {
@@ -581,9 +159,9 @@ public final class TrainingRepository {
                                     400,
                                     "invalid_workstation",
                                     "Сессия не содержит номер АРМ."));
-                          boolean card = "card".equals(row.getString("mode"));
-                          if (card) return Future.failedFuture(conflict("Карточку выдаёт занятие. Обновите список происшествий."));
-                          String origin = card ? IncidentOrigin.SERVICE_112 : row.getString("origin");
+                          if ("card".equals(row.getString("mode")))
+                            return Future.failedFuture(conflict("Карточку выдаёт занятие. Обновите список происшествий."));
+                          String origin = row.getString("origin");
                           if (!IncidentOrigin.SOURCES.contains(origin))
                             return Future.failedFuture(
                                 new ApiException(
@@ -593,20 +171,17 @@ public final class TrainingRepository {
                                   """
                                   INSERT INTO training_attempt(id,assignment_id,status,started_at,
                                     workstation,incident_source,vis_operator,card,card_status)
-                                  VALUES ($1,$2,$3::varchar,CASE WHEN $3::varchar='active' THEN now() ELSE NULL END,
-                                    $4,$5,$6,$7,$8)
+                                  VALUES ($1,$2,'created',NULL,$3,$4,$5,$6,'received')
                                   ON CONFLICT (id) DO NOTHING
                                   """)
                               .execute(
                                   Tuple.of(
                                       attempt,
                                       assignment,
-                                      "created",
                                       workstation,
                                       origin,
                                       IncidentOrigin.visOperator(origin, actor.login()),
-                                      snapshot,
-                                      "received"));
+                                      snapshot));
                         })
                     .compose(
                         ignored ->
@@ -726,11 +301,11 @@ public final class TrainingRepository {
           || !"card".equals(row.getString("mode"))
           || !"active".equals(row.getString("status"))) throw forbidden();
       JsonObject card = row.getJsonObject("card");
-      if ("caller".equals(request.getString("party")) && card.getString("phone", "").isBlank())
+      if ("caller".equals(request.getValue("party")) && card.getString("phone", "").isBlank())
         throw conflict("В карточке нет номера заявителя.");
       JsonObject report = DdsPhone.report(row.getString("card_status"), row.getString("dds_crew"),
           row.getJsonObject("card_template"), request);
-      return "service112".equals(request.getString("party"))
+      return "service112".equals(request.getValue("party"))
           ? requireDiscrepancy(pool, id).map(report) : Future.succeededFuture(report);
     });
   }
@@ -872,11 +447,11 @@ public final class TrainingRepository {
     }
     if ("dds.phone.report".equals(type)) {
       JsonObject card = row.getJsonObject("card");
-      if ("caller".equals(payload.getString("party")) && card.getString("phone", "").isBlank())
+      if ("caller".equals(payload.getValue("party")) && card.getString("phone", "").isBlank())
         return Future.failedFuture(conflict("В карточке нет номера заявителя."));
       JsonObject report = DdsPhone.report(status, row.getString("dds_crew"),
           row.getJsonObject("card_template"), payload);
-      Future<Void> evidence = "service112".equals(payload.getString("party"))
+      Future<Void> evidence = "service112".equals(payload.getValue("party"))
           ? requireDiscrepancy(db, attempt) : Future.succeededFuture();
       return evidence.compose(ignored -> append(db, attempt, eventId, actor.id(), "operator", type, report));
     }
@@ -1185,81 +760,23 @@ public final class TrainingRepository {
   }
 
   public Future<Void> deleteScenario(Account actor, UUID scenario) {
-    instructor(actor);
-    return pool.withTransaction(db ->
-        one(db, """
-            SELECT
-              EXISTS (SELECT 1 FROM lesson l WHERE l.scenario_id=s.id) AS used,
-              EXISTS (SELECT 1 FROM background_job j WHERE j.scenario_id=s.id AND j.state IN ('queued','running')) AS busy
-            FROM scenario s WHERE s.id=$1 AND s.author_id=$2 FOR UPDATE OF s
-            """, Tuple.of(scenario, actor.id()))
-            .compose(row -> {
-              if (row.getBoolean("used")) {
-                return Future.failedFuture(conflict("Сценарий уже назначен на занятие. Уберите его из списка, история сохранится."));
-              }
-              if (row.getBoolean("busy")) {
-                return Future.failedFuture(conflict("Дождитесь окончания подготовки сценария."));
-              }
-              return db.preparedQuery("DELETE FROM background_job WHERE scenario_id=$1").execute(Tuple.of(scenario))
-                  .compose(ignored -> db.preparedQuery("DELETE FROM scenario WHERE id=$1").execute(Tuple.of(scenario)));
-            })
-            .compose(ignored -> audit(db, actor.id(), "scenario.deleted", scenario, new JsonObject())));
+    return trainingScenarios.deleteScenario(actor, scenario);
   }
 
   public Future<JsonArray> materials(Account actor) {
-    String scope = "instructor".equals(actor.role())
-        ? "m.instructor_id=$1"
-        : """
-          EXISTS (SELECT 1 FROM training_group g JOIN training_group_member gm ON gm.group_id=g.id
-            WHERE g.instructor_id=m.instructor_id AND gm.user_id=$1)
-          """;
-    if (!Set.of("instructor", "user").contains(actor.role())) throw forbidden();
-    return list(pool, """
-        SELECT jsonb_build_object('id',m.id,'title',m.title,'filename',m.filename,
-          'media_type',m.media_type,'byte_size',m.byte_size,'created_at',m.created_at) AS value
-        FROM teaching_material m WHERE
-        """ + scope + " ORDER BY m.created_at DESC LIMIT 200", Tuple.of(actor.id()));
+    return materials.list(actor);
   }
 
   public Future<JsonObject> material(Account actor, UUID id) {
-    if (!Set.of("instructor", "user").contains(actor.role())) throw forbidden();
-    String scope = "instructor".equals(actor.role())
-        ? "instructor_id=$2"
-        : """
-          EXISTS (SELECT 1 FROM training_group g JOIN training_group_member gm ON gm.group_id=g.id
-            WHERE g.instructor_id=teaching_material.instructor_id AND gm.user_id=$2)
-          """;
-    return one(pool, "SELECT title,filename,media_type,content FROM teaching_material WHERE id=$1 AND " + scope,
-            Tuple.of(id, actor.id()))
-        .map(row -> new JsonObject()
-            .put("title", row.getString("title"))
-            .put("filename", row.getString("filename"))
-            .put("media_type", row.getString("media_type"))
-            .put("content_base64", Base64.getEncoder().encodeToString(row.getBuffer("content").getBytes())));
+    return materials.get(actor, id);
   }
 
   public Future<JsonObject> addMaterial(Account actor, String title, String filename, String media, byte[] content) {
-    instructor(actor);
-    if (title.isBlank() || title.length() > 200 || filename.isBlank() || filename.length() > 200
-        || !Set.of("application/pdf", "text/plain", "audio/wav", "audio/mpeg", "application/json").contains(media)
-        || content.length < 1 || content.length > MAX_MATERIAL_BYTES) {
-      throw new ApiException(400, "invalid_material", "Материал должен быть PDF, текстом, JSON или аудио до 8 МиБ.");
-    }
-    UUID id = UUID.randomUUID();
-    return pool.withTransaction(db -> db.preparedQuery(
-            "INSERT INTO teaching_material(id,instructor_id,title,filename,media_type,content,byte_size)"
-                + " VALUES ($1,$2,$3,$4,$5,$6,$7)")
-        .execute(Tuple.of(id, actor.id(), title, filename, media, Buffer.buffer(content), content.length))
-        .compose(ignored -> audit(db, actor.id(), "material.created", id, new JsonObject().put("title", title)))
-        .map(new JsonObject().put("id", id.toString()).put("title", title)));
+    return materials.add(actor, title, filename, media, content);
   }
 
   public Future<Void> deleteMaterial(Account actor, UUID id) {
-    instructor(actor);
-    return pool.withTransaction(db ->
-        one(db, "SELECT id FROM teaching_material WHERE id=$1 AND instructor_id=$2 FOR UPDATE", Tuple.of(id, actor.id()))
-            .compose(ignored -> db.preparedQuery("DELETE FROM teaching_material WHERE id=$1").execute(Tuple.of(id)))
-            .compose(ignored -> audit(db, actor.id(), "material.deleted", id, new JsonObject())));
+    return materials.delete(actor, id);
   }
 
   public Future<JsonArray> lessonReport(Account actor, UUID lesson) {

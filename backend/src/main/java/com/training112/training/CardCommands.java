@@ -61,10 +61,7 @@ public final class CardCommands {
       if (!okrug.isEmpty() && !OKRUGS.contains(okrug)) throw invalid("Неизвестный округ.");
       String classifierCode = copy.getString("classifier_code", "");
       if (!classifierCode.isEmpty()) {
-        JsonObject survey = IncidentClassifier.card(classifierCode);
-        if (survey == null || !survey.getString("type").equals(copy.getString("incident_code", ""))
-            || !survey.getString("sign2").equals(copy.getString("incident_sign_2", ""))
-            || !survey.getString("sign3").equals(copy.getString("incident_sign_3", ""))) {
+        if (!matchesClassifier(copy)) {
           throw invalid("Код и признаки происшествия не совпадают с классификатором.");
         }
         validateIncidentTypes(copy);
@@ -78,8 +75,10 @@ public final class CardCommands {
         || !Set.of("status", "comment").containsAll(payload.fieldNames())) {
       throw invalid("Неизвестная команда карточки.");
     }
-    String next = payload.getString("status", "");
-    String comment = payload.getString("comment", "");
+    Object nextValue = payload.getValue("status");
+    Object commentValue = payload.getValue("comment");
+    if (!(nextValue instanceof String next) || !(commentValue instanceof String comment))
+      throw invalid("Неверное значение статуса или комментария.");
     if (!TRANSITIONS.get(current).contains(next)) throw invalid("Недопустимый переход статуса.");
     if (comment.length() > 4000 || comment.isBlank()) {
       throw invalid("К статусу нужен комментарий.");
@@ -102,13 +101,17 @@ public final class CardCommands {
         throw invalid("Заполните обязательные поля карточки перед сохранением.");
       }
     }
-    JsonObject survey = IncidentClassifier.card(card.getString("classifier_code"));
-    if (survey == null || !survey.getString("type").equals(card.getString("incident_code", ""))
-        || !survey.getString("sign2").equals(card.getString("incident_sign_2", ""))
-        || !survey.getString("sign3").equals(card.getString("incident_sign_3", ""))) {
+    if (!matchesClassifier(card)) {
       throw invalid("Проверьте тип и признаки происшествия.");
     }
     validateIncidentTypes(card);
+  }
+
+  private static boolean matchesClassifier(JsonObject card) {
+    JsonObject survey = IncidentClassifier.card(card.getString("classifier_code", ""));
+    return survey != null && survey.getString("type").equals(card.getString("incident_code", ""))
+        && survey.getString("sign2").equals(card.getString("incident_sign_2", ""))
+        && survey.getString("sign3").equals(card.getString("incident_sign_3", ""));
   }
 
   private static void validateIncidentTypes(JsonObject card) {
@@ -124,10 +127,14 @@ public final class CardCommands {
     Set<String> seen = new java.util.HashSet<>();
     for (Object item : incidents) {
       if (!(item instanceof JsonObject selected)) throw invalid("Неверные типы происшествия.");
-      String type = selected.getString("type", "");
-      String second = selected.getString("sign2", "");
-      String third = selected.getString("sign3", "");
-      String code = selected.getString("code", "");
+      if (!(selected.getValue("type") instanceof String type)
+          || !(selected.getValue("sign2") instanceof String second)
+          || !(selected.getValue("sign3") instanceof String third))
+        throw invalid("Неверные типы происшествия.");
+      Object selectedCode = selected.getValue("code");
+      if (selectedCode != null && !(selectedCode instanceof String))
+        throw invalid("Неверные типы происшествия.");
+      String code = selectedCode == null ? "" : (String) selectedCode;
       JsonObject row = code.isEmpty()
           ? IncidentClassifier.card(type, second, third) : IncidentClassifier.card(code);
       if (row == null || !row.getString("type").equals(type)

@@ -64,13 +64,11 @@ public final class CardSnapshot {
     LinkedHashSet<String> names = new LinkedHashSet<>();
     if (survey != null) {
       add(names, survey.getJsonArray("services"));
-      String victims = text(facts, "victims").trim();
-      boolean hasVictims = !victims.isEmpty() && !victims.equalsIgnoreCase("нет")
-          && !victims.equalsIgnoreCase("неизвестно");
+      boolean hasVictims = "present".equals(text(facts, "victims_state"));
       boolean lawViolation = "true".equalsIgnoreCase(text(facts, "law_violation"));
-      if (!hasVictims && !lawViolation && survey.getBoolean("police_without_signs", false))
+      if (survey.getBoolean("police_without_signs", false))
         names.add("102");
-      if (!hasVictims && survey.getBoolean("medical_without_victims", false))
+      if (survey.getBoolean("medical_without_victims", false))
         names.add("103");
       if (hasVictims)
         add(names, survey.getJsonArray("victim_services"));

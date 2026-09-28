@@ -1,11 +1,10 @@
 package com.training112;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.Map;
 
 public record AppConfig(int port, String dbHost, int dbPort, String dbName, String dbUser,
-                        String dbPassword, String appOrigin, boolean secureCookie, Duration sessionTtl) {
+                        String dbPassword, String appOrigin, boolean secureCookie) {
     public static AppConfig fromEnvironment() {
         return from(System.getenv());
     }
@@ -25,8 +24,7 @@ public record AppConfig(int port, String dbHost, int dbPort, String dbName, Stri
         return new AppConfig(number(env, "PORT", 8080, 1, 65535),
                 env.getOrDefault("DB_HOST", "localhost"), number(env, "DB_PORT", 5432, 1, 65535),
                 env.getOrDefault("DB_NAME", "training112"), env.getOrDefault("DB_USER", "training112"),
-                password, origin, "https".equals(uri.getScheme()),
-                Duration.ofDays(7));
+                password, origin, "https".equals(uri.getScheme()));
     }
 
     private static int number(Map<String, String> env, String key, int fallback, int min, int max) {

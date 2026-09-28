@@ -10,7 +10,7 @@ import java.util.UUID;
 
 import static com.training112.training.TrainingRepository.forbidden;
 import static com.training112.training.TrainingRepository.instructor;
-import static com.training112.training.TrainingRepository.list;
+import static com.training112.training.TrainingDb.list;
 
 final class TrainingReports {
   private final Pool pool;
