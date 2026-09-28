@@ -17,9 +17,8 @@ export function DdsStatusEditor({ status, crew, pendingReport, busy, onMove }: {
   const [comment, setComment] = useState('');
   useEffect(() => setNext(''), [status]);
   if (available.length === 0) return null;
-  const needsComment = ['accepted', 'rejected', 'refused', 'completed'].includes(next);
   const needsReport = !!next && !['accepted', 'rejected'].includes(next);
-  const ready = !!next && !busy && (!needsComment || !!comment.trim())
+  const ready = !!next && !busy && !!comment.trim()
     && (!needsReport || pendingReport === next);
   return <div className={styles.editor}>
     <div className={styles.title}>Статус реагирования вашей службы
@@ -40,6 +39,6 @@ export function DdsStatusEditor({ status, crew, pendingReport, busy, onMove }: {
     {needsReport && pendingReport !== next && <div className={styles.hint}>
       Для этого статуса сначала нужен соответствующий доклад старшего бригады.
     </div>}
-    {needsComment && !comment.trim() && <div className={styles.hint}>Укажите причину или результат в комментарии.</div>}
+    {!!next && !comment.trim() && <div className={styles.hint}>Укажите обстоятельства смены статуса в комментарии.</div>}
   </div>;
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AttemptEvent } from '../../speech/trainingApi';
+import type { AttemptEvent, DdsServiceStatus } from '../../speech/trainingApi';
 import { sameService } from './serviceName';
 import { ddsPartyNames, ddsStatusNames } from './statuses';
 import styles from './DdsServiceBar.module.css';
@@ -21,7 +21,7 @@ export function DdsServiceBar({ services, ownService, ownStatus, events, login, 
   login: string;
   now: number;
   startedAt: number | null;
-  serviceStatuses: { service: string; status: string; started_at: string }[];
+  serviceStatuses: DdsServiceStatus[];
 }) {
   const [selected, setSelected] = useState(ownService);
   const [expanded, setExpanded] = useState(false);
@@ -30,10 +30,12 @@ export function DdsServiceBar({ services, ownService, ownStatus, events, login, 
   const statusFor = (service: string) => {
     if (sameService(service, ownService)) return currentStatus(ownStatus, now, startedAt);
     const latest = serviceStatuses.find((item) => sameService(item.service, service));
-    return latest ? currentStatus(latest.status, now, new Date(latest.started_at).valueOf())
+    return latest ? currentStatus(latest.status, now,
+      latest.started_at ? new Date(latest.started_at).valueOf() : null)
       : ddsStatusNames.added;
   };
   const history = events.filter((event) => ['card.status', 'dds.crew.select', 'dds.phone.report'].includes(event.type));
+  const otherHistory = serviceStatuses.find((item) => sameService(item.service, current))?.history ?? [];
   return <div className={styles.dock}>
     {expanded && <div className={styles.detail}>
       <div className={styles.detailTitle}>{current} · {statusFor(current)}</div>
@@ -47,7 +49,15 @@ export function DdsServiceBar({ services, ownService, ownStatus, events, login, 
             <span>{event.payload.status === 'received' ? 'Система' : login}</span>
             {(event.payload.comment || event.payload.message) && <span>{event.payload.comment || event.payload.message}</span>}
           </div>)}
-      </div> : <div className={styles.otherNotice}>Действия этой службы выполняются в её занятии.</div>}
+      </div> : <div className={styles.history}>
+        {otherHistory.length === 0 ? <span>Записей о реагировании пока нет.</span> : otherHistory.map((entry, index) =>
+          <div key={`${entry.created_at}-${index}`}>
+            <span>{timeFormatter.format(new Date(entry.created_at))}</span>
+            <span>{ddsStatusNames[entry.status] ?? entry.status}</span>
+            <span>{current}</span>
+            <span>{entry.comment}</span>
+          </div>)}
+      </div>}
     </div>}
     <div className={styles.tabs}>
       <span className={styles.tabsLabel}>Службы:</span>

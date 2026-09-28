@@ -23,7 +23,7 @@
 
 .history {
   display: grid;
-  grid-template-columns: repeat(4, max-content);
+  grid-template-columns: max-content max-content max-content minmax(240px, 1fr);
   max-height: 150px;
   overflow: auto;
   column-gap: 10px;
@@ -39,10 +39,6 @@
 
 .history > span {
   grid-column: 1 / -1;
-}
-
-.otherNotice {
-  font-size: 13px;
 }
 
 .tabs {

@@ -70,6 +70,13 @@ export type AttemptEvent = {
     direction?: string; topic?: string; report_status?: string; message?: string; audio?: string };
 };
 
+export type DdsServiceStatus = {
+  service: string;
+  status: string;
+  started_at: string | null;
+  history: { status: string; comment: string; created_at: string }[];
+};
+
 export async function attemptEvents(id: string) {
   return api<AttemptEvent[]>(`training/attempts/${id}/events?after=0`);
 }

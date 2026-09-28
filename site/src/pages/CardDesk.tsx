@@ -10,7 +10,7 @@ import { DdsServiceBar } from '../components/dds/DdsServiceBar';
 import { DdsStatusEditor } from '../components/dds/DdsStatusEditor';
 import { sameService } from '../components/dds/serviceName';
 import { attemptEvents, openCardAttempt, postCardStatus,
-  type AttemptEvent, type CardAttempt } from '../speech/trainingApi';
+  type AttemptEvent, type CardAttempt, type DdsServiceStatus } from '../speech/trainingApi';
 import type { Assignment } from '../management/types';
 import shell from '../App.module.css';
 import styles from './CardDesk.module.css';
@@ -23,7 +23,7 @@ export function CardDesk() {
   const [attempt, setAttempt] = useState<CardAttempt | null>(null);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [events, setEvents] = useState<AttemptEvent[]>([]);
-  const [serviceStatuses, setServiceStatuses] = useState<{ service: string; status: string; started_at: string }[]>([]);
+  const [serviceStatuses, setServiceStatuses] = useState<DdsServiceStatus[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [phoneEnabled, setPhoneEnabled] = useState(true);
@@ -44,7 +44,7 @@ export function CardDesk() {
     let cancelled = false;
     void openCardAttempt(user.id, assignmentId).then(async ({ assignment: next, attempt: opened }) => {
       const [history, statuses] = await Promise.all([attemptEvents(opened.id),
-        api<{ service: string; status: string; started_at: string }[]>(`training/attempts/${opened.id}/services`)]);
+        api<DdsServiceStatus[]>(`training/attempts/${opened.id}/services`)]);
       if (cancelled) return;
       setAttempt(opened);
       setAssignment(next);
@@ -58,7 +58,7 @@ export function CardDesk() {
     if (!attempt?.id) return undefined;
     let cancelled = false;
     const timer = window.setInterval(() => {
-      void api<{ service: string; status: string; started_at: string }[]>(`training/attempts/${attempt.id}/services`)
+      void api<DdsServiceStatus[]>(`training/attempts/${attempt.id}/services`)
         .then((statuses) => { if (!cancelled) setServiceStatuses(statuses); })
         .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     }, 5000);
@@ -97,7 +97,7 @@ export function CardDesk() {
     const [current, history, statuses] = await Promise.all([
       api<CardAttempt>(`training/attempts/${attemptId}`),
       attemptEvents(attemptId),
-      api<{ service: string; status: string; started_at: string }[]>(`training/attempts/${attemptId}/services`),
+      api<DdsServiceStatus[]>(`training/attempts/${attemptId}/services`),
     ]);
     setAttempt(current);
     setEvents(history);
