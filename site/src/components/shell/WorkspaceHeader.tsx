@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { useNotification } from '../Notifications';
 import helpIcon from '../../assets/workspace/help.svg';
 import workstationIcon from '../../assets/workspace/workstation.svg';
+import { useNow } from '../../hooks/useNow';
 import styles from '../../App.module.css';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -34,11 +35,7 @@ export function WorkspaceHeader({ leading, footer, menu, person }: {
   const notify = useNotification();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const now = useNow();
   useEffect(() => {
     if (!menuOpen) return;
     function closeOnOutsideClick(event: PointerEvent) {

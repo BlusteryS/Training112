@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } 
 import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { AddressLookup, type FiasAddress } from '../components/call/AddressLookup';
-import { IncidentSurvey, type SurveySelection } from '../components/call/IncidentSurvey';
+import { IncidentSurvey } from '../components/call/IncidentSurvey';
 import { ToggleGroup } from '../components/call/ToggleGroup';
 import { ModalForm } from '../components/ModalForm';
 import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
@@ -17,44 +17,11 @@ import closeIcon from '../assets/workspace/close.svg';
 import { incidentClassifier, matchingCard, servicesForCard,
   type ClassifierCard } from './incidentClassifier';
 import type { MapSelection } from '../components/call/IncidentMap';
+import { additionalIncidents, elapsedParts, initialDraft, splitServices, type IncidentDraft } from './callDraft';
 import styles from './CallWorkspace.module.css';
 
 const IncidentMap = lazy(() => import('../components/call/IncidentMap')
   .then((module) => ({ default: module.IncidentMap })));
-
-export type IncidentDraft = {
-  phone: string;
-  provided_phone: string;
-  scene_phone: string;
-  communication_channel: string;
-  foreign_phone: string;
-  caller_name: string;
-  caller_status: string;
-  foreign_language: string;
-  incident_code: string;
-  classifier_code: string;
-  incident_types: string;
-  incident_sign_2: string;
-  incident_sign_3: string;
-  incident_details: string;
-  address: string;
-  address_description: string;
-  location_lat: string;
-  location_lon: string;
-  country: string;
-  city: string;
-  okrug: string;
-  district: string;
-  street: string;
-  house: string;
-  entrance: string;
-  floor: string;
-  description: string;
-  victims: string;
-  law_violation: string;
-  services: string;
-  comment: string;
-};
 
 type LinkedCard = {
   id: string;
@@ -63,43 +30,6 @@ type LinkedCard = {
   phone: string;
   matched: boolean;
 };
-
-function initialDraft(phone: string, card?: Record<string, string> | null): IncidentDraft {
-  return {
-    phone, provided_phone: '', scene_phone: '', communication_channel: 'Мобильный телефон',
-    foreign_phone: 'false', caller_name: '', caller_status: '', foreign_language: 'false',
-    incident_code: '', classifier_code: '', incident_types: '[]',
-    incident_sign_2: '', incident_sign_3: '', incident_details: '',
-    address: '', address_description: '', location_lat: '', location_lon: '',
-    country: 'Россия', city: 'Москва', okrug: '',
-    district: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Нет',
-    law_violation: 'false', services: '', comment: '', ...card,
-  };
-}
-
-function splitServices(value: string) {
-  return value.split(',').map((item) => item.trim()).filter(Boolean);
-}
-
-function additionalIncidents(card?: Record<string, string> | null): SurveySelection[] {
-  try {
-    const values: unknown = JSON.parse(card?.incident_types ?? '[]');
-    if (!Array.isArray(values)) return [];
-    return values.slice(1).filter((item): item is SurveySelection => item !== null
-      && typeof item === 'object' && typeof item.type === 'string'
-      && typeof item.sign2 === 'string' && typeof item.sign3 === 'string')
-      .map((item) => ({ ...item, code: typeof item.code === 'string' ? item.code : '' }));
-  } catch {
-    return [];
-  }
-}
-
-function elapsedParts(seconds: number) {
-  return {
-    minutes: Math.floor(seconds / 60).toString().padStart(2, '0'),
-    seconds: (seconds % 60).toString().padStart(2, '0'),
-  };
-}
 
 export function CallWorkspace({ user, phone, elapsed, registeredAt, message, connected, initialCard, incidentNumber,
   attemptId, deadlineSeconds, saving, onEndCall, onCancel, onSave }: {
@@ -176,22 +106,28 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   }, []);
 
   useEffect(() => {
-    if (!attemptId || !phone.trim() && !draft.address.trim() && !linksOpen) return;
-    let active = true;
+    if (!attemptId || !phone.trim() && !draft.address.trim() && !linksOpen) {
+      setLinkCandidates([]);
+      setLinkError('');
+      return;
+    }
+    const controller = new AbortController();
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ q: linksOpen ? linkQuery : '', phone,
         address: draft.address.trim() });
-      void api<LinkedCard[]>(`training/attempts/${attemptId}/link-candidates?${params}`)
+      void api<LinkedCard[]>(`training/attempts/${attemptId}/link-candidates?${params}`,
+        undefined, controller.signal)
         .then((cards) => {
-          if (active) {
+          if (!controller.signal.aborted) {
             setLinkCandidates(linksOpen ? cards : cards.filter((card) => card.matched));
             setLinkError('');
           }
         }).catch((cause: unknown) => {
-          if (active) setLinkError(cause instanceof Error ? cause.message : 'Не удалось найти карточки.');
+          if (!controller.signal.aborted)
+            setLinkError(cause instanceof Error ? cause.message : 'Не удалось найти карточки.');
         });
     }, 350);
-    return () => { active = false; window.clearTimeout(timer); };
+    return () => { controller.abort(); window.clearTimeout(timer); };
   }, [attemptId, phone, draft.address, linksOpen, linkQuery]);
 
   useEffect(() => {
@@ -350,10 +286,13 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       </div>
       <div id="card-victims" tabIndex={-1} className={styles.victimsRow}>
         <span>Есть пострадавшие?</span>
-        <ToggleGroup value={draft.victims === 'Нет' ? 'no' : 'yes'}
-          options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' }] as const}
-          onChange={(value) => change('victims', value === 'yes' ? '1' : 'Нет')} />
-        {draft.victims !== 'Нет' && <input className={styles.count} min="1" type="number"
+        <ToggleGroup value={draft.victims === 'Нет' ? 'no'
+          : draft.victims === 'Неизвестно' ? 'unknown' : 'yes'}
+          options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' },
+            { value: 'unknown', label: 'Неизвестно' }] as const}
+          onChange={(value) => change('victims', value === 'yes' ? '1'
+            : value === 'no' ? 'Нет' : 'Неизвестно')} />
+        {!['Нет', 'Неизвестно'].includes(draft.victims) && <input className={styles.count} min="1" type="number"
           value={draft.victims} onChange={(event) => change('victims', event.target.value)}
           aria-label="Количество пострадавших" />}
         <span className={styles.lawLabel}>Правонарушение?</span>

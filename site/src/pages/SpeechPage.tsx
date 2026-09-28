@@ -6,7 +6,9 @@ import { useNotification } from '../components/Notifications';
 import { startCooldown } from '../operatorAvailability';
 import { finishAttempt, saveAttemptCard, startAssignedAttempt } from '../speech/trainingApi';
 import { VoiceCall } from '../speech/VoiceCall';
-import { CallWorkspace, type IncidentDraft } from './CallWorkspace';
+import { useNow } from '../hooks/useNow';
+import { CallWorkspace } from './CallWorkspace';
+import type { IncidentDraft } from './callDraft';
 import styles from './SpeechPage.module.css';
 
 type CallPhase = 'waiting' | 'active' | 'error' | 'finished';
@@ -41,17 +43,12 @@ export function SpeechPage() {
   const [saving, setSaving] = useState(false);
   const [retry, setRetry] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [now, setNow] = useState(Date.now);
+  const now = useNow();
   const [attemptId, setAttemptId] = useState('');
   const call = useRef<VoiceCall | null>(null);
   const attemptIdRef = useRef('');
   const savedRef = useRef(false);
   const leavingRef = useRef(false);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     let current: VoiceCall | undefined;
@@ -69,13 +66,14 @@ export function SpeechPage() {
     setMessage('');
     setStartedAt(null);
     setPhase('waiting');
-    setNow(Date.now());
 
     const failAttempt = () => {
       const id = attemptIdRef.current;
       if (!id || failedAttempt || savedRef.current) return;
       failedAttempt = true;
-      void finishAttempt(id, true);
+      void finishAttempt(id, true).catch((cause: unknown) => {
+        notify(cause instanceof Error ? cause.message : 'Не удалось закрыть попытку.', 'error');
+      });
     };
 
     const callbacks = {
@@ -104,14 +102,14 @@ export function SpeechPage() {
     const start = window.setTimeout(() => {
       void startAssignedAttempt(user.id, assignmentId).then(async (assigned) => {
         attemptIdRef.current = assigned.id;
-        setAttemptId(assigned.id);
-        setPhone(assigned.phone);
-        setCard(assigned.card);
-        setDeadlineSeconds(assigned.deadlineSeconds);
         if (disposed) {
           failAttempt();
           return;
         }
+        setAttemptId(assigned.id);
+        setPhone(assigned.phone);
+        setCard(assigned.card);
+        setDeadlineSeconds(assigned.deadlineSeconds);
         current = new VoiceCall(callbacks, assigned.id);
         call.current = current;
         await current.start();
@@ -134,7 +132,7 @@ export function SpeechPage() {
       current?.close();
       if (!leavingRef.current) failAttempt();
     };
-  }, [assignmentId, retry, user.id]);
+  }, [assignmentId, notify, retry, user.id]);
 
   async function save(draft: IncidentDraft, linkedTo: string | null) {
     const id = attemptIdRef.current;

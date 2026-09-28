@@ -2,12 +2,17 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './ModalForm.module.css';
 
+let openModals = 0;
+let previousOverflow = '';
+
 export function ModalForm({ label, children, onClose }: { label: string; children: ReactNode; onClose: () => void }) {
   const backdrop = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const previous = document.body.style.overflow;
+    if (openModals++ === 0) previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previous; };
+    return () => {
+      if (--openModals === 0) document.body.style.overflow = previousOverflow;
+    };
   }, []);
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {

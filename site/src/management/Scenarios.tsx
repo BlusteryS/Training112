@@ -109,10 +109,10 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   const [incident, setIncident] = useState<SurveySelection>({ type: '', sign2: '', sign3: '', code: '' });
   const [localError, setLocalError] = useState('');
   const [location, setLocation] = useState('');
+  const [victimsState, setVictimsState] = useState('unknown');
   const [difficulty, setDifficulty] = useState('basic');
   const [seconds, setSeconds] = useState('30');
   const [origin, setOrigin] = useState('Служба 112');
-  const [caller, setCaller] = useState('');
   useEffect(() => {
     let active = true;
     void incidentClassifier().then((cards) => { if (active) setClassifier(cards); })
@@ -125,18 +125,24 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
   onClose={onClose} onSubmit={() => {
     const card = matchingCard(classifier, incident.type, incident.sign2, incident.sign3, incident.code);
     if (!card) { setLocalError('Выберите тип происшествия и его признаки.'); return; }
-    if (!location.trim() || !caller.trim()) {
-      setLocalError('Укажите место происшествия и заявителя.'); return;
+    if (!location.trim()) {
+      setLocalError('Укажите место происшествия.'); return;
     }
     setLocalError('');
-    onSubmit({ classifier_code: card.code, location, difficulty, seconds: Number(seconds),
-      origin, caller_name: caller });
+    onSubmit({ classifier_code: card.code, location, victims_state: victimsState,
+      difficulty, seconds: Number(seconds), origin });
   }}>
     <IncidentSurvey cards={classifier} types={types} inputId="scenario-incident-types"
       listId="scenario-incident-lookup"
       value={incident} onChange={(value) => { setIncident(value); setLocalError(''); }} />
     <div className={formGrid}>
       <InputField label="Место" required maxLength={1000} value={location} onChange={(event) => setLocation(event.target.value)} />
+      <SelectField label="Пострадавшие в сценарии" value={victimsState}
+        onChange={(event) => setVictimsState(event.target.value)}>
+        <option value="unknown">Неизвестно</option>
+        <option value="present">Есть</option>
+        <option value="absent">Нет</option>
+      </SelectField>
       <SelectField label="Сложность" value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
         {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </SelectField>
@@ -144,7 +150,6 @@ function NewScenarioDialog({ busy, error, onClose, onSubmit }: {
       <SelectField label="Источник" value={origin} onChange={(event) => setOrigin(event.target.value)}>
         {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
       </SelectField>
-      <InputField label="Заявитель" required maxLength={200} value={caller} onChange={(event) => setCaller(event.target.value)} />
     </div>
   </FormCard>
 </ModalForm>;

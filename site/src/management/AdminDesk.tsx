@@ -144,17 +144,20 @@ function Status() {
   const [error, setError] = useState('');
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
     async function load() {
       try {
-        const next = await api<StatusData>('admin/status');
+        const next = await api<StatusData>('admin/status', undefined, controller.signal);
         if (!cancelled) { setRow(next); setError(''); }
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : 'Комплекс не ответил.');
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void load(), 5000);
       }
     }
     void load();
-    const timer = window.setInterval(() => void load(), 5000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    return () => { cancelled = true; controller.abort(); window.clearTimeout(timer); };
   }, []);
   const lines = row ? [
     ['База данных', row.database === 'up' ? 'Работает' : 'Нет ответа'],
@@ -184,14 +187,14 @@ function Journal() {
   const [error, setError] = useState('');
   useEffect(() => {
     void api<{ id: number; action: string; login: string | null; created_at: string }[]>('admin/audit')
-      .then((items) => setRows(items.filter((item) => actionNames[item.action])))
+      .then(setRows)
       .catch((cause: Error) => setError(cause.message));
   }, []);
   return <Desk>
     {rows.length === 0 ? <DeskEmpty>Записей нет</DeskEmpty> : <DeskTable head={<><span>Время</span><span>Событие</span><span>Кто</span></>}>
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
-        <span>{actionNames[row.action]}</span>
+        <span>{actionNames[row.action] ?? row.action}</span>
         <span>{row.login ?? ''}</span>
       </DeskRow>)}
     </DeskTable>}

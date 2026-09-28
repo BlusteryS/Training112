@@ -9,7 +9,8 @@ const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
 });
 
 function currentStatus(status: string, now: number, started: number | null) {
-  if (status === 'added' && started && now - started > 30_000) return 'Не оповещено';
+  if ((status === 'added' || status === 'received') && started && now - started > 30_000)
+    return 'Не оповещено';
   return ddsStatusNames[status] ?? status;
 }
 
@@ -32,7 +33,7 @@ export function DdsServiceBar({ services, ownService, ownStatus, events, login, 
     const latest = serviceStatuses.find((item) => sameService(item.service, service));
     return latest ? currentStatus(latest.status, now,
       latest.started_at ? new Date(latest.started_at).valueOf() : null)
-      : ddsStatusNames.added;
+      : currentStatus('added', now, startedAt);
   };
   const history = events.filter((event) => ['card.status', 'dds.crew.select', 'dds.phone.report'].includes(event.type));
   const otherHistory = serviceStatuses.find((item) => sameService(item.service, current))?.history ?? [];

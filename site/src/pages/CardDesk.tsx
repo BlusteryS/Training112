@@ -12,6 +12,7 @@ import { sameService } from '../components/dds/serviceName';
 import { attemptEvents, openCardAttempt, postCardStatus,
   type AttemptEvent, type CardAttempt, type DdsServiceStatus } from '../speech/trainingApi';
 import type { Assignment } from '../management/types';
+import { useNow } from '../hooks/useNow';
 import shell from '../App.module.css';
 import styles from './CardDesk.module.css';
 
@@ -27,12 +28,7 @@ export function CardDesk() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [phoneEnabled, setPhoneEnabled] = useState(true);
-  const [now, setNow] = useState(Date.now);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const now = useNow();
 
   useEffect(() => {
     void api<{ dds_phone: boolean }>('training/capabilities')
@@ -42,6 +38,11 @@ export function CardDesk() {
 
   useEffect(() => {
     let cancelled = false;
+    setAttempt(null);
+    setAssignment(null);
+    setEvents([]);
+    setServiceStatuses([]);
+    setError('');
     void openCardAttempt(user.id, assignmentId).then(async ({ assignment: next, attempt: opened }) => {
       const [history, statuses] = await Promise.all([attemptEvents(opened.id),
         api<DdsServiceStatus[]>(`training/attempts/${opened.id}/services`)]);
@@ -55,14 +56,24 @@ export function CardDesk() {
   }, [assignmentId, user.id]);
 
   useEffect(() => {
-    if (!attempt?.id) return undefined;
+    const id = attempt?.id;
+    if (!id) return undefined;
     let cancelled = false;
-    const timer = window.setInterval(() => {
-      void api<DdsServiceStatus[]>(`training/attempts/${attempt.id}/services`)
-        .then((statuses) => { if (!cancelled) setServiceStatuses(statuses); })
-        .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
-    }, 5000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    async function poll() {
+      try {
+        const statuses = await api<DdsServiceStatus[]>(`training/attempts/${id}/services`,
+          undefined, controller.signal);
+        if (!cancelled) setServiceStatuses(statuses);
+      } catch (cause) {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Не удалось обновить статусы служб.');
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void poll(), 5000);
+      }
+    }
+    timer = window.setTimeout(() => void poll(), 5000);
+    return () => { cancelled = true; controller.abort(); window.clearTimeout(timer); };
   }, [attempt?.id]);
 
   if (!attempt || !assignment) {
@@ -135,7 +146,7 @@ export function CardDesk() {
           </div>
           <button type="button" onClick={() => navigate('/')}>К списку</button>
         </div>
-        <DdsPhonePanel attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
+        <DdsPhonePanel key={attempt.id} attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
           callerPhone={card.phone ?? ''} pendingReport={pendingReport || null} enabled={phoneEnabled}
           discrepancy={discrepancy} notified112={notified112}
           onChange={refresh} onError={setError} />

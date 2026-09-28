@@ -23,6 +23,10 @@ const factNames: Record<string, string> = {
   district: 'Район происшествия', okrug: 'Округ происшествия',
 };
 
+const replyIntent: Record<string, string> = {
+  caller_name: 'name', description_details: 'description',
+};
+
 export function exportScenario(document: ScenarioDocument) {
   downloadFile(new Blob([JSON.stringify(document, null, 2)], { type: 'application/json' }),
     `${document.title.replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 80) || 'scenario'}.json`);
@@ -39,7 +43,11 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       const facts = { ...previous.facts };
       if ((key === 'district' || key === 'okrug') && !value.trim()) delete facts[key];
       else facts[key] = value;
-      return { ...previous, facts };
+      const intent = replyIntent[key] ?? key;
+      const variant = `{${key}}`;
+      return { ...previous, facts, responses: previous.responses.map((response) =>
+        response.intent === intent ? { ...response, variants: [variant], compact_variants: [variant] }
+          : response) };
     });
   }
   function updateCriterion(id: string, changes: Partial<ScenarioDocument['rubric'][number]>) {
@@ -84,7 +92,6 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
       <div className={styles.sectionTitle}>Общие сведения</div>
       <div className={formGrid}>
         <InputField label="Название" required maxLength={200} value={document.title} onChange={(event) => setDocument({ ...document, title: event.target.value })} />
-        {document.classifier_code && <InputField label="Код сценария реагирования" value={document.classifier_code} readOnly />}
         <SelectField label="Источник" required value={document.origin ?? ''} onChange={(event) => setDocument({ ...document, origin: event.target.value })}>
           <option value=""></option>
           {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
@@ -98,7 +105,7 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
     <div className={styles.section}>
       <div className={styles.sectionTitle}>Ответы заявителя</div>
       <div className={formGrid}>
-        {Object.entries(document.facts).filter(([key]) => key !== 'district' && key !== 'okrug')
+        {Object.entries(document.facts).filter(([key]) => !['district', 'okrug', 'victims_state'].includes(key))
           .map(([key, value]) => <TextareaField key={key} label={factNames[key] ?? key}
           required maxLength={1000} value={value} onChange={(event) => fact(key, event.target.value)} />)}
         <InputField label="Район происшествия" maxLength={200} value={document.facts.district ?? ''}

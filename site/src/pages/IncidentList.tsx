@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChoiceSelect } from '../components/ChoiceSelect';
 import { EvaluationDetails, type Evaluation } from '../components/EvaluationDetails';
@@ -21,6 +21,14 @@ import timerIcon from '../assets/workspace/timer.svg';
 import styles from './IncidentList.module.css';
 
 const pageSizes = [10, 20, 50];
+const dateFormatter = new Intl.DateTimeFormat('ru-RU');
+const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
+  hour: '2-digit', minute: '2-digit', hour12: false,
+});
+const stampFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit', month: '2-digit', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+});
 
 function assignmentStatus(assignment: Assignment) {
   if (assignment.attempt_status === 'completed') return 'Отработана';
@@ -49,11 +57,9 @@ function dateParts(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) return { date: '', time: '', stamp: '' };
   return {
-    date: new Intl.DateTimeFormat('ru-RU').format(date),
-    time: new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date),
-    stamp: new Intl.DateTimeFormat('ru-RU', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-    }).format(date).replace(',', ''),
+    date: dateFormatter.format(date),
+    time: timeFormatter.format(date),
+    stamp: stampFormatter.format(date).replace(',', ''),
   };
 }
 
@@ -182,6 +188,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
   const [resultAssignment, setResultAssignment] = useState<Assignment | null>(null);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [resultError, setResultError] = useState('');
+  const resultRequest = useRef<AbortController | null>(null);
   const [linkAssignment, setLinkAssignment] = useState<Assignment | null>(null);
   const [links, setLinks] = useState<LinkedCard[]>([]);
   const [candidates, setCandidates] = useState<LinkedCard[]>([]);
@@ -191,7 +198,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
   const [linkReload, setLinkReload] = useState(0);
   const groups = useMemo(() => [...new Set(assignments.map((item) => item.group_name))].sort(), [assignments]);
   const needle = filter.trim().toLocaleLowerCase('ru');
-  const filtered = assignments.filter((assignment) => {
+  const filtered = useMemo(() => assignments.filter((assignment) => {
     const card = assignment.card;
     const created = assignment.created_at ? new Date(assignment.created_at).valueOf() : Number.NaN;
     const searchable = [assignment.title, assignment.group_name, assignment.learner_login,
@@ -220,7 +227,7 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
       && equals(search.visOperator, assignment.vis_operator)
       && (!status || assignmentStatus(assignment) === status)
       && (!group || assignment.group_name === group);
-  });
+  }), [assignments, filter, group, search, status]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const rows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -228,28 +235,42 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
   const last = Math.min(currentPage * pageSize, filtered.length);
 
   useEffect(() => setPage(1), [filter, group, pageSize, search, status]);
+  useEffect(() => () => resultRequest.current?.abort(), []);
 
   function viewResult(assignment: Assignment) {
+    resultRequest.current?.abort();
+    const controller = new AbortController();
+    resultRequest.current = controller;
     setResultAssignment(assignment);
     setEvaluation(null);
     setResultError('');
-    void api<Evaluation>(`training/attempts/${assignment.attempt_id}/result`)
-      .then(setEvaluation)
-      .catch((cause: Error) => setResultError(cause.message));
+    void api<Evaluation>(`training/attempts/${assignment.attempt_id}/result`, undefined, controller.signal)
+      .then((result) => { if (!controller.signal.aborted) setEvaluation(result); })
+      .catch((cause: Error) => { if (!controller.signal.aborted) setResultError(cause.message); });
   }
 
   useEffect(() => {
     const id = linkAssignment?.attempt_id;
     if (!id) return;
-    let active = true;
-    void Promise.all([
-      api<LinkedCard[]>(`training/attempts/${id}/links`),
-      api<LinkedCard[]>(`training/attempts/${id}/link-candidates?q=${encodeURIComponent(linkQuery)}`),
-    ]).then(([chain, options]) => {
-      if (active) { setLinks(chain); setCandidates(options); }
-    }).catch((cause: Error) => { if (active) setLinkError(cause.message); });
-    return () => { active = false; };
-  }, [linkAssignment, linkQuery, linkReload]);
+    const controller = new AbortController();
+    void api<LinkedCard[]>(`training/attempts/${id}/links`, undefined, controller.signal)
+      .then((chain) => { if (!controller.signal.aborted) setLinks(chain); })
+      .catch((cause: Error) => { if (!controller.signal.aborted) setLinkError(cause.message); });
+    return () => controller.abort();
+  }, [linkAssignment?.attempt_id, linkReload]);
+
+  useEffect(() => {
+    const id = linkAssignment?.attempt_id;
+    if (!id) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void api<LinkedCard[]>(`training/attempts/${id}/link-candidates?q=${encodeURIComponent(linkQuery)}`,
+        undefined, controller.signal)
+        .then((options) => { if (!controller.signal.aborted) setCandidates(options); })
+        .catch((cause: Error) => { if (!controller.signal.aborted) setLinkError(cause.message); });
+    }, 250);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [linkAssignment?.attempt_id, linkQuery, linkReload]);
 
   async function linkAction(path: string, body: Record<string, string> = {}) {
     if (!linkAssignment?.attempt_id || linkBusy) return;
@@ -332,7 +353,10 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
       </div>
     </div>
     </>}
-    {resultAssignment && <ModalForm label="Результат занятия" onClose={() => setResultAssignment(null)}>
+    {resultAssignment && <ModalForm label="Результат занятия" onClose={() => {
+      resultRequest.current?.abort();
+      setResultAssignment(null);
+    }}>
       <div className={styles.resultPanel}>
         <div className={styles.resultHeading}>
           <span>Результат: {resultAssignment.title}</span>

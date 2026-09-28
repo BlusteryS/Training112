@@ -40,10 +40,10 @@ export function servicesForCard(card: ClassifierCard | undefined, address: strin
   okrug: string, victims: string, lawViolation: boolean) {
   if (!card || !address.trim()) return [];
   const services = [...card.services];
-  const hasVictims = Boolean(victims.trim())
-    && !['нет', 'неизвестно'].includes(victims.trim().toLocaleLowerCase('ru'));
-  if (!hasVictims && !lawViolation && card.police_without_signs) services.push('102');
-  if (!hasVictims && card.medical_without_victims) services.push('103');
+  const count = victims.trim();
+  const hasVictims = /^[1-9]\d*$/.test(count);
+  if (card.police_without_signs) services.push('102');
+  if (card.medical_without_victims) services.push('103');
   if (hasVictims)
     services.push(...card.victim_services);
   if (lawViolation) services.push(...card.law_services);

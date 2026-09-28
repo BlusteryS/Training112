@@ -14,8 +14,7 @@
   src: url('./assets/roboto-medium.ttf') format('truetype');
 }
 
-.workspace,
-.managementPage {
+.workspace {
   position: absolute;
   inset: 0;
   min-width: 1280px;
@@ -28,18 +27,13 @@
 }
 
 .workspace,
-.workspace *,
-.managementPage,
-.managementPage * {
+.workspace * {
   box-sizing: border-box;
 }
 
 .workspace button,
 .workspace input,
-.workspace select,
-.managementPage button,
-.managementPage input,
-.managementPage select {
+.workspace select {
   font: inherit;
 }
 
@@ -306,48 +300,6 @@
 .operatorContent {
   min-height: calc(100vh - 138px);
   padding: 20px;
-}
-
-.managementPage {
-  min-width: 1024px;
-  padding: 24px;
-  background: #f3f5f6;
-  color: #1d252b;
-}
-
-.managementHeader {
-  display: grid;
-  grid-template-columns: auto minmax(260px, 1fr) auto auto;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  border-radius: 8px;
-  background: #2f353a;
-  color: #fff;
-  gap: 18px;
-}
-
-.managementHeader > div:first-child {
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.managementHeader input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, .24);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, .08);
-  color: #fff;
-}
-
-.managementHeader button {
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 6px;
-  background: #ec653b;
-  color: #fff;
-  cursor: pointer;
 }
 
 .visuallyHidden {

@@ -34,10 +34,10 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   const canCallCaller = enabled && ['received', 'rejected', ...reports].includes(status) && !!attemptId;
 
   useEffect(() => {
-    if (!canCall || !crew || pendingReport || active || incoming) return undefined;
+    if (!canCall || !crew || pendingReport || active || incoming || recordingFor || busy) return undefined;
     const timer = window.setTimeout(() => setIncoming(true), 12000);
     return () => window.clearTimeout(timer);
-  }, [canCall, crew, pendingReport, active, incoming, status]);
+  }, [canCall, crew, pendingReport, active, incoming, recordingFor, busy]);
 
   useEffect(() => () => {
     recordingRef.current?.capture.cancel();
