@@ -110,8 +110,14 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
   const [caller, setCaller] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [addressDescription, setAddressDescription] = useState('');
+  const [district, setDistrict] = useState('');
+  const [okrug, setOkrug] = useState('');
+  const [object, setObject] = useState('');
+  const [scenePhone, setScenePhone] = useState('');
   const [description, setDescription] = useState('');
   const [victims, setVictims] = useState('');
+  const [services, setServices] = useState('');
   const [expectedPrimary, setExpectedPrimary] = useState('accepted');
   const [outcome, setOutcome] = useState('completed');
   useEffect(() => {
@@ -142,7 +148,8 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
       ] });
     } else {
       onSubmit({ ...shared, incident_code: incident, caller_name: caller, phone, address,
-        description, victims });
+        address_description: addressDescription, district, okrug, object, scene_phone: scenePhone,
+        description, victims, services: [service, services].filter(Boolean).join(', ') });
     }
   }
   return <ModalForm label="Занятие" onClose={onClose}>
@@ -187,8 +194,15 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
           <InputField label="Заявитель" value={caller} maxLength={200} onChange={(event) => setCaller(event.target.value)} />
           <InputField label="Телефон заявителя" value={phone} maxLength={100} onChange={(event) => setPhone(event.target.value)} />
           <InputField label="Адрес" value={address} maxLength={1000} onChange={(event) => setAddress(event.target.value)} />
+          <InputField label="Район" value={district} maxLength={200} onChange={(event) => setDistrict(event.target.value)} />
+          <InputField label="Округ" value={okrug} maxLength={100} onChange={(event) => setOkrug(event.target.value)} />
+          <InputField label="Объект" value={object} maxLength={200} onChange={(event) => setObject(event.target.value)} />
+          <InputField label="Телефон на месте" value={scenePhone} maxLength={100} onChange={(event) => setScenePhone(event.target.value)} />
+          <InputField label="Ориентир" value={addressDescription} maxLength={1000} onChange={(event) => setAddressDescription(event.target.value)} />
           <TextareaField label="Описание" value={description} maxLength={1000} onChange={(event) => setDescription(event.target.value)} />
           <TextareaField label="Пострадавшие" value={victims} maxLength={1000} onChange={(event) => setVictims(event.target.value)} />
+          <InputField label="Другие оповещённые службы, через запятую" value={services} maxLength={1000}
+            onChange={(event) => setServices(event.target.value)} />
         </>}
         <SelectField label="Верное первичное решение ДДС" value={expectedPrimary}
           onChange={(event) => setExpectedPrimary(event.target.value)}>
