@@ -7,7 +7,7 @@ import { InputField } from '../components/ui/InputField';
 import { TextareaField } from '../components/ui/TextareaField';
 import { attemptNames, difficultyNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario, type TrainingModule } from './types';
 import { ModuleCreate } from './ModuleCreate';
-import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskInlineActions, deskError } from './Desk';
 import styles from './LessonCreate.module.css';
 
 type OperatorCard = { id: string; incident_code: string; address: string; services: string; created_at: string };
@@ -58,14 +58,14 @@ export function Lessons() {
         <span>{difficultyNames[module.difficulty] ?? module.difficulty}</span>
         <span>{lessons.filter((lesson) => lesson.module_id === module.id).length}</span></DeskRow>)}
     </DeskTable></DeskSection>}
-    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable head={<><span>Сценарий или карточка</span><span>Модуль</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
+    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable head={<><span>Сценарий или карточка</span><span>Модуль</span><span>Группа</span><span>Режим</span><span>Статус</span></>}>
       {lessons.map((lesson) => <DeskRow key={lesson.id}>
         <span>{lesson.title}</span>
         <span>{lesson.module_title ?? '—'}</span>
         <span>{lesson.group_name}</span>
         <span>{lesson.mode === 'card' ? 'Карточка' : 'Звонок'}</span>
-        <span>{lessonNames[lesson.status] ?? lesson.status}</span>
-        <span className={deskActions}>
+        <span className={deskInlineActions}>
+          <span>{lessonNames[lesson.status] ?? lesson.status}</span>
           {lesson.status === 'planned' && <button type="button" onClick={() => setConfirm({ id: lesson.id, action: 'start' })}>Запустить</button>}
           {lesson.status === 'active' && <button type="button" onClick={() => setConfirm({ id: lesson.id, action: 'finish' })}>Завершить</button>}
         </span>

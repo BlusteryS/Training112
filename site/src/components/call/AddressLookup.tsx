@@ -21,11 +21,17 @@ export function AddressLookup({ value, onChange, onSelect }: {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!focused || value.trim().length < 3) return;
+    if (!focused || value.trim().length < 3) {
+      setMatches([]);
+      setError('');
+      return;
+    }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       void api<FiasAddress[]>(`training/addresses?q=${encodeURIComponent(value.trim())}`, undefined,
-        controller.signal).then((rows) => { setMatches(rows); setError(''); })
+        controller.signal).then((rows) => {
+          if (!controller.signal.aborted) { setMatches(rows); setError(''); }
+        })
         .catch(() => { if (!controller.signal.aborted) setError('Не удалось найти адрес.'); });
     }, 120);
     return () => { window.clearTimeout(timer); controller.abort(); };

@@ -5,19 +5,28 @@
 
 .table {
   display: grid;
-  grid-template-columns: repeat(var(--column-count), minmax(max-content, auto));
+  grid-template-columns: var(--table-columns);
   width: 100%;
   min-width: max-content;
   row-gap: 8px;
 }
 
-.head,
-.row {
+.compact {
+  row-gap: 0;
+}
+
+.gridHead,
+.gridRow {
   box-sizing: border-box;
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: center;
+  min-width: 0;
+}
+
+.head,
+.row {
   min-height: 48px;
   column-gap: 0;
 }
@@ -64,6 +73,12 @@
   flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 12px;
+  white-space: nowrap;
+}
+
+.inlineActions {
+  justify-content: space-between;
+  gap: 16px;
   white-space: nowrap;
 }
 

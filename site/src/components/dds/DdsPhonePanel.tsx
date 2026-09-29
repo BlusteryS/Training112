@@ -28,7 +28,9 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   const [incoming, setIncoming] = useState(false);
   const [callerActionsOpen, setCallerActionsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [committing, setCommitting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const committingRef = useRef(false);
   const recordingRef = useRef<{ capture: DdsRecording; party: DdsPhoneParty;
     direction: 'incoming' | 'outgoing'; topic?: string } | null>(null);
   const canCall = enabled && reports.includes(status) && !!attemptId;
@@ -98,6 +100,10 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
       setActive(report);
       setSpokenText(utterance);
       audio.onended = () => {
+        audio.onended = null;
+        audio.onerror = null;
+        committingRef.current = true;
+        setCommitting(true);
         void (async () => {
           try {
             await recordDdsPhone(attemptId, party, direction, utterance, topic);
@@ -109,6 +115,8 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
             setActive(null);
             setSpokenText('');
             setBusy(false);
+            committingRef.current = false;
+            setCommitting(false);
           }
         })();
       };
@@ -130,6 +138,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
   }
 
   function hangUp() {
+    if (committingRef.current) return;
     if (recordingRef.current) {
       recordingRef.current.capture.cancel();
       recordingRef.current = null;
@@ -164,7 +173,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
       <div>Разговор: {active.party === 'crew' ? crew || 'бригада' : ddsPartyNames[active.party] || active.party}</div>
       <div>Вы: {spokenText}</div>
       <div>{active.message}</div>
-      <button type="button" onClick={hangUp}>Завершить</button>
+      <button type="button" disabled={committing} onClick={hangUp}>Завершить</button>
     </div> : <>
       {incoming && !pendingReport && <div className={styles.incoming}>
         <span>Звонит старший бригады</span>

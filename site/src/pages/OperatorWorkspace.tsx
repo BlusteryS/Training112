@@ -172,6 +172,7 @@ export function OperatorWorkspace() {
     </div>}
     <div className={styles.operatorContent}>
       <IncidentList assignments={visibleAssignments} autoRefresh={autoRefresh} filter={query}
+        userId={user.id} now={now}
         moduleId={moduleId} moduleOptions={moduleOptions} onModuleChange={(value) => {
           setParams((current) => { const next = new URLSearchParams(current); if (value) next.set('module_id', value); else next.delete('module_id'); return next; });
         }}

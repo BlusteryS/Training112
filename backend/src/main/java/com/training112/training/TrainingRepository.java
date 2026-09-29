@@ -229,19 +229,21 @@ public final class TrainingRepository {
     return accessibleAttempt(pool, actor, id, false)
         .compose(
             row -> {
-              boolean open =
+              boolean ownActiveCard =
                   "user".equals(actor.role())
                       && actor.id().equals(row.getUUID("learner_id"))
                       && "card".equals(row.getString("mode"))
-                      && "added".equals(row.getString("card_status"))
                       && "active".equals(row.getString("status"));
-              if (!open) return loadAttempt(pool, id);
+              if (!ownActiveCard) return loadAttempt(pool, id);
               return pool.withTransaction(
                   db ->
-                      db.preparedQuery(
-                              "UPDATE training_attempt SET card_status='received' WHERE id=$1 AND"
-                                  + " card_status='added' AND status='active'")
-                          .execute(Tuple.of(id))
+                      db.preparedQuery("UPDATE training_attempt SET workstation=$2 WHERE id=$1"
+                              + " AND workstation IS NULL AND status='active'")
+                          .execute(Tuple.of(id, actor.workstation()))
+                          .compose(ignored -> db.preparedQuery(
+                                  "UPDATE training_attempt SET card_status='received' WHERE id=$1 AND"
+                                      + " card_status='added' AND status='active'")
+                              .execute(Tuple.of(id)))
                           .compose(
                               updated ->
                                   updated.rowCount() == 0

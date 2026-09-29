@@ -6,6 +6,7 @@ import { ModalForm } from '../components/ModalForm';
 import { WorkspaceSwitch } from '../components/WorkspaceSwitch';
 import { api } from '../api';
 import type { Assignment } from '../management/types';
+import { TableGrid, TableRow } from '../management/Table';
 import type { IncidentSearch } from './IncidentSearch';
 import { ddsStatusNames } from '../components/dds/statuses';
 import boltIcon from '../assets/workspace/bolt.svg';
@@ -21,6 +22,22 @@ import timerIcon from '../assets/workspace/timer.svg';
 import styles from './IncidentList.module.css';
 
 const pageSizes = [10, 20, 50];
+type MarkerKind = 'pinned' | 'emergency';
+type IncidentMarkers = Record<MarkerKind, string[]>;
+
+function readMarkers(userId: string): IncidentMarkers {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(`incident-markers:${userId}`) ?? 'null');
+    if (stored && typeof stored === 'object') {
+      const value = stored as Record<string, unknown>;
+      return {
+        pinned: Array.isArray(value.pinned) ? value.pinned.filter((id): id is string => typeof id === 'string') : [],
+        emergency: Array.isArray(value.emergency) ? value.emergency.filter((id): id is string => typeof id === 'string') : [],
+      };
+    }
+  } catch { /* Недоступно хранилище браузера. */ }
+  return { pinned: [], emergency: [] };
+}
 const dateFormatter = new Intl.DateTimeFormat('ru-RU');
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
   hour: '2-digit', minute: '2-digit', hour12: false,
@@ -67,11 +84,16 @@ function operatorNumber(login: string) {
   return login.match(/\d+/)?.[0] ?? login;
 }
 
-function IncidentRow({ assignment, onViewResult, onViewLinks }: {
+function IncidentRow({ assignment, pinned, emergency, onToggleMarker, onViewTimer, onViewResult, onViewLinks }: {
   assignment: Assignment;
+  pinned: boolean;
+  emergency: boolean;
+  onToggleMarker: (id: string, kind: MarkerKind) => void;
+  onViewTimer: (assignment: Assignment) => void;
   onViewResult: (assignment: Assignment) => void;
   onViewLinks: (assignment: Assignment) => void;
 }) {
+  const [expanded, setExpanded] = useState(true);
   const created = dateParts(assignment.created_at);
   const status = assignmentStatus(assignment);
   const description = assignment.instructions?.trim() || incidentType(assignment);
@@ -79,25 +101,36 @@ function IncidentRow({ assignment, onViewResult, onViewLinks }: {
     ? assignment.status === 'active' && !['completed', 'failed'].includes(assignment.attempt_status ?? '')
     : ['created', 'active', 'suspended'].includes(assignment.attempt_status ?? '');
   const openPath = assignment.mode === 'card' ? '/card' : '/session';
+  const cardPath = `${openPath}?assignment_id=${encodeURIComponent(assignment.id)}`;
   return <div className={styles.row}>
-    <div className={styles.rowMain}>
-      {canOpen ? <Link className={styles.cellButton} title="Открыть текущую карточку"
-          to={`${openPath}?assignment_id=${encodeURIComponent(assignment.id)}`}>
-          <img src={expandIcon} alt="" />
-        </Link>
-        : <div className={styles.iconCell}><img src={expandIcon} alt="" /></div>}
+    <TableRow plain className={[styles.rowMain, expanded ? '' : styles.rowCollapsed,
+      emergency ? styles.emergencyRow : ''].filter(Boolean).join(' ')}>
+      <button type="button" className={styles.cellButton} aria-expanded={expanded}
+        title={expanded ? 'Свернуть описание' : 'Развернуть описание'}
+        onClick={() => setExpanded((value) => !value)}>
+        <img className={expanded ? '' : styles.expandClosed} src={expandIcon} alt="" />
+      </button>
       {assignment.mode === 'call' && assignment.attempt_id && assignment.attempt_status === 'completed'
         ? <button type="button" className={styles.cellButton} title="Связи карточки"
           onClick={() => onViewLinks(assignment)}><img src={linkIcon} alt="" />
           {!!assignment.link_count && <span className={styles.linkCount}>{assignment.link_count}</span>}
         </button>
-        : <div className={styles.iconCell} />}
-      <div className={styles.iconCell}><img src={bookmarkIcon} alt="" /></div>
-      <div className={styles.iconCell}><img src={boltIcon} alt="" /></div>
-      <div className={styles.iconCell}><img src={timerIcon} alt="" /></div>
+        : <div className={styles.iconCell} title={assignment.mode === 'card'
+          ? 'Связи доступны для карточек оператора 112'
+          : 'Связать карточку можно после её сохранения'}>—</div>}
+      <button type="button" className={`${styles.cellButton} ${pinned ? styles.markedButton : ''}`}
+        aria-pressed={pinned} title={pinned ? 'Открепить происшествие' : 'Закрепить происшествие'}
+        onClick={() => onToggleMarker(assignment.id, 'pinned')}><img src={bookmarkIcon} alt="" /></button>
+      <button type="button" className={`${styles.cellButton} ${emergency ? styles.markedButton : ''}`}
+        aria-pressed={emergency} title={emergency ? 'Снять личную пометку ЧС' : 'Лично пометить как ЧС'}
+        onClick={() => onToggleMarker(assignment.id, 'emergency')}><img src={boltIcon} alt="" /></button>
+      <button type="button" className={styles.cellButton} title="Время происшествия и норматив"
+        onClick={() => onViewTimer(assignment)}><img src={timerIcon} alt="" /></button>
       <div className={styles.cell}>{operatorNumber(assignment.learner_login)}</div>
       <div className={styles.cell}>{assignment.workstation ? assignment.workstation.padStart(3, '0') : ''}</div>
-      <div className={styles.cell}>{shortNumber(assignment.id)}</div>
+      <div className={styles.cell}>{canOpen
+        ? <Link className={styles.cardLink} title="Открыть карточку" to={cardPath}>{shortNumber(assignment.id)}</Link>
+        : shortNumber(assignment.id)}</div>
       <div className={styles.cell}>{created.date}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{created.time}</div>
       <div className={`${styles.cell} ${styles.darkCell}`}>{incidentType(assignment)}</div>
@@ -107,15 +140,15 @@ function IncidentRow({ assignment, onViewResult, onViewLinks }: {
       {assignment.attempt_id && ['completed', 'failed'].includes(assignment.attempt_status ?? '')
         ? <button type="button" className={styles.cellButton} title="Посмотреть результат"
           onClick={() => onViewResult(assignment)}><img src={detailsIcon} alt="" /></button>
-        : <div className={styles.iconCell}><img src={detailsIcon} alt="" /></div>}
+        : <div className={styles.iconCell} />}
       <div className={styles.checkedCell}>{status === 'Отработана' && <img src={checkedIcon} alt="Проверено" />}</div>
-    </div>
-    <div className={styles.description}>
+    </TableRow>
+    {expanded && <div className={styles.description}>
       <span>Описание:</span>
       <span className={styles.descriptionMeta}>{created.stamp} {assignment.mode === 'card' ? 'ДДС' : 'Опер.'} {operatorNumber(assignment.learner_login)}</span>
       <img src={separatorIcon} alt="" />
       <span>{description} /112</span>
-    </div>
+    </div>}
   </div>;
 }
 
@@ -173,13 +206,16 @@ function operatorMatch(query: string, login: string) {
   return needle === login.toLocaleLowerCase('ru') || needle === number;
 }
 
-export function IncidentList({ assignments, autoRefresh, filter, loading, moduleId, moduleOptions, onAutoRefresh, onModuleChange, search }: {
+export function IncidentList({ assignments, autoRefresh, filter, loading, moduleId, moduleOptions, userId, now,
+  onAutoRefresh, onModuleChange, search }: {
   assignments: Assignment[];
   autoRefresh: boolean;
   filter: string;
   loading: boolean;
   moduleId: string;
   moduleOptions: [string, string][];
+  userId: string;
+  now: number;
   onAutoRefresh: (value: boolean) => void;
   onModuleChange: (value: string) => void;
   search: IncidentSearch;
@@ -199,6 +235,19 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, module
   const [linkError, setLinkError] = useState('');
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkReload, setLinkReload] = useState(0);
+  const [timerId, setTimerId] = useState('');
+  const [markers, setMarkers] = useState(() => readMarkers(userId));
+  useEffect(() => {
+    try { localStorage.setItem(`incident-markers:${userId}`, JSON.stringify(markers)); }
+    catch { /* Пометки останутся до закрытия страницы. */ }
+  }, [markers, userId]);
+  const pinned = useMemo(() => new Set(markers.pinned), [markers.pinned]);
+  const emergency = useMemo(() => new Set(markers.emergency), [markers.emergency]);
+  const timerAssignment = assignments.find((item) => item.id === timerId);
+  function toggleMarker(id: string, kind: MarkerKind) {
+    setMarkers((current) => ({ ...current, [kind]: current[kind].includes(id)
+      ? current[kind].filter((item) => item !== id) : [...current[kind], id] }));
+  }
   const groups = useMemo(() => [...new Set(assignments.map((item) => item.group_name))].sort(), [assignments]);
   const needle = filter.trim().toLocaleLowerCase('ru');
   const filtered = useMemo(() => assignments.filter((assignment) => {
@@ -230,7 +279,8 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, module
       && equals(search.visOperator, assignment.vis_operator)
       && (!status || assignmentStatus(assignment) === status)
       && (!group || assignment.group_name === group);
-  }), [assignments, filter, group, search, status]);
+  }).sort((left, right) => Number(pinned.has(right.id)) - Number(pinned.has(left.id))),
+  [assignments, filter, group, pinned, search, status]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const rows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -310,21 +360,21 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, module
     </div>
 
     {!rows.length ? <div className={styles.empty}>Происшествия не найдены</div> : <>
-      <div className={styles.tableViewport}>
-      <div className={styles.table}>
-        <div className={styles.tableHead}>
+      <TableGrid compact fillColumn={12} viewportClassName={styles.tableViewport}
+        headClassName={styles.tableHead} plainHead head={<>
           <span /><span>Связи</span><span /><span>ЧС</span><span />
           <span>Опер.</span><span>АРМ</span><span>Номер</span><span>Дата</span><span>Время</span>
           <span>Тип происшествия</span><span>Постр.</span><span>Адрес</span><span>Статус службы</span><span /><span>Проверено</span>
-        </div>
+        </>}>
         <div className={styles.rows}>
-          {rows.map((assignment) => <IncidentRow assignment={assignment} onViewResult={viewResult}
+          {rows.map((assignment) => <IncidentRow assignment={assignment}
+            pinned={pinned.has(assignment.id)} emergency={emergency.has(assignment.id)}
+            onToggleMarker={toggleMarker} onViewTimer={(item) => setTimerId(item.id)} onViewResult={viewResult}
             onViewLinks={(item) => {
               setLinkAssignment(item); setLinkQuery(''); setLinks([]); setCandidates([]); setLinkError('');
             }} key={assignment.id} />)}
         </div>
-      </div>
-    </div>
+      </TableGrid>
 
     <div className={styles.footer}>
       <label className={styles.footerSelect}>
@@ -360,6 +410,25 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, module
       </div>
     </div>
     </>}
+    {timerAssignment && <ModalForm label="Время происшествия" onClose={() => setTimerId('')}>
+      <div className={styles.resultPanel}>
+        <div className={styles.resultHeading}>
+          <span>Происшествие {shortNumber(timerAssignment.id)}</span>
+          <button type="button" onClick={() => setTimerId('')}>Закрыть</button>
+        </div>
+        <div className={styles.timeDetails}>
+          <div>Назначено: {dateParts(timerAssignment.created_at).stamp || 'Время не указано'}</div>
+          <div>Начало работы: {dateParts(timerAssignment.attempt_started_at).stamp || 'Ещё не открыто'}</div>
+          {timerAssignment.attempt_started_at && ['created', 'active', 'suspended'].includes(timerAssignment.attempt_status ?? '')
+            && <div>Прошло с начала работы: {
+            Math.max(0, Math.floor((now - new Date(timerAssignment.attempt_started_at).valueOf()) / 1000))} с</div>}
+          {timerAssignment.mode === 'card'
+            ? <div>Норматив: открыть за 30 с, внести первый статус за 3 мин.</div>
+            : timerAssignment.card_deadline_seconds != null
+              && <div>Норматив заполнения: {timerAssignment.card_deadline_seconds} с.</div>}
+        </div>
+      </div>
+    </ModalForm>}
     {resultAssignment && <ModalForm label="Результат занятия" onClose={() => {
       resultRequest.current?.abort();
       setResultAssignment(null);

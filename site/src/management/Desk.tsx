@@ -25,4 +25,4 @@ export function DeskEmpty({ children }: { children: string }) {
 }
 
 export const deskError = styles.error;
-export { deskActions } from './Table';
+export { deskActions, deskInlineActions } from './Table';

@@ -9,7 +9,7 @@ import { FormCard, formGrid } from './FormCard';
 import { SectionTabs } from '../components/ui/SectionTabs';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
-import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskInlineActions, deskError } from './Desk';
 import { SummaryGrid } from './SummaryGrid';
 import { Operations } from './Operations';
 import { RoleField, roleNames } from './RoleField';
@@ -73,12 +73,13 @@ function Accounts() {
     .catch((cause: Error) => setError(cause.message));
   useEffect(() => { void refresh(); }, []);
   return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
-    {users.length === 0 ? <DeskEmpty>Пользователей нет</DeskEmpty> : <DeskTable head={<><span>Логин</span><span>Роль</span><span>Доступ</span><span /></>}>
+    {users.length === 0 ? <DeskEmpty>Пользователей нет</DeskEmpty> : <DeskTable head={<><span>Логин</span><span>Роль</span><span>Доступ</span></>}>
       {users.map((entry) => <DeskRow key={entry.id}>
         <span>{entry.login}</span>
         <span>{roleNames[entry.role] ?? entry.role}</span>
-        <span>{entry.blocked ? 'Закрыт' : 'Открыт'}</span>
-        <span className={deskActions}>{entry.id !== user.id && <button type="button" onClick={() => { setError(''); setEditing(entry); }}>Изменить</button>}</span>
+        <span className={deskInlineActions}><span>{entry.blocked ? 'Закрыт' : 'Открыт'}</span>
+          {entry.id !== user.id && <button type="button" onClick={() => { setError(''); setEditing(entry); }}>Изменить</button>}
+        </span>
       </DeskRow>)}
     </DeskTable>}
     {error && !creating && !editing && <div className={deskError} role="alert">{error}</div>}
