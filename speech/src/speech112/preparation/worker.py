@@ -22,9 +22,10 @@ LOG = logging.getLogger(__name__)
 
 
 class JobWorker:
-    def __init__(self, dsn: str, semantic=None, prepare=None):
+    def __init__(self, dsn: str, semantic=None, prepare=None, generate=None):
         self.dsn, self.semantic = dsn, semantic
         self.prepare = prepare
+        self.generate = generate
 
     def connect(self):
         return psycopg.connect(self.dsn, row_factory=dict_row)
@@ -107,7 +108,10 @@ class JobWorker:
             else:
                 raise ValueError("Unknown job type")
         if job["kind"] == "compile_scenario":
-            bundle = ScenarioBundle.compile(scenario["document"])
+            document = scenario["document"]
+            if self.generate is not None:
+                document = self.generate(document)
+            bundle = ScenarioBundle.compile(document)
             if self.prepare is not None:
                 self.prepare(bundle)
             return bundle
@@ -137,11 +141,12 @@ class JobWorker:
                     db.execute(
                         (
                             "UPDATE scenario SET status=CASE WHEN approved_by IS NULL "
-                            "THEN 'prepared' ELSE 'approved' END,artifact=%s,"
+                            "THEN 'prepared' ELSE 'approved' END,document=%s,artifact=%s,"
                             "artifact_sha256=%s "
                             "WHERE id=%s AND status='preparing' "
                         ),
-                        (output.payload.decode(), output.digest, job["scenario_id"]),
+                        (Jsonb(output.document), output.payload.decode(), output.digest,
+                         job["scenario_id"]),
                     )
                 else:
                     db.execute(
@@ -206,6 +211,7 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
     from speech112.preparation.audio import AudioPreparer
+    from speech112.preparation.reply_generator import ReplyGenerator
     from speech112.preparation.semantic import SemanticCardEvaluator
 
     prepare = AudioPreparer()
@@ -213,6 +219,8 @@ def main():
         os.environ.get("TRAINING_DATABASE_URL", ""),
         semantic=SemanticCardEvaluator(prepare.recognizer),
         prepare=prepare,
+        generate=ReplyGenerator(os.environ["REPLY_GENERATOR_URL"])
+        if "REPLY_GENERATOR_URL" in os.environ else None,
     )
     while True:
         worked = worker.run_once()

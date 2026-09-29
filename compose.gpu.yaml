@@ -1,0 +1,33 @@
+services:
+  reply-generator:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    restart: unless-stopped
+    command:
+      - --model
+      - /models/Qwen_Qwen3.5-4B-Q4_K_M.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --ctx-size
+      - "2048"
+      - --parallel
+      - "1"
+      - --n-gpu-layers
+      - "${GENERATOR_GPU_LAYERS:-20}"
+    volumes:
+      - ./speech/.models/generator:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  worker:
+    environment:
+      REPLY_GENERATOR_URL: http://reply-generator:8080
+    depends_on:
+      reply-generator:
+        condition: service_started
