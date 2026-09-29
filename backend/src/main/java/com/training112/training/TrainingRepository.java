@@ -579,6 +579,8 @@ public final class TrainingRepository {
   }
 
   public Future<Void> terminate(UUID id, boolean failed) {
+    // Ending the voice connection leaves the operator card open for saving.
+    if (!failed) return Future.succeededFuture();
     return pool.withTransaction(
         db ->
             one(db, "SELECT status FROM training_attempt WHERE id=$1 FOR UPDATE", Tuple.of(id))
@@ -586,7 +588,7 @@ public final class TrainingRepository {
                     row ->
                         Set.of("completed", "failed").contains(row.getString("status"))
                             ? Future.succeededFuture()
-                            : finish(db, id, null, failed)));
+                            : finish(db, id, null, true)));
   }
 
   public Future<Void> finishAttempt(Account actor, UUID id, boolean failed) {

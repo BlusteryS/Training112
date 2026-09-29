@@ -177,7 +177,7 @@
     "caller caller"
     "victims actions"
     "case case";
-  grid-template-rows: 56px 56px auto;
+  grid-template-rows: 56px auto auto;
   padding: 4px 6px 70px;
   gap: 4px;
 }
@@ -255,8 +255,19 @@
   grid-area: victims;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   padding: 10px 16px;
-  gap: 12px;
+  gap: 8px 20px;
+}
+
+.caseFlag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.caseFlag > span {
+  white-space: nowrap;
 }
 
 .count {
@@ -265,10 +276,6 @@
   padding: 0 8px;
   border: 1px solid rgba(0, 0, 0, .14);
   border-radius: 8px;
-}
-
-.lawLabel {
-  margin-left: auto;
 }
 
 .quickActions {

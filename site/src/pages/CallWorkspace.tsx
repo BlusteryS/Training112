@@ -284,20 +284,24 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         </button>
       </div>
       <div id="card-victims" tabIndex={-1} className={styles.victimsRow}>
-        <span>Есть пострадавшие?</span>
-        <ToggleGroup value={draft.victims === 'Нет' ? 'no'
-          : draft.victims === 'Неизвестно' ? 'unknown' : 'yes'}
-          options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' },
-            { value: 'unknown', label: 'Неизвестно' }] as const}
-          onChange={(value) => change('victims', value === 'yes' ? '1'
-            : value === 'no' ? 'Нет' : 'Неизвестно')} />
-        {!['Нет', 'Неизвестно'].includes(draft.victims) && <input className={styles.count} min="1" type="number"
-          value={draft.victims} onChange={(event) => change('victims', event.target.value)}
-          aria-label="Количество пострадавших" />}
-        <span className={styles.lawLabel}>Правонарушение?</span>
-        <ToggleGroup value={draft.law_violation === 'true' ? 'yes' : 'no'}
-          options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' }] as const}
-          onChange={(value) => change('law_violation', String(value === 'yes'))} />
+        <div className={styles.caseFlag}>
+          <span>Есть пострадавшие?</span>
+          <ToggleGroup value={draft.victims === 'Нет' ? 'no'
+            : draft.victims === 'Неизвестно' ? 'unknown' : 'yes'}
+            options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' },
+              { value: 'unknown', label: 'Неизвестно' }] as const}
+            onChange={(value) => change('victims', value === 'yes' ? '1'
+              : value === 'no' ? 'Нет' : 'Неизвестно')} />
+          {!['Нет', 'Неизвестно'].includes(draft.victims) && <input className={styles.count} min="1" type="number"
+            value={draft.victims} onChange={(event) => change('victims', event.target.value)}
+            aria-label="Количество пострадавших" />}
+        </div>
+        <div className={styles.caseFlag}>
+          <span>Правонарушение?</span>
+          <ToggleGroup value={draft.law_violation === 'true' ? 'yes' : 'no'}
+            options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' }] as const}
+            onChange={(value) => change('law_violation', String(value === 'yes'))} />
+        </div>
       </div>
       <div className={styles.quickActions}>
         <button type="button" onClick={() => setLinksOpen(true)}>

@@ -27,7 +27,7 @@ export function AddressLookup({ value, onChange, onSelect }: {
       void api<FiasAddress[]>(`training/addresses?q=${encodeURIComponent(value.trim())}`, undefined,
         controller.signal).then((rows) => { setMatches(rows); setError(''); })
         .catch(() => { if (!controller.signal.aborted) setError('Не удалось найти адрес.'); });
-    }, 300);
+    }, 120);
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [focused, value]);
 

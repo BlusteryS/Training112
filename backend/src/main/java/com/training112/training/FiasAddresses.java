@@ -39,8 +39,8 @@ final class FiasAddresses {
     List<Address> candidates = ADDRESSES;
     for (String word : words) {
       if (word.length() >= 3 && Character.isLetter(word.charAt(0))) {
-        candidates = BY_INITIAL.getOrDefault(word.charAt(0), List.of());
-        break;
+        List<Address> indexed = BY_INITIAL.getOrDefault(word.charAt(0), List.of());
+        if (indexed.size() < candidates.size()) candidates = indexed;
       }
     }
     for (Address address : candidates) {

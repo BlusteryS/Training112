@@ -159,7 +159,7 @@ public final class SpeechRoutes {
     final SpeechTransport transport;
     ServerWebSocket socket;
     String token;
-    boolean ready, closed, checking;
+    boolean ready, admitted, closed, checking;
     long timer = -1, grace = -1, lastActivity = System.nanoTime();
     int pendingJournal;
     Future<Void> journal = Future.succeededFuture();
@@ -287,7 +287,10 @@ public final class SpeechRoutes {
       }
       JsonObject event = message.event();
       String type = event.getString("type", "");
-      if (Set.of("ready", "resumed").contains(type)) ready = true;
+      if (Set.of("ready", "resumed").contains(type)) {
+        ready = true;
+        admitted = true;
+      }
       if (!Set.of("audio_stop", "pong", "listening").contains(type)) {
         if (++pendingJournal > 64) {
           fail("journal_overflow");
@@ -340,7 +343,7 @@ public final class SpeechRoutes {
       closing =
           Future.fromCompletionStage(transport.close(), Vertx.currentContext())
               .compose(ignored -> journal.recover(error -> Future.succeededFuture()))
-              .compose(ignored -> training.terminate(attempt, failed));
+              .compose(ignored -> training.terminate(attempt, failed && !admitted));
       return closing;
     }
   }

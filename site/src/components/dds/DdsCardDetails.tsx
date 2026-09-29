@@ -54,34 +54,30 @@ export function DdsCardDetails({ card, assignment, statusEditor }: {
       {card.law_violation === 'true' && <Field label="Правонарушение" text="Да" />}
     </div>
     <div className={styles.columns}>
-      <div className={styles.column}>
-        <div className={styles.block}>
-          <div className={styles.blockTitle}>Адрес происшествия</div>
-          <div className={styles.strong}>{value(card.address || facts?.address)}</div>
-          {visibleAddressParts.length > 0 && <div className={styles.addressFields}>
-            {visibleAddressParts.map(([label, text]) => <Field key={label} label={label} text={text} />)}
-          </div>}
-          {(card.address_description || card.landmark) &&
-            <Field label="Ориентир и описание адреса" text={card.address_description || card.landmark} />}
-        </div>
-        <div className={styles.block}>
-          <div className={styles.blockTitle}>Описание со слов заявителя</div>
-          <div className={styles.description}>{value(card.description || facts?.incident)}</div>
-        </div>
+      <div className={styles.block}>
+        <div className={styles.blockTitle}>Адрес происшествия</div>
+        <div className={styles.strong}>{value(card.address || facts?.address)}</div>
+        {visibleAddressParts.length > 0 && <div className={styles.addressFields}>
+          {visibleAddressParts.map(([label, text]) => <Field key={label} label={label} text={text} />)}
+        </div>}
+        {(card.address_description || card.landmark) &&
+          <Field label="Ориентир и описание адреса" text={card.address_description || card.landmark} />}
       </div>
-      <div className={styles.column}>
-        <div className={styles.block}>
-          <div className={styles.blockTitle}>Происшествие</div>
-          <div className={styles.strong}>{value(card.incident_code || assignment?.title)}</div>
-          {card.incident_sign_2 && <Field label="Признак" text={card.incident_sign_2} />}
-          {card.incident_sign_3 && <Field label="Уточнение" text={card.incident_sign_3} />}
-          {additionalTypes(card).map((item, index) => <Field key={index}
-            label={`Дополнительный тип ${index + 1}`}
-            text={[item.type, item.sign2, item.sign3].filter(Boolean).join(' · ')} />)}
-          {card.incident_details && <Field label="Подробности" text={card.incident_details} />}
-          <Field label="Источник обращения" text={card.origin || assignment?.origin} />
-        </div>
+      <div className={styles.block}>
+        <div className={styles.blockTitle}>Происшествие</div>
+        <div className={styles.strong}>{value(card.incident_code || assignment?.title)}</div>
+        {card.incident_sign_2 && <Field label="Признак" text={card.incident_sign_2} />}
+        {card.incident_sign_3 && <Field label="Уточнение" text={card.incident_sign_3} />}
+        {additionalTypes(card).map((item, index) => <Field key={index}
+          label={`Дополнительный тип ${index + 1}`}
+          text={[item.type, item.sign2, item.sign3].filter(Boolean).join(' · ')} />)}
+        {card.incident_details && <Field label="Подробности" text={card.incident_details} />}
+        <Field label="Источник обращения" text={card.origin || assignment?.origin} />
       </div>
+    </div>
+    <div className={styles.block}>
+      <div className={styles.blockTitle}>Описание со слов заявителя</div>
+      <div className={styles.description}>{value(card.description || facts?.incident)}</div>
     </div>
     {statusEditor}
   </>;
