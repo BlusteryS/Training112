@@ -8,7 +8,7 @@ export function IncidentQuestions({ card, answers, onChange }: {
   onChange: (key: string, value: string) => void;
 }) {
   return <div className={styles.questions}>
-    <div className={styles.title}>Уточнения: {card.result}</div>
+    <div className={styles.title}>Уточнения</div>
     {questionsFor(card).map((question) => <div className={styles.question} key={question.key}>
       <span>{question.label}</span>
       {question.options ? <div className={styles.choices}>{question.options.map((option) => {
