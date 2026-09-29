@@ -41,9 +41,8 @@ public final class DdsEvaluation {
         first != null && expected.equals(first.getJsonObject("payload").getString("status")));
     add(checks, "open_deadline", "Карточка открыта в течение 30 секунд после поступления",
         rejected ? 20 : 15, opened != null && opened.getLong("elapsed_ms", Long.MAX_VALUE) <= 30_000);
-    add(checks, "first_record", "Первый статус с комментарием внесён в течение 3 минут",
-        rejected ? 30 : 10, first != null && first.getLong("elapsed_ms", Long.MAX_VALUE) <= 180_000
-            && !first.getJsonObject("payload").getString("comment", "").isBlank());
+    add(checks, "first_record", "Первый статус внесён в течение 3 минут",
+        rejected ? 30 : 10, first != null && first.getLong("elapsed_ms", Long.MAX_VALUE) <= 180_000);
     if (rejected) return result(checks, attemptStatus);
     add(checks, "crew", "Бригада назначена либо отказ подтверждён руководителем", 10,
         crew || "refused".equals(outcome) && supervisorRefusal);

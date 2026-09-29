@@ -31,6 +31,7 @@ public final class CardCommands {
           "Заблокированы люди", "Есть возгорание", "Без пострадавших", "Травма",
           "Затруднено дыхание", "Боль", "Отравление", "Другое", "Да", "Нет", "Запах газа",
           "Повреждение оборудования", "Прорыв", "Отключение", "Затопление", "Повреждение");
+  private static final Set<String> STATUSES_REQUIRING_COMMENT = Set.of("rejected", "refused", "completed");
   private static final Map<String, Set<String>> TRANSITIONS =
       Map.of(
           "added", Set.of("received"),
@@ -80,7 +81,8 @@ public final class CardCommands {
     if (!(nextValue instanceof String next) || !(commentValue instanceof String comment))
       throw invalid("Неверное значение статуса или комментария.");
     if (!TRANSITIONS.get(current).contains(next)) throw invalid("Недопустимый переход статуса.");
-    if (comment.length() > 4000 || comment.isBlank()) {
+    if (comment.length() > 4000 || STATUSES_REQUIRING_COMMENT.contains(next)
+        && comment.isBlank()) {
       throw invalid("К статусу нужен комментарий.");
     }
     return new Applied(copy, next);
