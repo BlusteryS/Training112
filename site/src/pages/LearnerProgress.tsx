@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { WorkspaceHeader } from '../components/shell/WorkspaceHeader';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskError } from '../management/Desk';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskPlaceholder, deskError } from '../management/Desk';
 import shell from '../App.module.css';
 import styles from './LearnerProgress.module.css';
 
@@ -45,7 +45,7 @@ export function LearnerProgress() {
               <span>{row.title}</span>
               <span>{new Date(row.finished_at).toLocaleString('ru-RU')}</span>
               <span>{row.status === 'completed' ? 'Завершена' : 'Прервана'}</span>
-              <span>{row.status === 'failed' ? '—' : row.score === null ? 'На проверке' : row.score}</span>
+              <span className={row.status === 'failed' ? deskPlaceholder : undefined}>{row.status === 'failed' ? '—' : row.score === null ? 'На проверке' : row.score}</span>
               <span>{row.status === 'failed' ? 'Занятие прервано до сохранения карточки'
                 : row.checks.filter((check) => check.status === 'failed').map((check) => check.description).join('; ')
                   || row.recommendations.join('; ') || 'Ошибок нет'}</span>

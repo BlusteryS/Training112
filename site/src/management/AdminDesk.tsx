@@ -9,7 +9,7 @@ import { FormCard, formGrid } from './FormCard';
 import { SectionTabs } from '../components/ui/SectionTabs';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
-import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskInlineActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskInlineActions, deskPlaceholder, deskError } from './Desk';
 import { SummaryGrid } from './SummaryGrid';
 import { Operations } from './Operations';
 import { RoleField, roleNames } from './RoleField';
@@ -201,7 +201,7 @@ function Journal() {
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{actionNames[row.action] ?? row.action}</span>
-        <span>{row.login || '—'}</span>
+        <span className={row.login ? undefined : deskPlaceholder}>{row.login || '—'}</span>
       </DeskRow>)}
     </DeskTable>}
     {error && <div className={deskError} role="alert">{error}</div>}

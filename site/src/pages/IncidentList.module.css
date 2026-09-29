@@ -146,6 +146,10 @@
   content: '—';
 }
 
+.rowMain > :empty {
+  justify-content: center;
+}
+
 .markedButton {
   background: #9a513b;
 }

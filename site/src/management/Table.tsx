@@ -48,3 +48,4 @@ export function DeskRow({ children }: { children: ReactNode }) {
 export const deskActions = styles.actions;
 export const deskActionHead = styles.actionHead;
 export const deskInlineActions = styles.inlineActions;
+export const deskPlaceholder = styles.placeholder;
