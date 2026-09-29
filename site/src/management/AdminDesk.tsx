@@ -201,7 +201,7 @@ function Journal() {
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{new Date(row.created_at).toLocaleString('ru-RU')}</span>
         <span>{actionNames[row.action] ?? row.action}</span>
-        <span>{row.login ?? ''}</span>
+        <span>{row.login || '—'}</span>
       </DeskRow>)}
     </DeskTable>}
     {error && <div className={deskError} role="alert">{error}</div>}

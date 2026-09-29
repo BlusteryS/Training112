@@ -142,6 +142,10 @@
   border-left: 1px solid #838f97;
 }
 
+.rowMain > :empty::before {
+  content: '—';
+}
+
 .markedButton {
   background: #9a513b;
 }

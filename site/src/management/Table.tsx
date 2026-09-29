@@ -17,9 +17,9 @@ export function TableGrid({ head, children, fillColumn = -1, actionsRight = fals
 }) {
   const columns = Children.count(head.props.children);
   const tracks = actionsRight
-    ? [...Array.from({ length: columns - 1 }, () => 'max-content'), 'minmax(0, 1fr)', 'max-content']
+    ? [...Array.from({ length: columns - 1 }, () => 'minmax(max-content, 1fr)'), 'max-content']
     : Array.from({ length: columns }, (_, index) =>
-      index === (fillColumn < 0 ? columns - 1 : fillColumn) ? 'minmax(max-content, 1fr)' : 'max-content');
+      fillColumn < 0 || index === fillColumn ? 'minmax(max-content, 1fr)' : 'max-content');
   const style: TableStyle = { '--table-columns': tracks.join(' ') };
   return <div className={`${styles.viewport} ${viewportClassName}`}>
     <div className={`${styles.table} ${actionsRight ? styles.actionsRight : ''} ${compact ? styles.compact : ''} ${className}`} style={style}>

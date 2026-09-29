@@ -53,6 +53,7 @@
 .row > *,
 .head > * {
   display: flex;
+  align-self: stretch;
   align-items: center;
   min-width: 0;
   padding: 9px 12px;
@@ -62,6 +63,10 @@
 
 .row > * + * {
   border-left: 1px solid #838f97;
+}
+
+.row > :empty::before {
+  content: '—';
 }
 
 .head > * + * {
@@ -81,9 +86,18 @@
 .actions {
   display: flex;
   flex-wrap: nowrap;
-  justify-content: flex-end;
-  gap: 12px;
+  align-items: stretch;
   white-space: nowrap;
+}
+
+.row > .actions {
+  padding: 0;
+}
+
+.row .actions button {
+  flex: 1;
+  padding: 9px 12px;
+  text-align: center;
 }
 
 .inlineActions {
