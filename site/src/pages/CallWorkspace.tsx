@@ -3,6 +3,7 @@ import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { AddressLookup, type FiasAddress } from '../components/call/AddressLookup';
 import { IncidentSurvey } from '../components/call/IncidentSurvey';
+import { IncidentQuestions } from '../components/call/IncidentQuestions';
 import { ToggleGroup } from '../components/call/ToggleGroup';
 import { ModalForm } from '../components/ModalForm';
 import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
@@ -17,7 +18,8 @@ import closeIcon from '../assets/workspace/close.svg';
 import { incidentClassifier, matchingCard, servicesForCard,
   type ClassifierCard } from './incidentClassifier';
 import type { MapSelection } from '../components/call/IncidentMap';
-import { additionalIncidents, elapsedParts, initialDraft, splitServices, type IncidentDraft } from './callDraft';
+import { additionalIncidents, elapsedParts, initialDraft, splitServices, surveyAnswers,
+  type IncidentDraft } from './callDraft';
 import styles from './CallWorkspace.module.css';
 
 const IncidentMap = lazy(() => import('../components/call/IncidentMap')
@@ -66,6 +68,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   const [linkCandidates, setLinkCandidates] = useState<LinkedCard[]>([]);
   const [linkError, setLinkError] = useState('');
   const services = useMemo(() => splitServices(draft.services), [draft.services]);
+  const answers = useMemo(() => surveyAnswers(draft.survey_answers), [draft.survey_answers]);
   const types = useMemo(() => [...new Set(classifier.map((card) => card.type))].sort((a, b) => a.localeCompare(b, 'ru')),
     [classifier]);
   const selectedCard = useMemo(() => matchingCard(classifier, draft.incident_code,
@@ -75,8 +78,9 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
     matchingCard(classifier, item.type, item.sign2, item.sign3, item.code))], [selectedCard, extraIncidents, classifier]);
   const suggestedServices = useMemo(() => [...new Set(selectedCards.flatMap((card) =>
     servicesForCard(card, draft.address, draft.district, draft.okrug, draft.victims,
-      draft.law_violation === 'true')))],
-  [selectedCards, draft.address, draft.district, draft.okrug, draft.victims, draft.law_violation]);
+      draft.law_violation === 'true', draft.medical_help)))],
+  [selectedCards, draft.address, draft.district, draft.okrug, draft.victims,
+    draft.law_violation, draft.medical_help]);
   const serviceOptions = useMemo(() => [...new Set(['101', '102', '103', '104',
     ...classifier.flatMap((card) => card.services),
     ...classifier.flatMap((card) => card.victim_services),
@@ -192,6 +196,14 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
+  function changeAnswer(code: string, key: string, value: string) {
+    setDraft((current) => {
+      const currentAnswers = surveyAnswers(current.survey_answers);
+      return { ...current, survey_answers: JSON.stringify({ ...currentAnswers,
+        [code]: { ...currentAnswers[code], [key]: value } }) };
+    });
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
@@ -201,11 +213,17 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
   async function save() {
     if (confirm === 'save' && missingFields.length > 0) return;
     setError('');
+    const selectedCodes = new Set(selectedCards.filter((card): card is ClassifierCard => Boolean(card))
+      .map((card) => card.code));
+    const currentAnswers = surveyAnswers(draft.survey_answers);
+    const savedAnswers = Object.fromEntries(Object.entries(currentAnswers)
+      .filter(([code]) => selectedCodes.has(code)));
     const reason = confirm === 'no-contact' ? 'Нет контакта с заявителем'
       : confirm === 'dropped' ? 'Срыв звонка' : '';
     const value = reason ? { ...draft, comment: reason, incident_code: reason,
       classifier_code: '', incident_types: '[]', incident_sign_2: '', incident_sign_3: '',
-      services: '', description: reason } : draft;
+      survey_answers: '{}', services: '', description: reason }
+      : { ...draft, survey_answers: JSON.stringify(savedAnswers) };
     try {
       await onSave(value, linkedTo?.id ?? null);
     } catch (cause) {
@@ -283,6 +301,12 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           <img src={languageIcon} alt="" /> Язык
         </button>
       </div>
+      <div className={styles.callerDetails}>
+        <label>Дата рождения заявителя<input type="date" value={draft.birth_date}
+          onChange={(event) => change('birth_date', event.target.value)} /></label>
+        <label>Место жительства заявителя<input value={draft.residence}
+          onChange={(event) => change('residence', event.target.value)} /></label>
+      </div>
       <div id="card-victims" tabIndex={-1} className={styles.victimsRow}>
         <div className={styles.caseFlag}>
           <span>Есть пострадавшие?</span>
@@ -302,6 +326,17 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
             options={[{ value: 'yes', label: 'Да' }, { value: 'no', label: 'Нет' }] as const}
             onChange={(value) => change('law_violation', String(value === 'yes'))} />
         </div>
+        <label className={styles.caseFlag}>Медпомощь
+          <select value={draft.medical_help} onChange={(event) => change('medical_help', event.target.value)}>
+            <option>Неизвестно</option><option>Требуется</option><option>Не требуется</option>
+            <option>Отказ от скорой</option>
+          </select>
+        </label>
+        <label className={styles.caseFlag}>Люди заблокированы
+          <select value={draft.blocked_people} onChange={(event) => change('blocked_people', event.target.value)}>
+            <option>Неизвестно</option><option>Да</option><option>Нет</option>
+          </select>
+        </label>
       </div>
       <div className={styles.quickActions}>
         <button type="button" onClick={() => setLinksOpen(true)}>
@@ -334,8 +369,14 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
           <label>Район<input value={draft.district} onChange={(event) => change('district', event.target.value)} /></label>
           <label>Улица<input value={draft.street} onChange={(event) => change('street', event.target.value)} /></label>
           <label>Дом<input value={draft.house} onChange={(event) => change('house', event.target.value)} /></label>
+          <label>Корпус<input value={draft.building} onChange={(event) => change('building', event.target.value)} /></label>
+          <label>Строение<input value={draft.structure} onChange={(event) => change('structure', event.target.value)} /></label>
+          <label>Квартира / офис<input value={draft.apartment}
+            onChange={(event) => change('apartment', event.target.value)} /></label>
           <label>Подъезд<input value={draft.entrance} onChange={(event) => change('entrance', event.target.value)} /></label>
           <label>Этаж<input value={draft.floor} onChange={(event) => change('floor', event.target.value)} /></label>
+          <label>Код подъезда<input value={draft.entry_code}
+            onChange={(event) => change('entry_code', event.target.value)} /></label>
         </div>
         <label className={styles.description}>Описательный адрес
           <AutosizeTextarea maxLength={1999} value={draft.address_description}
@@ -372,6 +413,9 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         <button className={styles.addIncident} type="button" disabled={extraIncidents.length >= 29}
           onClick={() => setExtraIncidents((current) =>
           [...current, { type: '', sign2: '', sign3: '', code: '' }])}>Добавить ещё тип происшествия</button>
+        {selectedCards.filter((card): card is ClassifierCard => Boolean(card)).map((card) =>
+          <IncidentQuestions key={card.code} card={card} answers={answers[card.code] ?? {}}
+            onChange={(key, value) => changeAnswer(card.code, key, value)} />)}
         {classifierError && <div className={styles.modalError} role="alert">{classifierError}</div>}
         {error && !confirm && <div className={styles.modalError} role="alert">{error}</div>}
         <label className={styles.details}>Подробности происшествия

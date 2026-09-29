@@ -8,7 +8,6 @@ import { DdsCardContacts, DdsCardDetails } from '../components/dds/DdsCardDetail
 import { DdsPhonePanel } from '../components/dds/DdsPhonePanel';
 import { DdsServiceBar } from '../components/dds/DdsServiceBar';
 import { DdsStatusEditor } from '../components/dds/DdsStatusEditor';
-import { sameService } from '../components/dds/serviceName';
 import { attemptEvents, openCardAttempt, postCardStatus,
   type AttemptEvent, type CardAttempt, type DdsServiceStatus } from '../speech/trainingApi';
 import type { Assignment } from '../management/types';
@@ -83,11 +82,10 @@ export function CardDesk() {
     </div>;
   }
 
-  const card = attempt.card ?? {};
+  const card = attempt.card;
   const attemptId = attempt.id;
-  const ownService = card.dds_service || assignment.service || '';
-  const notified = [...new Set((card.services || ownService).split(',').map((item) => item.trim()).filter(Boolean))];
-  if (ownService && !notified.some((item) => sameService(item, ownService))) notified.unshift(ownService);
+  const ownService = card.dds_service;
+  const notified = card.services.split(',').map((item) => item.trim()).filter(Boolean);
   const startedAt = attempt.started_at ? new Date(attempt.started_at).valueOf() : null;
   const elapsed = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
   const waiting = ['added', 'received'].includes(attempt.card_status);
@@ -151,15 +149,15 @@ export function CardDesk() {
           <button type="button" onClick={() => navigate('/')}>К списку</button>
         </div>
         <DdsPhonePanel key={attempt.id} attemptId={attempt.id} status={attempt.card_status} crew={attempt.dds_crew}
-          callerPhone={card.phone ?? ''} pendingReport={pendingReport || null} enabled={phoneEnabled}
+          callerPhone={card.phone} pendingReport={pendingReport || null} enabled={phoneEnabled}
           discrepancy={discrepancy} notified112={notified112}
           onChange={refresh} onError={setError} />
       </div>
       <div className={styles.caseBody}>
         <div className={styles.contactRow}>
-          <DdsCardContacts card={card} assignment={assignment} />
+          <DdsCardContacts card={card} />
         </div>
-        <DdsCardDetails card={card} assignment={assignment} statusEditor={
+        <DdsCardDetails card={card} statusEditor={
           <DdsStatusEditor status={attempt.card_status} crew={attempt.dds_crew}
             pendingReport={pendingReport} busy={busy} onMove={move} />
         } />

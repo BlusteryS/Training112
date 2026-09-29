@@ -8,6 +8,8 @@ export type IncidentDraft = {
   foreign_phone: string;
   caller_name: string;
   caller_status: string;
+  birth_date: string;
+  residence: string;
   foreign_language: string;
   incident_code: string;
   classifier_code: string;
@@ -15,6 +17,7 @@ export type IncidentDraft = {
   incident_sign_2: string;
   incident_sign_3: string;
   incident_details: string;
+  survey_answers: string;
   address: string;
   address_description: string;
   location_lat: string;
@@ -26,10 +29,16 @@ export type IncidentDraft = {
   object: string;
   street: string;
   house: string;
+  building: string;
+  structure: string;
+  apartment: string;
+  entry_code: string;
   entrance: string;
   floor: string;
   description: string;
   victims: string;
+  medical_help: string;
+  blocked_people: string;
   law_violation: string;
   services: string;
   comment: string;
@@ -38,12 +47,15 @@ export type IncidentDraft = {
 export function initialDraft(phone: string, card?: Record<string, string> | null): IncidentDraft {
   const draft: IncidentDraft = {
     phone, provided_phone: '', scene_phone: '', communication_channel: 'Мобильный телефон',
-    foreign_phone: 'false', caller_name: '', caller_status: '', foreign_language: 'false',
+    foreign_phone: 'false', caller_name: '', caller_status: '', birth_date: '', residence: '',
+    foreign_language: 'false',
     incident_code: '', classifier_code: '', incident_types: '[]',
-    incident_sign_2: '', incident_sign_3: '', incident_details: '',
+    incident_sign_2: '', incident_sign_3: '', incident_details: '', survey_answers: '{}',
     address: '', address_description: '', location_lat: '', location_lon: '',
     country: 'Россия', city: 'Москва', okrug: '',
-    district: '', object: '', street: '', house: '', entrance: '', floor: '', description: '', victims: 'Неизвестно',
+    district: '', object: '', street: '', house: '', building: '', structure: '', apartment: '',
+    entry_code: '', entrance: '', floor: '', description: '', victims: 'Неизвестно',
+    medical_help: 'Неизвестно', blocked_people: 'Неизвестно',
     law_violation: 'false', services: '', comment: '',
   };
   if (card) {
@@ -56,6 +68,15 @@ export function initialDraft(phone: string, card?: Record<string, string> | null
 
 export function splitServices(value: string) {
   return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+export function surveyAnswers(value: string): Record<string, Record<string, string>> {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+      return parsed as Record<string, Record<string, string>>;
+  } catch { /* Карточка ещё не содержит ответов на уточнения. */ }
+  return {};
 }
 
 export function additionalIncidents(card?: Record<string, string> | null): SurveySelection[] {

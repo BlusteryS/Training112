@@ -37,7 +37,7 @@ export function matchingCard(cards: ClassifierCard[], type: string, sign2: strin
 }
 
 export function servicesForCard(card: ClassifierCard | undefined, address: string, district: string,
-  okrug: string, victims: string, lawViolation: boolean) {
+  okrug: string, victims: string, lawViolation: boolean, medicalHelp: string) {
   if (!card || !address.trim()) return [];
   const services = [...card.services];
   const count = victims.trim();
@@ -46,6 +46,7 @@ export function servicesForCard(card: ClassifierCard | undefined, address: strin
   if (card.medical_without_victims) services.push('103');
   if (hasVictims)
     services.push(...card.victim_services);
+  if (medicalHelp === 'Требуется') services.push('103');
   if (lawViolation) services.push(...card.law_services);
   const local = okrug === 'ТиНАО' ? card.tinao_dds : card.district_dds;
   if (district.trim() && local) services.push(`ДДС района ${district.trim()}`);

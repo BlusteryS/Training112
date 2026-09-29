@@ -48,7 +48,13 @@ export function finishAttempt(id: string, failed = false) {
   return api<void>(`training/attempts/${id}/finish`, { failed });
 }
 
-export type CardAttempt = AttemptState & {
+export type DdsCard = Record<string, string | undefined> & {
+  phone: string; services: string; dds_service: string;
+  incident_types: string; survey_answers: string;
+};
+
+export type CardAttempt = Omit<AttemptState, 'card'> & {
+  card: DdsCard;
   card_status: string; started_at: string | null; status: string; dds_crew: string | null;
 };
 

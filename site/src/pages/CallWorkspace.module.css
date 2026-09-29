@@ -126,7 +126,11 @@
 }
 
 .overdue .timer {
-  background: #a73e1c;
+  background: #d71920;
+}
+
+.overdue .timerSeconds {
+  color: #fff;
 }
 
 .overdue .form :is(input, select, textarea)[required]:invalid {
@@ -175,14 +179,16 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     "caller caller"
+    "callerDetails callerDetails"
     "victims actions"
     "case case";
-  grid-template-rows: 56px auto auto;
+  grid-template-rows: 56px auto auto auto;
   padding: 4px 6px 70px;
   gap: 4px;
 }
 
 .callerRow,
+.callerDetails,
 .victimsRow,
 .quickActions,
 .addressPanel,
@@ -199,6 +205,32 @@
   height: 56px;
   padding: 0 16px;
   gap: 12px;
+}
+
+.callerDetails {
+  grid-area: callerDetails;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  padding: 10px 16px;
+  gap: 16px;
+}
+
+.callerDetails label {
+  display: grid;
+  color: rgba(0, 0, 0, .56);
+  font-size: 13px;
+  gap: 4px;
+}
+
+.callerDetails input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, .2);
+  background: transparent;
+  color: #000;
 }
 
 .callerRow input,
@@ -268,6 +300,14 @@
 
 .caseFlag > span {
   white-space: nowrap;
+}
+
+.caseFlag select {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid rgba(0, 0, 0, .14);
+  border-radius: 8px;
+  background: #fff;
 }
 
 .count {
