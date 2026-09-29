@@ -70,6 +70,10 @@ public final class TrainingRoutes {
                   .onFailure(ctx::fail);
             });
     router.get("/api/training/lessons").handler(c -> json(c, repository.lessons(actor(c))));
+    router.get("/api/training/modules").handler(c -> json(c, repository.modules(actor(c))));
+    router.post("/api/training/modules").handler(c -> json(c,
+        repository.createModule(actor(c), uuid(body(c), "group_id"), text(c, "title", 200),
+            text(c, "difficulty", 20))));
     router.get("/api/training/classifier")
         .handler(c -> json(c, Future.succeededFuture(IncidentClassifier.cards())));
     router.get("/api/training/addresses").handler(c -> {
@@ -173,9 +177,10 @@ public final class TrainingRoutes {
           JsonObject request = body(c);
           String mode = text(c, "mode", 16);
           UUID group = uuid(request, "group_id");
+          UUID module = uuid(request, "module_id");
           json(c, "card".equals(mode)
-              ? repository.createCardLesson(actor(c), group, request)
-              : repository.createLesson(actor(c), group,
+              ? repository.createCardLesson(actor(c), group, module, request)
+              : repository.createLesson(actor(c), group, module,
                   uuid(request, "scenario_id"), mode));
         });
     router

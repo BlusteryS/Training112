@@ -29,15 +29,16 @@ final class TrainingLessons {
   Future<JsonArray> lessons(Account actor) {
     instructor(actor);
     return list(pool, """
-        SELECT to_jsonb(l) || jsonb_build_object('group_name',g.name,
+        SELECT to_jsonb(l) || jsonb_build_object('group_name',g.name,'module_title',m.title,
           'title',COALESCE(l.card_template->>'title',s.document->>'title')) AS value
         FROM lesson l JOIN training_group g ON g.id=l.group_id
+        LEFT JOIN training_module m ON m.id=l.module_id
         LEFT JOIN scenario s ON s.id=l.scenario_id
         WHERE g.instructor_id=$1 ORDER BY l.created_at DESC LIMIT 100
         """, Tuple.of(actor.id()));
   }
 
-  Future<JsonObject> createLesson(Account actor, UUID group, UUID scenario, String mode) {
+  Future<JsonObject> createLesson(Account actor, UUID group, UUID module, UUID scenario, String mode) {
     instructor(actor);
     if (!"call".equals(mode))
       throw new ApiException(400, "invalid_mode", "Неизвестный режим занятия.");
@@ -46,22 +47,25 @@ final class TrainingLessons {
         db ->
             one(
                     db,
-                    "SELECT id FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
-                    Tuple.of(group, actor.id()))
+                    "SELECT g.id FROM training_group g JOIN training_module m ON m.group_id=g.id"
+                        + " WHERE g.id=$1 AND m.id=$2 AND g.instructor_id=$3 AND m.instructor_id=$3"
+                        + " FOR UPDATE OF g",
+                    Tuple.of(group, module, actor.id()))
                 .compose(
                     ignored ->
                         one(
                             db,
-                            "SELECT id FROM scenario WHERE id=$1 AND author_id=$2 AND"
-                                + " status='approved' AND NOT archived FOR UPDATE",
-                            Tuple.of(scenario, actor.id())))
+                            "SELECT s.id FROM scenario s JOIN training_module m ON m.id=$3"
+                                + " WHERE s.id=$1 AND s.author_id=$2 AND s.status='approved'"
+                                + " AND NOT s.archived AND COALESCE(s.document->>'difficulty','basic')=m.difficulty FOR UPDATE OF s",
+                            Tuple.of(scenario, actor.id(), module)))
                 .compose(
                     ignored ->
                         one(
                             db,
-                            "INSERT INTO lesson(id,group_id,scenario_id,mode) VALUES ($1,$2,$3,$4)"
+                            "INSERT INTO lesson(id,group_id,module_id,scenario_id,mode) VALUES ($1,$2,$3,$4,$5)"
                                 + " RETURNING to_jsonb(lesson) AS value",
-                            Tuple.of(id, group, scenario, mode)))
+                            Tuple.of(id, group, module, scenario, mode)))
                 .compose(
                     row ->
                         audit(db, actor.id(), "lesson.created", id, new JsonObject())
@@ -84,13 +88,16 @@ final class TrainingLessons {
         """, Tuple.of(actor.id()));
   }
 
-  Future<JsonObject> createCardLesson(Account actor, UUID group, JsonObject body) {
+  Future<JsonObject> createCardLesson(Account actor, UUID group, UUID module, JsonObject body) {
     instructor(actor);
     UUID id = UUID.randomUUID();
     return pool.withTransaction(db -> one(db,
-        "SELECT service_code FROM training_group WHERE id=$1 AND instructor_id=$2 FOR UPDATE",
-        Tuple.of(group, actor.id())).compose(groupRow -> {
+        "SELECT g.service_code,m.difficulty FROM training_group g JOIN training_module m ON m.group_id=g.id"
+            + " WHERE g.id=$1 AND m.id=$2 AND g.instructor_id=$3 AND m.instructor_id=$3"
+            + " FOR UPDATE OF g",
+        Tuple.of(group, module, actor.id())).compose(groupRow -> {
       String service = groupRow.getString("service_code");
+      String difficulty = groupRow.getString("difficulty");
       Object sourceValue = body.getValue("sources");
       if (sourceValue != null && !(sourceValue instanceof JsonArray))
         return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неверная подборка карточек."));
@@ -109,7 +116,7 @@ final class TrainingLessons {
             return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Неверный источник карточки."));
           if (!unique.add(selectedType + ":" + selectedId))
             return Future.failedFuture(new ApiException(400, "invalid_dds_card", "Карточка выбрана повторно."));
-          cards = cards.compose(items -> sourceCard(db, actor, item, body, service)
+          cards = cards.compose(items -> sourceCard(db, actor, item, body, service, difficulty)
               .map(card -> items.add(card)));
         }
         return cards.map(DdsCardPool::pack);
@@ -120,17 +127,17 @@ final class TrainingLessons {
       String source = sourceValueSingle == null ? "" : (String) sourceValueSingle;
       if (source.isBlank()) return Future.succeededFuture(DdsCardTemplate.manual(body, service));
       return sourceCard(db, actor, new JsonObject().put("type", "operator").put("id", source),
-          body, service);
+          body, service, difficulty);
     }).compose(template -> one(db,
-        "INSERT INTO lesson(id,group_id,scenario_id,card_template,mode) "
-            + "VALUES ($1,$2,NULL,$3,'card') RETURNING to_jsonb(lesson) AS value",
-        Tuple.of(id, group, template)).compose(row ->
+        "INSERT INTO lesson(id,group_id,module_id,scenario_id,card_template,mode) "
+            + "VALUES ($1,$2,$3,NULL,$4,'card') RETURNING to_jsonb(lesson) AS value",
+        Tuple.of(id, group, module, template)).compose(row ->
             audit(db, actor.id(), "lesson.created", id, new JsonObject())
                 .map(row.getJsonObject("value")))));
   }
 
   private Future<JsonObject> sourceCard(SqlClient db, Account actor, JsonObject source,
-      JsonObject options, String service) {
+      JsonObject options, String service, String difficulty) {
     Object selectedType = source.getValue("type");
     String type = selectedType instanceof String text ? text : "";
     UUID sourceId;
@@ -147,8 +154,9 @@ final class TrainingLessons {
           """, Tuple.of(sourceId, actor.id()))
           .map(row -> DdsCardTemplate.fromOperator(row.getJsonObject("card"), options, service, sourceId));
     if ("generated".equals(type)) return one(db,
-        "SELECT document FROM scenario WHERE id=$1 AND author_id=$2 AND status='approved' AND NOT archived",
-        Tuple.of(sourceId, actor.id())).map(row -> {
+        "SELECT document FROM scenario WHERE id=$1 AND author_id=$2 AND status='approved' AND NOT archived"
+            + " AND COALESCE(document->>'difficulty','basic')=$3",
+        Tuple.of(sourceId, actor.id(), difficulty)).map(row -> {
           JsonObject document = row.getJsonObject("document");
           JsonObject input = CardSnapshot.from(document, service);
           for (Object rule : document.getJsonArray("rubric", new JsonArray())) {
@@ -242,9 +250,9 @@ final class TrainingLessons {
         """
         SELECT jsonb_build_object('id',a.id,'lesson_id',l.id,'learner_id',a.learner_id,'mode',l.mode,
            'status',l.status,'title',COALESCE(latest.card_template->>'title',l.card_template->>'title',s.document->>'title'),
-           'scenario_id',s.id,
+           'scenario_id',s.id,'module_id',m.id,'module_title',m.title,
            'group_name',g.name,'learner_login',u.login,
-           'instructions',s.document->>'instructions','difficulty',s.document->>'difficulty',
+           'instructions',s.document->>'instructions','difficulty',COALESCE(s.document->>'difficulty',m.difficulty),
            'caller_phone',COALESCE(latest.card_template#>>'{facts,phone}',l.card_template#>>'{facts,phone}',s.document#>>'{facts,phone}'),
            'service',g.service_code,'origin',COALESCE(latest.card_template->>'origin',l.card_template->>'origin',s.document->>'origin'),
            'facts',COALESCE(latest.card_template->'facts',l.card_template->'facts',s.document->'facts','{}'::jsonb),
@@ -256,7 +264,9 @@ final class TrainingLessons {
            'link_count',(SELECT count(*) FROM card_link cl WHERE cl.parent_attempt_id=
              COALESCE((SELECT parent_attempt_id FROM card_link WHERE child_attempt_id=latest.id),latest.id))) AS value
         FROM lesson_assignment a JOIN lesson l ON l.id=a.lesson_id
-        JOIN training_group g ON g.id=l.group_id LEFT JOIN scenario s ON s.id=l.scenario_id
+        JOIN training_group g ON g.id=l.group_id
+        LEFT JOIN training_module m ON m.id=l.module_id
+        LEFT JOIN scenario s ON s.id=l.scenario_id
         JOIN app_user u ON u.id=a.learner_id
         LEFT JOIN LATERAL (SELECT t.id,t.status,t.card,t.card_template,t.created_at,t.started_at,t.card_status,t.workstation,
           t.incident_source,t.vis_operator FROM training_attempt t

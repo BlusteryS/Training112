@@ -21,6 +21,7 @@ import static com.training112.training.TrainingDb.one;
 public final class TrainingRepository {
   private final Pool pool;
   private final TrainingGroups trainingGroups;
+  private final TrainingModules trainingModules;
   private final TrainingScenarios trainingScenarios;
   private final TrainingLessons trainingLessons;
   private final CardLinks cardLinks;
@@ -30,6 +31,7 @@ public final class TrainingRepository {
   public TrainingRepository(Pool pool) {
     this.pool = pool;
     this.trainingGroups = new TrainingGroups(pool);
+    this.trainingModules = new TrainingModules(pool);
     this.trainingScenarios = new TrainingScenarios(pool);
     this.trainingLessons = new TrainingLessons(pool);
     this.cardLinks = new CardLinks(pool);
@@ -67,6 +69,14 @@ public final class TrainingRepository {
 
   public Future<JsonArray> groups(Account actor) {
     return trainingGroups.groups(actor);
+  }
+
+  public Future<JsonArray> modules(Account actor) {
+    return trainingModules.modules(actor);
+  }
+
+  public Future<JsonObject> createModule(Account actor, UUID group, String title, String difficulty) {
+    return trainingModules.create(actor, group, title, difficulty);
   }
 
   public Future<JsonArray> members(Account actor, UUID group) {
@@ -109,16 +119,16 @@ public final class TrainingRepository {
     return trainingScenarios.jobs(actor);
   }
 
-  public Future<JsonObject> createLesson(Account actor, UUID group, UUID scenario, String mode) {
-    return trainingLessons.createLesson(actor, group, scenario, mode);
+  public Future<JsonObject> createLesson(Account actor, UUID group, UUID module, UUID scenario, String mode) {
+    return trainingLessons.createLesson(actor, group, module, scenario, mode);
   }
 
   public Future<JsonArray> operatorCards(Account actor) {
     return trainingLessons.operatorCards(actor);
   }
 
-  public Future<JsonObject> createCardLesson(Account actor, UUID group, JsonObject body) {
-    return trainingLessons.createCardLesson(actor, group, body);
+  public Future<JsonObject> createCardLesson(Account actor, UUID group, UUID module, JsonObject body) {
+    return trainingLessons.createCardLesson(actor, group, module, body);
   }
 
   public Future<Void> startLesson(Account actor, UUID id) {

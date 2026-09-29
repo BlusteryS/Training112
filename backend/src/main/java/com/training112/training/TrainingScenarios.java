@@ -26,7 +26,8 @@ final class TrainingScenarios {
     instructor(actor);
     return list(
         pool,
-        "SELECT jsonb_build_object('id',id,'title',title,'status',status) AS value FROM"
+        "SELECT jsonb_build_object('id',id,'title',title,'status',status,"
+            + "'difficulty',document->>'difficulty') AS value FROM"
             + " scenario WHERE author_id=$1 AND NOT archived ORDER BY created_at DESC LIMIT 100",
         Tuple.of(actor.id()));
   }

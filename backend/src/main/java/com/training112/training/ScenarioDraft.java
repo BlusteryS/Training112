@@ -44,6 +44,7 @@ public final class ScenarioDraft {
 
     JsonObject facts = document.getJsonObject("facts");
     JsonObject defaults = PROFILE.getJsonObject("facts");
+    JsonObject level = PROFILE.getJsonObject("difficulty_profiles").getJsonObject(difficulty);
     Map<String, JsonArray> answers = new HashMap<>();
     facts.put("caller_name", choose(PROFILE.getJsonArray("caller_names")));
     facts.put("address", location);
@@ -54,12 +55,17 @@ public final class ScenarioDraft {
     answers.put("victims", victims.getJsonArray(victimsState));
     facts.put("victims", choose(answers.get("victims")));
     facts.put("phone", "+7 999 000-" + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
-    answers.put("victim_count", defaults.getJsonObject("victim_count")
-        .getJsonArray("absent".equals(victimsState) ? "absent" : "unknown"));
+    JsonObject present = level.getJsonObject("present");
+    JsonObject victimDetails = "present".equals(victimsState) ? present
+        : PROFILE.getJsonObject("victim_details").getJsonObject(victimsState);
+    answers.put("victim_count", "present".equals(victimsState) ? present.getJsonArray("victim_count")
+        : defaults.getJsonObject("victim_count").getJsonArray("absent".equals(victimsState) ? "absent" : "unknown"));
     facts.put("victim_count", choose(answers.get("victim_count")));
     for (String field : Set.of("age", "consciousness", "breathing", "danger", "weapon",
         "description_details", "vehicle")) {
-      JsonArray variants = defaults.getJsonArray(field);
+      JsonArray variants = "danger".equals(field) ? level.getJsonArray("danger")
+          : victimDetails.containsKey(field) ? victimDetails.getJsonArray(field)
+              : defaults.getJsonArray(field);
       answers.put(field.equals("description_details") ? "description" : field, variants);
       facts.put(field, choose(variants));
     }
@@ -77,6 +83,8 @@ public final class ScenarioDraft {
     }
 
     JsonArray rubric = document.getJsonArray("rubric");
+    document.put("pass_score", level.getInteger("pass_score"));
+    document.put("max_errors", level.getInteger("max_errors"));
     JsonObject rubricText = PROFILE.getJsonObject("rubric");
     for (int i = 0; i < rubric.size(); i++) {
       JsonObject rule = rubric.getJsonObject(i);
@@ -85,8 +93,11 @@ public final class ScenarioDraft {
         rule.put("action", "saved");
         rule.put("description", rubricText.getString("deadline").replace("{seconds}", String.valueOf(seconds)));
       }
+      if (level.getJsonArray("mandatory").contains(rule.getString("id"))) rule.put("mandatory", true);
     }
     rubric.add(fieldRule("classifier_code", rubricText.getString("classifier_code")));
+    if (level.getJsonArray("mandatory").contains("classifier_code"))
+      rubric.getJsonObject(rubric.size() - 1).put("mandatory", true);
     if (!incident.getString("sign2").isEmpty()) {
       rubric.add(fieldRule("incident_sign_2", rubricText.getString("incident_sign_2")));
     }
