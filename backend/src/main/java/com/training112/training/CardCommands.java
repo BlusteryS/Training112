@@ -9,12 +9,14 @@ import java.util.Set;
 public final class CardCommands {
   private static final Set<String> FIELDS =
       Set.of(
-          "address", "address_description", "landmark", "caller_name", "caller_status", "city", "comment",
+          "address", "address_description", "landmark", "caller_name", "caller_status", "birth_date",
+          "residence", "city", "comment",
           "communication_channel", "country", "description", "district", "entrance", "floor",
           "foreign_language", "foreign_phone", "house", "incident_code", "classifier_code", "incident_types",
           "law_violation",
-          "incident_sign_2", "incident_sign_3", "incident_details",
+          "incident_sign_2", "incident_sign_3", "incident_details", "survey_answers",
           "object", "okrug", "phone", "provided_phone", "scene_phone", "services", "street", "victims",
+          "medical_help", "blocked_people", "building", "structure", "apartment", "entry_code",
           "location_lat", "location_lon");
   private static final Set<String> OKRUGS =
       Set.of("ЦАО", "САО", "СВАО", "ВАО", "ЮВАО", "ЮАО", "ЮЗАО", "ЗАО", "СЗАО", "ЗелАО", "ТиНАО");
@@ -53,7 +55,7 @@ public final class CardCommands {
       if (payload.isEmpty() || !FIELDS.containsAll(payload.fieldNames()))
         throw invalid("Неизвестные поля карточки.");
       for (var entry : payload) {
-        int maxLength = "incident_types".equals(entry.getKey()) ? 20_000 : 4000;
+        int maxLength = Set.of("incident_types", "survey_answers").contains(entry.getKey()) ? 20_000 : 4000;
         if (!(entry.getValue() instanceof String value) || value.length() > maxLength)
           throw invalid("Неверное значение поля.");
         copy.put(entry.getKey(), entry.getValue());

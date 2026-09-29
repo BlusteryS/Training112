@@ -9,10 +9,18 @@ from speech112.runtime.context_input import operator_text
 _LANGUAGE = json.loads(
     files("speech112.contracts").joinpath("semantic-patterns.json").read_text()
 )
+_EXTRA = json.loads(
+    files("speech112.contracts").joinpath("extra-intents.json").read_text()
+)
+RULE_INTENTS = frozenset(_EXTRA["intents"])
 _PATTERNS = {
     label: tuple(re.compile(pattern) for pattern in patterns)
     for label, patterns in _LANGUAGE["fields"].items()
 }
+_PATTERNS.update({
+    label: (re.compile(entry["pattern"]),)
+    for label, entry in _EXTRA["intents"].items()
+})
 _REPEAT = re.compile(_LANGUAGE["repeat"])
 _CONTACT = re.compile(_LANGUAGE["contact"])
 _KNOWN = re.compile(_LANGUAGE["known"])
@@ -38,6 +46,15 @@ def evidence(text: str) -> tuple[str, ...]:
         if start is not None:
             matches.append((start, label))
     labels = [label for _, label in sorted(matches)]
+    for specific, broad in (
+        ("people_threatened", "danger"), ("medical_help", "victims"),
+        ("blocked_people", "victims"), ("fire_location", "fire"),
+        ("fire_location", "address"), ("gas_sign", "fire"),
+        ("explosion_location", "address"), ("injury", "victims"),
+        ("address_details", "address"),
+    ):
+        if specific in labels and broad in labels:
+            labels.remove(broad)
     if "weapon" in labels and "danger" in labels and re.search(
         r"\bчем (?:он|она|они) угрожа\w*\b", words
     ) and not re.search(

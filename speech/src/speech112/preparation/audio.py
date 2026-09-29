@@ -7,6 +7,7 @@ from pathlib import Path
 
 from speech112.config import AppConfig
 from speech112.runtime.factory import PreparationEngines, voice_fingerprint
+from speech112.runtime.semantic_evidence import RULE_INTENTS
 from speech112.runtime.voices import CachedVoice
 
 
@@ -23,7 +24,7 @@ class AudioPreparer:
             if directory
             else files("speech112.learned").joinpath("contextual", "context.json")
         )
-        self.labels = set(json.loads(metadata.read_text())["labels"])
+        self.labels = set(json.loads(metadata.read_text())["labels"]) | RULE_INTENTS
 
     def __call__(self, bundle):
         unsupported = {item["id"] for item in bundle.document["intents"]} - (

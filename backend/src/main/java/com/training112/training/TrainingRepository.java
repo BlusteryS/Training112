@@ -215,7 +215,7 @@ public final class TrainingRepository {
         db,
         """
         SELECT a.*,la.learner_id,l.id AS lesson_id,l.scenario_id,
-          COALESCE(a.card_template,l.card_template) AS card_template,l.mode,
+          a.card_template,l.mode,
           l.status AS lesson_status,g.instructor_id
         FROM training_attempt a JOIN lesson_assignment la ON la.id=a.assignment_id
         JOIN lesson l ON l.id=la.lesson_id JOIN training_group g ON g.id=l.group_id
@@ -280,9 +280,7 @@ public final class TrainingRepository {
   public Future<JsonArray> serviceStatuses(Account actor, UUID id) {
     return accessibleAttempt(pool, actor, id, false).compose(row -> {
       if (!"card".equals(row.getString("mode"))) throw forbidden();
-      JsonObject template = row.getJsonObject("card_template");
-      String caseId = template == null ? null : template.getString("case_id");
-      if (caseId == null || caseId.isBlank()) return Future.succeededFuture(new JsonArray());
+      String caseId = row.getJsonObject("card_template").getString("case_id");
       return list(pool, """
           SELECT to_jsonb(latest) AS value FROM (
             SELECT DISTINCT ON (lower(g.service_code)) g.service_code AS service,
@@ -610,7 +608,7 @@ public final class TrainingRepository {
             db,
             """
             SELECT l.mode,l.scenario_id,l.card_template AS lesson_pool,a.card,
-              COALESCE(a.card_template,l.card_template) AS selected_template,
+              a.card_template AS selected_template,
               a.assignment_id,la.learner_id,g.service_code,l.status AS lesson_status
             FROM training_attempt a
             JOIN lesson_assignment la ON la.id=a.assignment_id

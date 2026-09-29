@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ public final class ScenarioDraft {
   private static final Set<String> DIFFICULTIES = Set.of("basic", "intermediate", "advanced");
   private static final JsonObject TEMPLATE = loadJson("demo-scenario.json");
   private static final JsonObject PROFILE = loadJson("draft-profile.json");
+  private static final JsonObject EXTRA = loadJson("extra-intents.json");
   private static final JsonObject SIGNALS = PROFILE.getJsonObject("signals");
   private static final Pattern FLAMES = Pattern.compile(SIGNALS.getString("flames"));
   private static final Pattern SMOKE = Pattern.compile(SIGNALS.getString("smoke"));
@@ -47,6 +49,8 @@ public final class ScenarioDraft {
     JsonObject level = PROFILE.getJsonObject("difficulty_profiles").getJsonObject(difficulty);
     Map<String, JsonArray> answers = new HashMap<>();
     facts.put("caller_name", choose(PROFILE.getJsonArray("caller_names")));
+    facts.put("birth_date", choose(PROFILE.getJsonArray("birth_dates")));
+    facts.put("residence", "Москва");
     facts.put("address", location);
     facts.put("incident", label == null ? description : label.getString("incident"));
     String lower = description.toLowerCase(Locale.ROOT);
@@ -81,6 +85,7 @@ public final class ScenarioDraft {
         response.put("compact_variants", variants.copy());
       }
     }
+    addIncidentQuestions(document, incident, description, victimsState);
 
     JsonArray rubric = document.getJsonArray("rubric");
     document.put("pass_score", level.getInteger("pass_score"));
@@ -105,6 +110,45 @@ public final class ScenarioDraft {
       rubric.add(fieldRule("incident_sign_3", rubricText.getString("incident_sign_3")));
     }
     return ScenarioDocuments.fillExpected(document);
+  }
+
+  private static void addIncidentQuestions(JsonObject document, JsonObject incident,
+      String description, String victimsState) {
+    String lower = description.toLowerCase(Locale.ROOT);
+    String group = lower.contains("взрыв") ? "explosion"
+        : incident.getJsonArray("services", new JsonArray()).contains("104") && lower.contains("газ") ? "gas"
+        : Pattern.compile("пожар|возгоран|задымлен|дым|гари").matcher(lower).find() ? "fire"
+        : Pattern.compile("дтп|дорожн|столкновен|наезд").matcher(lower).find() ? "road"
+        : incident.getJsonArray("services", new JsonArray()).contains("103") ? "medical" : "";
+    document.getJsonObject("facts").put("incident_location", incident.getString("type"));
+    var groups = EXTRA.getJsonObject("groups");
+    var selected = new LinkedHashSet<String>();
+    for (Object key : groups.getJsonArray("common")) selected.add((String) key);
+    if (!group.isEmpty()) for (Object key : groups.getJsonArray(group)) selected.add((String) key);
+    if ("fire".equals(group) && Pattern.compile("дом|квартир|здани|объект|подъезд")
+        .matcher(lower + " " + incident.getString("sign2") + " " + incident.getString("type")).find()) {
+      for (Object key : groups.getJsonArray("fire_building")) selected.add((String) key);
+    }
+    var entries = EXTRA.getJsonObject("intents");
+    var intents = document.getJsonArray("intents");
+    var responses = document.getJsonArray("responses");
+    for (String key : selected) {
+      JsonObject entry = entries.getJsonObject(key);
+      JsonArray variants = entry.getJsonArray("variants");
+      JsonObject byVictims = entry.getJsonObject("by_victims");
+      boolean specific = byVictims != null && byVictims.getJsonArray(victimsState) != null;
+      if ("medical_help".equals(key) && "absent".equals(victimsState)
+          && incident.getBoolean("medical_without_victims", false)) {
+        variants = byVictims.getJsonArray("present");
+      } else if (specific)
+        variants = byVictims.getJsonArray(victimsState);
+      intents.add(new JsonObject().put("id", key).put("examples", entry.getJsonArray("examples").copy()));
+      responses.add(new JsonObject().put("id", key + "_reply").put("intent", key)
+          .put("states", new JsonArray().add("waiting").add("assisted"))
+          .put("variants", variants.copy())
+          .put("compact_variants", specific ? variants.copy()
+              : entry.getJsonArray("compact_variants").copy()));
+    }
   }
 
   private static JsonObject fieldRule(String field, String description) {

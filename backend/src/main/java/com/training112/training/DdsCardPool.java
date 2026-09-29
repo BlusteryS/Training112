@@ -46,7 +46,7 @@ public final class DdsCardPool {
   }
 
   public static boolean hasSequence(JsonObject lesson) {
-    JsonArray cards = lesson == null ? null : lesson.getJsonArray("cards");
+    JsonArray cards = lesson.getJsonArray("cards");
     return cards != null && cards.size() > 1;
   }
 

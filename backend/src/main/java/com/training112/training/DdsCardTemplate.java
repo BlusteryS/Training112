@@ -13,7 +13,8 @@ public final class DdsCardTemplate {
       "incident_code", "district", "okrug", "object", "scene_phone", "provided_phone",
       "communication_channel", "caller_status", "street", "house", "entrance", "floor",
       "landmark", "incident_sign_2", "incident_sign_3", "incident_details", "classifier_code",
-      "incident_types",
+      "incident_types", "survey_answers", "birth_date", "residence", "medical_help", "blocked_people",
+      "building", "structure", "apartment", "entry_code",
       "city", "country", "foreign_language", "foreign_phone", "law_violation");
 
   private DdsCardTemplate() {}
@@ -36,10 +37,15 @@ public final class DdsCardTemplate {
     JsonObject facts = new JsonObject();
     for (String key : FIELDS) {
       Object value = input.getValue(key);
-      int maxLength = "incident_types".equals(key) ? 20_000 : 4000;
+      int maxLength = Set.of("incident_types", "survey_answers").contains(key) ? 20_000 : 4000;
       if (value != null && (!(value instanceof String) || ((String) value).length() > maxLength))
         throw invalid();
-      facts.put(key, value == null ? "" : ((String) value).trim());
+      String empty = switch (key) {
+        case "incident_types" -> "[]";
+        case "survey_answers" -> "{}";
+        default -> "";
+      };
+      facts.put(key, value == null ? empty : ((String) value).trim());
     }
     for (String key : new String[] {"phone", "address", "description", "incident_code"}) {
       if (facts.getString(key).isBlank()) throw new ApiException(

@@ -193,9 +193,6 @@ final class TrainingLessons {
                             conflict("Сценарий нужно повторно утвердить перед началом занятия."));
                       boolean card = "card".equals(row.getString("mode"));
                       JsonObject template = row.getJsonObject("card_template");
-                      JsonObject legacyCard = card && template == null
-                          ? CardSnapshot.from(row.getJsonObject("document"), row.getString("service_code"))
-                          : null;
                       return db.preparedQuery(
                               "INSERT INTO lesson_assignment(id,lesson_id,learner_id) SELECT"
                                   + " gen_random_uuid(),$1,m.user_id FROM training_group_member m"
@@ -207,7 +204,7 @@ final class TrainingLessons {
                                 if (rows.rowCount() == 0)
                                   return Future.failedFuture(conflict("В группе нет обучающихся."));
                                 Future<Void> seeded = card
-                                    ? seedCardAttempts(db, id, template, legacyCard, row.getString("service_code"))
+                                    ? seedCardAttempts(db, id, template, row.getString("service_code"))
                                     : Future.succeededFuture();
                                 return seeded.compose(
                                     ignored ->
@@ -220,14 +217,14 @@ final class TrainingLessons {
   }
 
   private Future<Void> seedCardAttempts(SqlClient db, UUID lesson, JsonObject pool,
-      JsonObject legacyCard, String service) {
+      String service) {
     return db.preparedQuery("SELECT id FROM lesson_assignment WHERE lesson_id=$1")
         .execute(Tuple.of(lesson)).compose(rows -> {
           Future<Void> chain = Future.succeededFuture();
           for (Row row : rows) {
             UUID assignment = row.getUUID("id");
-            JsonObject selected = pool == null ? null : DdsCardPool.choose(pool, new JsonArray());
-            JsonObject card = selected == null ? legacyCard : CardSnapshot.fromTemplate(selected, service);
+            JsonObject selected = DdsCardPool.choose(pool, new JsonArray());
+            JsonObject card = CardSnapshot.fromTemplate(selected, service);
             chain = chain.compose(ignored -> insertCardAttempt(db, assignment, selected, card));
           }
           return chain;

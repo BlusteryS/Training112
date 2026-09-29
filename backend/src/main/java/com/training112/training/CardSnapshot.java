@@ -1,5 +1,6 @@
 package com.training112.training;
 
+import com.training112.auth.ApiException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import java.util.LinkedHashSet;
@@ -10,13 +11,15 @@ public final class CardSnapshot {
   private CardSnapshot() {}
 
   public static JsonObject from(JsonObject document, String service) {
-    JsonObject source = document == null ? new JsonObject() : document;
-    JsonObject facts = source.getJsonObject("facts", new JsonObject());
-    String classifierCode = text(source, "classifier_code");
+    JsonObject facts = document.getJsonObject("facts");
+    String classifierCode = text(document, "classifier_code");
     JsonObject survey = IncidentClassifier.card(classifierCode);
-    String type = survey == null ? text(source, "title") : survey.getString("type");
+    if (survey == null) throw new ApiException(400, "invalid_scenario",
+        "У сценария не выбран тип происшествия.");
     return new JsonObject()
         .put("caller_name", text(facts, "caller_name"))
+        .put("birth_date", text(facts, "birth_date"))
+        .put("residence", text(facts, "residence"))
         .put("phone", text(facts, "phone"))
         .put("address", text(facts, "address"))
         .put("description", descriptionForService(text(facts, "incident"), service))
@@ -26,11 +29,11 @@ public final class CardSnapshot {
         .put("address_description", text(facts, "address_description"))
         .put("scene_phone", text(facts, "scene_phone"))
         .put("object", text(facts, "object"))
-        .put("incident_code", type)
+        .put("incident_code", survey.getString("type"))
         .put("classifier_code", classifierCode)
-        .put("incident_sign_2", survey == null ? "" : survey.getString("sign2"))
-        .put("incident_sign_3", survey == null ? "" : survey.getString("sign3"))
-        .put("origin", text(source, "origin"))
+        .put("incident_sign_2", survey.getString("sign2"))
+        .put("incident_sign_3", survey.getString("sign3"))
+        .put("origin", text(document, "origin"))
         .put("services", services(survey, facts, service))
         .put("dds_service", service == null ? "" : service);
   }
@@ -62,26 +65,24 @@ public final class CardSnapshot {
 
   private static String services(JsonObject survey, JsonObject facts, String service) {
     LinkedHashSet<String> names = new LinkedHashSet<>();
-    if (survey != null) {
-      add(names, survey.getJsonArray("services"));
-      boolean hasVictims = "present".equals(text(facts, "victims_state"));
-      boolean lawViolation = "true".equalsIgnoreCase(text(facts, "law_violation"));
-      if (survey.getBoolean("police_without_signs", false))
-        names.add("102");
-      if (survey.getBoolean("medical_without_victims", false))
-        names.add("103");
-      if (hasVictims)
-        add(names, survey.getJsonArray("victim_services"));
-      if (lawViolation)
-        add(names, survey.getJsonArray("law_services"));
-      String district = text(facts, "district").trim();
-      String okrug = text(facts, "okrug").trim();
-      boolean tinao = "ТиНАО".equals(okrug);
-      if (!district.isEmpty() && survey.getBoolean(tinao ? "tinao_dds" : "district_dds", false))
-        names.add("ДДС района " + district);
-      if (!okrug.isEmpty() && survey.getBoolean(tinao ? "tinao_dds" : "okrug_dds", false))
-        names.add("ДДС " + okrug);
-    }
+    add(names, survey.getJsonArray("services"));
+    boolean hasVictims = "present".equals(text(facts, "victims_state"));
+    boolean lawViolation = "true".equalsIgnoreCase(text(facts, "law_violation"));
+    if (survey.getBoolean("police_without_signs", false))
+      names.add("102");
+    if (survey.getBoolean("medical_without_victims", false))
+      names.add("103");
+    if (hasVictims)
+      add(names, survey.getJsonArray("victim_services"));
+    if (lawViolation)
+      add(names, survey.getJsonArray("law_services"));
+    String district = text(facts, "district").trim();
+    String okrug = text(facts, "okrug").trim();
+    boolean tinao = "ТиНАО".equals(okrug);
+    if (!district.isEmpty() && survey.getBoolean(tinao ? "tinao_dds" : "district_dds", false))
+      names.add("ДДС района " + district);
+    if (!okrug.isEmpty() && survey.getBoolean(tinao ? "tinao_dds" : "okrug_dds", false))
+      names.add("ДДС " + okrug);
     if (service != null && !service.isBlank()) {
       String code = service.trim().replaceFirst("(?iu)^служба\\s+", "");
       if (names.stream().noneMatch(name -> name.equalsIgnoreCase(service.trim())

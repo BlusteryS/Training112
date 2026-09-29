@@ -19,7 +19,9 @@ from speech112.runtime.context_input import (
 )
 from speech112.runtime.learned import file_digest
 from speech112.runtime.scheduler import InferenceScheduler
-from speech112.runtime.semantic_evidence import evidence, explicit_action, negated_goodbye, strip_known
+from speech112.runtime.semantic_evidence import (
+    RULE_INTENTS, evidence, explicit_action, negated_goodbye, strip_known,
+)
 from speech112.runtime.semantic_frame import ACTIONS, FRAME_SCHEMA, SemanticFrame, decode_frame
 
 _INFORMED_INTENTS = frozenset(
@@ -53,7 +55,7 @@ class ContextualUnderstanding:
             or not self.cardinality
         ):
             raise ValueError("Invalid contextual output schema")
-        self.labels = (*self.targets, "repeat", "contact", "other")
+        self.labels = (*self.targets, *sorted(RULE_INTENTS), "repeat", "contact", "other")
         self.version = meta["weights_sha256"]
         options = ort.SessionOptions()
         options.intra_op_num_threads = threads

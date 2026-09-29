@@ -8,8 +8,8 @@ public final class DdsEvaluation {
   private DdsEvaluation() {}
 
   public static JsonObject evaluate(JsonObject template, JsonArray events, String attemptStatus) {
-    String expected = template == null ? "accepted" : template.getString("expected_primary", "accepted");
-    String outcome = template == null ? "completed" : template.getString("outcome", "completed");
+    String expected = template.getString("expected_primary");
+    String outcome = template.getString("outcome");
     JsonObject first = null;
     JsonObject opened = null;
     boolean crew = false;
