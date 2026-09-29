@@ -20,3 +20,6 @@ speech/.cache/
 !speech/assets/telephone/ATTRIBUTION.md
 
 deploy/tls/
+docs/*.pptx
+docs/*.docx
+docs/Training112_ЛЦТ2026.pdf

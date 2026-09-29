@@ -80,7 +80,7 @@
 
 ## 2 Условия работы
 
-Для установки на сервере нужны Linux x86-64, Git, Docker Engine с Docker Compose, Python 3, OpenSSL, постоянный IPv4-адрес в локальной сети и свободный порт 443. [Порядок установки Docker Engine и Compose для Ubuntu](https://docs.docker.com/engine/install/ubuntu/) приведён в документации Docker. Для других дистрибутивов используйте соответствующий раздел документации Docker.
+Сервер может работать под Linux или Windows на процессоре x86-64. На Linux установите Docker Engine с Docker Compose; на Windows — Docker Desktop в режиме Linux-контейнеров. Также нужны Git, Python 3, OpenSSL, постоянный IPv4-адрес в локальной сети и свободный порт 443. [Установка Docker Compose](https://docs.docker.com/compose/install/) и [Docker Desktop для Windows](https://docs.docker.com/desktop/setup/install/windows-install/) описаны в документации Docker.
 
 | Параметр | Сервер | Рабочее место |
 |---|---|---|
@@ -107,11 +107,19 @@ cd Training112
 
 ### 3.2 Адрес, сертификат и запуск
 
-Убедитесь, что у сервера есть постоянный IPv4-адрес в локальной сети и порт 443 доступен рабочим местам. Затем выполните в обычном интерактивном терминале:
+Убедитесь, что у сервера есть постоянный IPv4-адрес в локальной сети и порт 443 доступен рабочим местам. На Linux выполните в терминале:
 
 ```bash
 python3 deploy/setup.py
 python3 deploy/start.py
+docker compose ps
+```
+
+На Windows выполните те же действия в PowerShell:
+
+```powershell
+py -3 deploy/setup.py
+py -3 deploy/start.py
 docker compose ps
 ```
 
@@ -136,7 +144,7 @@ sudo update-ca-certificates
 
 Файлы `ca.key`, `server.key` и `.env` остаются на сервере. Передавать их на рабочие места не требуется. Для [online.tindapp.com](https://online.tindapp.com) установка локального сертификата не нужна: этот экземпляр уже открывается по HTTPS.
 
-Сертификат сервера действует один год. Для перевыпуска с тем же IP-адресом выполните `python3 deploy/setup.py` и `docker compose up -d --force-recreate web`. Установленный на рабочих местах `ca.crt` при этом не меняется. Если изменился IP-адрес сервера, после настройки пересоздайте также backend: `docker compose up -d --force-recreate backend web`.
+Сертификат сервера действует один год. Для перевыпуска с тем же IP-адресом выполните `python3 deploy/setup.py` (на Windows — `py -3 deploy/setup.py`) и `docker compose up -d --force-recreate web`. Установленный на рабочих местах `ca.crt` при этом не меняется. Если изменился IP-адрес сервера, после настройки пересоздайте также backend: `docker compose up -d --force-recreate backend web`.
 
 ### 3.4 Первый администратор
 
