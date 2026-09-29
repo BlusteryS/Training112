@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { previewDdsPhone, recognizeDdsPhone, recordDdsPhone, selectDdsCrew,
   type DdsPhoneParty, type PhoneReport } from '../../speech/trainingApi';
 import { startDdsRecording, type DdsRecording } from '../../speech/recordDdsUtterance';
+import { microphoneError } from '../../speech/microphoneError';
 import { InputField } from '../ui/InputField';
 import { ddsPartyNames, ddsStatusNames } from './statuses';
 import styles from './DdsPhonePanel.module.css';
@@ -74,7 +75,7 @@ export function DdsPhonePanel({ attemptId, status, crew, callerPhone, pendingRep
       recordingRef.current = { capture, party, direction, topic };
       setRecordingFor(party === 'crew' ? crew || 'бригадой' : ddsPartyNames[party] || party);
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : 'Не удалось включить микрофон.');
+      onError(microphoneError(cause, 'Не удалось включить микрофон.'));
     } finally { setBusy(false); }
   }
 

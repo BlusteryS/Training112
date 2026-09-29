@@ -6,6 +6,7 @@ import { useNotification } from '../components/Notifications';
 import { startCooldown } from '../operatorAvailability';
 import { finishAttempt, saveAttemptCard, startAssignedAttempt } from '../speech/trainingApi';
 import { VoiceCall } from '../speech/VoiceCall';
+import { microphoneError } from '../speech/microphoneError';
 import { useNow } from '../hooks/useNow';
 import { CallWorkspace } from './CallWorkspace';
 import type { IncidentDraft } from './callDraft';
@@ -19,14 +20,7 @@ function incidentNumber(id: string) {
 }
 
 function callError(cause: unknown) {
-  if (cause instanceof DOMException && ['NotAllowedError', 'PermissionDeniedError'].includes(cause.name)) {
-    return 'Доступ к микрофону запрещён. Разрешите его в браузере и системе, затем повторите подключение.';
-  }
-  const message = cause instanceof Error ? cause.message : '';
-  if (/permission denied|notallowederror/i.test(message)) {
-    return 'Доступ к микрофону запрещён. Разрешите его в браузере и системе, затем повторите подключение.';
-  }
-  return message || 'Не удалось начать звонок.';
+  return microphoneError(cause, 'Не удалось начать звонок.');
 }
 
 export function SpeechPage() {
