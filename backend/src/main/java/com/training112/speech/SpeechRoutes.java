@@ -159,7 +159,7 @@ public final class SpeechRoutes {
     final SpeechTransport transport;
     ServerWebSocket socket;
     String token;
-    boolean ready, admitted, closed, checking;
+    boolean ready, admitted, closed, checking, terminating;
     long timer = -1, grace = -1, lastActivity = System.nanoTime();
     int pendingJournal;
     Future<Void> journal = Future.succeededFuture();
@@ -182,7 +182,7 @@ public final class SpeechRoutes {
       next.setWriteQueueMaxSize(32768);
       next.binaryMessageHandler(
           data -> {
-            if (socket != next || closed) return;
+            if (socket != next || closed || terminating) return;
             lastActivity = System.nanoTime();
             if (!ready
                 || data.length() != 1024
@@ -191,7 +191,7 @@ public final class SpeechRoutes {
           });
       next.textMessageHandler(
           text -> {
-            if (socket != next || closed) return;
+            if (socket != next || closed || terminating) return;
             lastActivity = System.nanoTime();
             try {
               JsonObject message = new JsonObject(text);
@@ -246,7 +246,7 @@ public final class SpeechRoutes {
     }
 
     void maintain() {
-      if (closed) return;
+      if (closed || terminating) return;
       if (socket != null && System.nanoTime() - lastActivity > 15_000_000_000L) detach(socket);
       if (checking) return;
       checking = true;
@@ -260,6 +260,7 @@ public final class SpeechRoutes {
           .onComplete(
               result -> {
                 checking = false;
+                if (closed || terminating) return;
                 if (result.failed()) fail("authorization_lost");
                 else if (Set.of("completed", "failed")
                     .contains(result.result().getString("status"))) close(false);
@@ -271,7 +272,7 @@ public final class SpeechRoutes {
     }
 
     void receive(SpeechTransport.Message message) {
-      if (closed) return;
+      if (closed || terminating) return;
       if ("audio".equals(message.kind())) {
         if (socket != null) {
           if (socket.writeQueueFull()) {
@@ -311,26 +312,32 @@ public final class SpeechRoutes {
                 .onComplete(ignored -> pendingJournal--);
         journal.onFailure(error -> fail("journal_failed"));
       }
+      boolean terminal = "ended".equals(type)
+          || Set.of("unavailable", "busy", "closed").contains(type);
+      if (terminal) terminating = true;
       if (Set.of("ready", "resumed").contains(type)) {
         journal.onSuccess(ignored -> forward(event));
-      } else forward(event);
-      if ("ended".equals(type)) close(false);
-      else if (Set.of("unavailable", "busy", "closed").contains(type)) close(true);
+      } else if (terminal) {
+        forward(event).onComplete(ignored -> close(!"ended".equals(type)));
+      } else {
+        forward(event);
+      }
     }
 
-    void forward(JsonObject event) {
-      if (closed || socket == null) return;
+    Future<Void> forward(JsonObject event) {
+      if (closed || socket == null) return Future.succeededFuture();
       ServerWebSocket target = socket;
       if (target.writeQueueFull()) {
-        fail("playback_overflow");
-        return;
+        if (!terminating) fail("playback_overflow");
+        return Future.failedFuture("Playback queue exceeded");
       }
-      target.writeTextMessage(event.encode()).onFailure(error -> detach(target));
+      return target.writeTextMessage(event.encode()).onFailure(error -> detach(target));
     }
 
     void fail(String code) {
-      if (closed) return;
-      if (socket != null)
+      if (closed || terminating) return;
+      terminating = true;
+      if (socket != null) {
         socket.writeTextMessage(
             new JsonObject().put("type", "unavailable").put("code", code)
                 .put("message", switch (code) {
@@ -338,8 +345,10 @@ public final class SpeechRoutes {
                   case "audio_overflow", "playback_overflow", "transport_overflow", "journal_overflow" ->
                       "Звонок остановлен: сервер или соединение перегружены. Повторите попытку позже.";
                   default -> "Звонок остановлен из-за ошибки соединения. Повторите попытку.";
-                }).encode());
-      close(true);
+                }).encode()).onComplete(ignored -> close(true));
+      } else {
+        close(true);
+      }
     }
 
     Future<Void> close(boolean failed) {
