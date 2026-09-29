@@ -44,9 +44,17 @@ class StreamingAudio(VadAudioChannel):
         self._changed = asyncio.Event()
 
     async def detect_speech(self) -> None:
-        async with asyncio.TaskGroup() as group:
-            group.create_task(super().detect_speech())
-            group.create_task(self._send_audio())
+        detector = asyncio.create_task(super().detect_speech())
+        sender = asyncio.create_task(self._send_audio())
+        try:
+            done, _ = await asyncio.wait({detector, sender}, return_when=asyncio.FIRST_COMPLETED)
+            for task in done:
+                task.result()
+            raise RuntimeError("Audio processing stopped")
+        finally:
+            detector.cancel()
+            sender.cancel()
+            await asyncio.gather(detector, sender, return_exceptions=True)
 
     async def _send_audio(self) -> None:
         loop = asyncio.get_running_loop()

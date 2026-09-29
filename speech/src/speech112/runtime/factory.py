@@ -6,8 +6,10 @@ import hashlib
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import numpy as np
+
 from speech112.config import AppConfig, VoiceConfig
-from speech112.runtime.models import ToneRecognizer, onnx_session
+from speech112.runtime.models import OnnxVad, ToneRecognizer, onnx_session
 from speech112.runtime.scheduler import InferenceScheduler
 from speech112.runtime.voices import CachedVoice
 
@@ -49,6 +51,10 @@ async def open_models(config: AppConfig):
         asr = await scheduler.run(
             ToneRecognizer, Path(settings.asr_directory), settings.model_threads, scheduler
         )
+        await scheduler.run(OnnxVad(vad).probability, np.zeros(512, dtype=np.float32))
+        warmup = asr.stream()
+        await warmup.accept(np.zeros(16000, dtype=np.float32))
+        await warmup.finish()
         intent = await scheduler.run(make_understanding, settings, scheduler)
         digest = await scheduler.run(voice_fingerprint, config.voice)
         voice = CachedVoice(None, scheduler, Path(settings.audio_cache), digest)

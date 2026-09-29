@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from speech112.config import VadConfig
 from speech112.events import EventKind, SpeechEvent
 from speech112.providers import RecognitionStream, VoiceActivityDetector
+from speech112.runtime.scheduler import Overloaded
 
 
 class VadAudioChannel:
@@ -24,7 +25,9 @@ class VadAudioChannel:
         self._input_sample_rate = sample_rate
         self._block_ms = block_ms
         self._vad_config = vad
-        self._frames: asyncio.Queue[NDArray[np.float32]] = asyncio.Queue(maxsize=128)
+        # Keep short CPU scheduling stalls from ending an otherwise healthy call.
+        # 256 frames are 8.2 seconds at the fixed 32 ms input rate.
+        self._frames: asyncio.Queue[NDArray[np.float32]] = asyncio.Queue(maxsize=256)
         self.events: asyncio.Queue[SpeechEvent] = asyncio.Queue(maxsize=16)
         self._vad = detector
         self._recognizer = recognizer
@@ -76,7 +79,7 @@ class VadAudioChannel:
                 speaking = False
                 speech_run = silence_run = 0
             if self._overflow:
-                raise RuntimeError("Обработка микрофона отстаёт: очередь аудио переполнена")
+                raise Overloaded("Microphone processing queue exceeded")
             probability = self._vad.probability(frame)
             threshold = (
                 self._vad_config.barge_in_threshold if self._playing else self._vad_config.threshold

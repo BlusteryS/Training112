@@ -287,6 +287,15 @@ public final class SpeechRoutes {
       }
       JsonObject event = message.event();
       String type = event.getString("type", "");
+      if (Set.of("unavailable", "busy").contains(type)) {
+        event.put("message", switch (event.getString("code", "")) {
+          case "overloaded", "capacity_exceeded" ->
+              "Сервер не успевает обработать звук. Повторите звонок позже.";
+          case "speech_unavailable" -> "Речевой модуль недоступен. Повторите звонок позже.";
+          case "runtime_failed" -> "Ошибка обработки речи. Повторите звонок.";
+          default -> "Не удалось продолжить звонок. Повторите попытку.";
+        });
+      }
       if (Set.of("ready", "resumed").contains(type)) {
         ready = true;
         admitted = true;
