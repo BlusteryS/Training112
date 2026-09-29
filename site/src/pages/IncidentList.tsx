@@ -345,11 +345,11 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, module
     <div className={styles.toolbar}>
       <div className={styles.title}>Список происшествий</div>
       <div className={styles.controls}>
+        <WorkspaceSwitch checked={autoRefresh} onChange={onAutoRefresh}>Автообновление</WorkspaceSwitch>
         {moduleOptions.length > 0 && <ChoiceSelect label="Учебный модуль" value={moduleId} onChange={onModuleChange}>
           <option value="">Все модули</option>
           {moduleOptions.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
         </ChoiceSelect>}
-        <WorkspaceSwitch checked={autoRefresh} onChange={onAutoRefresh}>Автообновление</WorkspaceSwitch>
         <ChoiceSelect label="Что показать" value={status} onChange={setStatus}>
           <option value="">Выберите, что показать</option>
           <option value="В работе">В работе</option>
