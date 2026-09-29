@@ -4,6 +4,7 @@
   padding: 12px;
   border: 1px solid rgba(0, 0, 0, .14);
   border-radius: 8px;
+  font-size: 14px;
 }
 
 .heading {
@@ -32,13 +33,14 @@
   border-bottom: 1px solid rgba(0, 0, 0, .2);
   outline: 0;
   background: transparent;
-  color: #000;
+  color: #1d252b;
+  font: inherit;
 }
 
 .survey label {
   display: grid;
-  color: rgba(0, 0, 0, .5);
-  font-size: 13px;
+  color: #596167;
+  font-size: 14px;
   gap: 3px;
 }
 

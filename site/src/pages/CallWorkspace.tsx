@@ -3,7 +3,6 @@ import type { User } from '../auth/api';
 import { PhoneCard } from '../components/call/PhoneCard';
 import { AddressLookup, type FiasAddress } from '../components/call/AddressLookup';
 import { IncidentSurvey } from '../components/call/IncidentSurvey';
-import { IncidentQuestions } from '../components/call/IncidentQuestions';
 import { ToggleGroup } from '../components/call/ToggleGroup';
 import { ModalForm } from '../components/ModalForm';
 import { AutosizeTextarea } from '../components/ui/AutosizeTextarea';
@@ -397,6 +396,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
       <div className={styles.incidentPanel}>
         <div className={styles.panelTitle}>Что случилось?</div>
         <IncidentSurvey cards={classifier} types={types} inputId="incident-types"
+          answers={answers} onAnswerChange={changeAnswer}
           listId="incident-lookup" value={{
           type: draft.incident_code, sign2: draft.incident_sign_2, sign3: draft.incident_sign_3,
           code: draft.classifier_code,
@@ -406,6 +406,7 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         }))} />
         {extraIncidents.map((item, index) => <IncidentSurvey key={index} cards={classifier}
           types={types} inputId={`incident-type-${index}`} listId="incident-lookup"
+          answers={answers} onAnswerChange={changeAnswer}
           showOptions={false} value={item}
           onChange={(value) => setExtraIncidents((current) => current.map((row, rowIndex) =>
             rowIndex === index ? value : row))}
@@ -413,9 +414,6 @@ export function CallWorkspace({ user, phone, elapsed, registeredAt, message, con
         <button className={styles.addIncident} type="button" disabled={extraIncidents.length >= 29}
           onClick={() => setExtraIncidents((current) =>
           [...current, { type: '', sign2: '', sign3: '', code: '' }])}>Добавить ещё тип происшествия</button>
-        {selectedCards.filter((card): card is ClassifierCard => Boolean(card)).map((card) =>
-          <IncidentQuestions key={card.code} card={card} answers={answers[card.code] ?? {}}
-            onChange={(key, value) => changeAnswer(card.code, key, value)} />)}
         {classifierError && <div className={styles.modalError} role="alert">{classifierError}</div>}
         {error && !confirm && <div className={styles.modalError} role="alert">{error}</div>}
         <label className={styles.details}>Подробности происшествия

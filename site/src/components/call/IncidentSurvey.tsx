@@ -1,15 +1,19 @@
 import { incidentOptions, matchingCard, type ClassifierCard } from '../../pages/incidentClassifier';
+import { IncidentQuestions } from './IncidentQuestions';
 import styles from './IncidentSurvey.module.css';
 
 export type SurveySelection = { type: string; sign2: string; sign3: string; code: string };
 
-export function IncidentSurvey({ cards, types, value, inputId, listId, showOptions = true, onChange, onRemove }: {
+export function IncidentSurvey({ cards, types, value, inputId, listId, showOptions = true,
+  answers, onAnswerChange, onChange, onRemove }: {
   cards: ClassifierCard[];
   types: string[];
   value: SurveySelection;
   inputId: string;
   listId: string;
   showOptions?: boolean;
+  answers?: Record<string, Record<string, string>>;
+  onAnswerChange?: (code: string, key: string, value: string) => void;
   onChange: (value: SurveySelection) => void;
   onRemove?: () => void;
 }) {
@@ -57,5 +61,7 @@ export function IncidentSurvey({ cards, types, value, inputId, listId, showOptio
       </select>
     </label>}
     {match && <div className={styles.result}>Код {match.code} · {match.result}</div>}
+    {match && onAnswerChange && <IncidentQuestions card={match} answers={answers?.[match.code] ?? {}}
+      onChange={(key, answer) => onAnswerChange(match.code, key, answer)} />}
   </div>;
 }
