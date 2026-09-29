@@ -15,6 +15,7 @@
     "greeting",
     "clarification",
     "check_in",
+    "contact",
     "rubric"
   ],
   "properties": {

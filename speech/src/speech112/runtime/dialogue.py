@@ -7,7 +7,6 @@ from dataclasses import dataclass, replace
 from typing import Protocol
 
 from speech112.runtime.bundle import ScenarioBundle, render
-from speech112.runtime.conversation_controls import CONTACT_REPLY
 from speech112.runtime.semantic_frame import SemanticFrame
 
 
@@ -42,6 +41,14 @@ class ScenarioDialogue:
         self._last_reply: Reply | None = None
         self._answered: dict[str, str] = {}
         self._history: list[str] = []
+        self._routes = {
+            state: {response["intent"]: response for response in self._document["responses"]
+                    if state in response["states"]}
+            for state in self._document["states"]
+        }
+        self._response_intents = {
+            response["id"]: response["intent"] for response in self._document["responses"]
+        }
         unsupported = {i["id"] for i in self._document["intents"]} - set(recognizer.labels)
         if unsupported:
             raise ValueError(f"Scenario uses untrained semantic intents: {sorted(unsupported)}")
@@ -63,7 +70,7 @@ class ScenarioDialogue:
     def initiative(self, kind: str) -> Reply:
         if kind not in ("greeting", "check_in", "clarification", "contact"):
             raise ValueError("Unknown initiative")
-        text = self._choose(kind, self._document.get(kind, CONTACT_REPLY))
+        text = self._choose(kind, self._document[kind])
         return Reply(
             text,
             kind,
@@ -88,37 +95,36 @@ class ScenarioDialogue:
                 operator_text=text,
             )
         if plan.action == "repeat" and intents:
-            routes = {
-                response["intent"]: response
-                for response in self._document["responses"]
-                if self.state in response["states"]
-            }
-            if all(intent in self._answered or intent in routes for intent in intents):
+            routes = self._routes[self.state]
+            if any(intent in self._answered or intent in routes for intent in intents):
                 choices = []
                 fragments = []
                 for intent in intents:
                     if intent in self._answered:
                         fragments.append(self._answered[intent])
-                    else:
+                    elif intent in routes:
                         route = routes[intent]
                         value = self._choose(route["id"], self._variants(route, len(intents) > 1))
                         choices.append((route["id"], value))
+                        fragments.append(value)
+                    else:
+                        value = self._choose("clarification", self._document["clarification"])
+                        choices.append(("clarification", value))
                         fragments.append(value)
                 return Reply(" ".join(fragments), "repeat", self.revision, self.state,
                              fragments=tuple(fragments), choices=tuple(choices), operator_text=text)
         if not intents or set(intents) & {"other", "contact", "repeat"} or len(intents) > 6:
             return replace(self.initiative("clarification"), operator_text=text)
-        routes = {
-            response["intent"]: response
-            for response in self._document["responses"]
-            if self.state in response["states"]
-        }
-        if any(intent not in routes for intent in intents):
+        routes = self._routes[self.state]
+        missing = [intent for intent in intents if intent not in routes]
+        responses = [routes[intent] for intent in intents if intent in routes]
+        if not responses:
             return replace(self.initiative("clarification"), operator_text=text)
-        responses = [routes[intent] for intent in intents]
         # Answer the questions before accepting a mixed farewell.
-        if len(responses) > 1 and any(r.get("end_call", False) for r in responses):
+        if len(responses) + len(missing) > 1 and any(r.get("end_call", False) for r in responses):
             responses = [r for r in responses if not r.get("end_call", False)]
+        if not responses:
+            return replace(self.initiative("clarification"), operator_text=text)
         next_states = {r["next_state"] for r in responses if "next_state" in r}
         if len(next_states) > 1:
             return replace(self.initiative("clarification"), operator_text=text)
@@ -126,6 +132,8 @@ class ScenarioDialogue:
             (response["id"], self._choose(response["id"], self._variants(response, len(responses) > 1)))
             for response in responses
         )
+        if missing:
+            choices += (("clarification", self._choose("clarification", self._document["clarification"])),)
         fragments = tuple(value for _, value in choices)
         return Reply(
             " ".join(fragments),
@@ -149,10 +157,9 @@ class ScenarioDialogue:
             if used >= self._choice_catalog[key]:
                 used.clear()
             used.add(value)
-        routes = {r["id"]: r["intent"] for r in self._document["responses"]}
         for key, value in reply.choices:
-            if key in routes:
-                self._answered[routes[key]] = value
+            if key in self._response_intents:
+                self._answered[self._response_intents[key]] = value
         if reply.operator_text is not None:
             self._history.extend((reply.operator_text, reply.text))
             self._history = self._history[-4:]

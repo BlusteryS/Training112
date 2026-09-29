@@ -127,10 +127,10 @@ class ContextualUnderstanding:
             if len(referred) == 1:
                 return SemanticFrame("request", referred, 1.0)
         text = strip_known(text) or text
-        stated = evidence(text)
         parts = question_parts(text)
         if not parts or len(parts) > 8:
             return SemanticFrame("reject", (), 0.0)
+        stated = tuple(dict.fromkeys(target for part in parts for target in evidence(part)))
         try:
             whole = decode_frame(self.logits([{"text": text, "history": history}])[0], self.targets)
         except OperatorUtteranceTooLong:
@@ -165,8 +165,7 @@ class ContextualUnderstanding:
             for target in eligible:
                 if target not in targets:
                     targets.append(target)
-        # An ASR truncation can split one explicit question across two clauses
-        # ("пострадавшие и сколько и"). Keep evidence from the whole utterance.
+        # Keep the grounded topics of every clause, including ASR text without punctuation.
         for target in stated:
             if target != "goodbye" and target not in targets:
                 targets.append(target)

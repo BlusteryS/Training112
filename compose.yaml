@@ -94,6 +94,7 @@ services:
       PGUSER: training112
       PGPASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       SPEECH_CONFIG: /app/config/default.toml
+      TRAINING112_GPU_REPLIES: ${TRAINING112_GPU_REPLIES:-0}
       HF_HUB_OFFLINE: "1"
       OMP_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"

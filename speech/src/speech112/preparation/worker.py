@@ -213,18 +213,17 @@ def main():
     dsn = os.environ.get("TRAINING_DATABASE_URL", "")
     if args.kind == "compile_scenario":
         from speech112.preparation.audio import AudioPreparer
-        from speech112.preparation.reply_generator import ReplyGenerator
 
         prepare = AudioPreparer()
-        generator = (
-            ReplyGenerator(
-                os.environ["REPLY_GENERATOR_URL"],
-                Path(prepare.config.runtime.audio_cache) / "replies",
-            )
-            if "REPLY_GENERATOR_URL" in os.environ
-            else None
-        )
-        worker = JobWorker(dsn, args.kind, prepare=prepare, generate=generator)
+        gpu_replies = os.environ.get("TRAINING112_GPU_REPLIES", "0")
+        if gpu_replies not in ("0", "1"):
+            raise ValueError("TRAINING112_GPU_REPLIES must be 0 or 1")
+        generate = None
+        if gpu_replies == "1":
+            from speech112.preparation.reply_generator import ReplyGenerator
+
+            generate = ReplyGenerator()
+        worker = JobWorker(dsn, args.kind, prepare=prepare, generate=generate)
     else:
         from speech112.preparation.semantic import SemanticCardEvaluator
         from speech112.runtime.factory import make_understanding

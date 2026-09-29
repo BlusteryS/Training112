@@ -2,49 +2,21 @@
 
 from __future__ import annotations
 
+import json
 import random
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 import numpy as np
 
 from speech112.runtime.bundle import ScenarioBundle, render
-from speech112.runtime.conversation_controls import CONTACT_REPLY
 from speech112.runtime.scheduler import InferenceScheduler
 
-CONTACT = frozenset(
-    {
-        "алло",
-        "алло алло",
-        "здравствуйте",
-        "добрый день",
-        "добрый вечер",
-        "доброе утро",
-        "алло здравствуйте",
-        "здравствуйте алло",
-        "вы меня слышите",
-        "меня слышно",
-        "слышите меня",
-        "вы на линии",
-        "вы здесь",
-        "алло вы меня слышите",
-    }
-)
-REPAIR = frozenset(
-    {
-        "что",
-        "что что",
-        "простите",
-        "не расслышал",
-        "не расслышала",
-        "не слышно",
-        "повторите",
-        "повторите пожалуйста",
-        "что вы сказали",
-        "скажите еще раз",
-    }
-)
+EXAMPLES = json.loads(Path(__file__).with_name("reference_examples.json").read_text())
+CONTACT = frozenset(EXAMPLES["CONTACT"])
+REPAIR = frozenset(EXAMPLES["REPAIR"])
 GREETING_PREFIX = re.compile(
     r"^(?:(?:алло|здравствуйте|добрый день|добрый вечер|доброе утро)[\s,!.:;]+)+", re.I
 )
@@ -182,7 +154,7 @@ class ScenarioDialogue:
     def initiative(self, kind: str) -> Reply:
         if kind not in ("greeting", "check_in", "clarification", "contact"):
             raise ValueError("Unknown initiative")
-        text = self._choose(kind, self._document.get(kind, CONTACT_REPLY))
+        text = self._choose(kind, self._document[kind])
         return Reply(
             text,
             kind,
@@ -211,12 +183,7 @@ class ScenarioDialogue:
         examples = {i["id"]: i["examples"] for i in self._document["intents"]}
         examples.setdefault(
             "repeat",
-            [
-                "Повторите пожалуйста",
-                "Скажите ещё раз",
-                "Я вас не расслышал",
-                "Повторите последнюю фразу",
-            ],
+            EXAMPLES["REPEAT_EXAMPLES"],
         )
         state = self.state
         fragments, ids, choices = [], [], []

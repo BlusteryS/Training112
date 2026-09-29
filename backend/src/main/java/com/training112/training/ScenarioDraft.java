@@ -5,6 +5,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -49,8 +52,14 @@ public final class ScenarioDraft {
     JsonObject level = PROFILE.getJsonObject("difficulty_profiles").getJsonObject(difficulty);
     Map<String, JsonArray> answers = new HashMap<>();
     facts.put("caller_name", choose(PROFILE.getJsonArray("caller_names")));
-    facts.put("birth_date", choose(PROFILE.getJsonArray("birth_dates")));
-    facts.put("residence", "Москва");
+    JsonArray birthDates = PROFILE.getJsonArray("birth_dates");
+    JsonObject birthDate = birthDates.getJsonObject(
+        ThreadLocalRandom.current().nextInt(birthDates.size()));
+    facts.put("birth_date", birthDate.getString("spoken"));
+    int callerAge = Period.between(LocalDate.parse(birthDate.getString("date")),
+        LocalDate.now(ZoneId.of("Europe/Moscow"))).getYears();
+    facts.put("caller_age", callerAge + " " + years(callerAge));
+    facts.put("residence", PROFILE.getString("residence"));
     facts.put("address", location);
     facts.put("incident", label == null ? description : label.getString("incident"));
     String lower = description.toLowerCase(Locale.ROOT);
@@ -58,7 +67,8 @@ public final class ScenarioDraft {
     JsonObject victims = defaults.getJsonObject("victims");
     answers.put("victims", victims.getJsonArray(victimsState));
     facts.put("victims", choose(answers.get("victims")));
-    facts.put("phone", "+7 999 000-" + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
+    facts.put("phone", PROFILE.getString("phone_prefix")
+        + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000)));
     JsonObject present = level.getJsonObject("present");
     JsonObject victimDetails = "present".equals(victimsState) ? present
         : PROFILE.getJsonObject("victim_details").getJsonObject(victimsState);
@@ -120,11 +130,14 @@ public final class ScenarioDraft {
         : Pattern.compile("пожар|возгоран|задымлен|дым|гари").matcher(lower).find() ? "fire"
         : Pattern.compile("дтп|дорожн|столкновен|наезд").matcher(lower).find() ? "road"
         : incident.getJsonArray("services", new JsonArray()).contains("103") ? "medical" : "";
-    document.getJsonObject("facts").put("incident_location", incident.getString("type"));
     var groups = EXTRA.getJsonObject("groups");
     var selected = new LinkedHashSet<String>();
     for (Object key : groups.getJsonArray("common")) selected.add((String) key);
     if (!group.isEmpty()) for (Object key : groups.getJsonArray(group)) selected.add((String) key);
+    if (!"absent".equals(victimsState)
+        || incident.getJsonArray("services", new JsonArray()).contains("103")) {
+      for (Object key : groups.getJsonArray("medical")) selected.add((String) key);
+    }
     if ("fire".equals(group) && Pattern.compile("дом|квартир|здани|объект|подъезд")
         .matcher(lower + " " + incident.getString("sign2") + " " + incident.getString("type")).find()) {
       for (Object key : groups.getJsonArray("fire_building")) selected.add((String) key);
@@ -162,6 +175,16 @@ public final class ScenarioDraft {
       throw new IllegalStateException("Missing scenario fact variants");
     }
     return options.getString(ThreadLocalRandom.current().nextInt(options.size()));
+  }
+
+  private static String years(int count) {
+    int lastTwo = count % 100;
+    if (lastTwo >= 11 && lastTwo <= 14) return "лет";
+    return switch (count % 10) {
+      case 1 -> "год";
+      case 2, 3, 4 -> "года";
+      default -> "лет";
+    };
   }
 
   private static JsonObject loadJson(String name) {

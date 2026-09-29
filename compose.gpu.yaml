@@ -1,10 +1,10 @@
 services:
   reply-generator:
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b10991
     restart: unless-stopped
     command:
       - --model
-      - /models/Qwen_Qwen3.5-4B-Q4_K_M.gguf
+      - /models/Qwen_Qwen3-4B-Instruct-2507-Q8_0.gguf
       - --host
       - 0.0.0.0
       - --port
@@ -14,9 +14,14 @@ services:
       - --parallel
       - "1"
       - --n-gpu-layers
-      - "${GENERATOR_GPU_LAYERS:-20}"
+      - "99"
     volumes:
       - ./speech/.models/generator:/models:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     deploy:
       resources:
         reservations:
@@ -26,8 +31,6 @@ services:
               capabilities: [gpu]
 
   worker:
-    environment:
-      REPLY_GENERATOR_URL: http://reply-generator:8080
     depends_on:
       reply-generator:
         condition: service_started

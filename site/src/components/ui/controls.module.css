@@ -38,6 +38,7 @@
 }
 
 .tabs {
+  box-sizing: border-box;
   display: flex;
   height: 41px;
   flex-wrap: nowrap;
@@ -45,13 +46,15 @@
   gap: 4px;
   margin: 0 0 20px;
   overflow-x: auto;
+  overflow-y: hidden;
   border-bottom: 1px solid rgba(255, 255, 255, .3);
   font-size: 16px;
   line-height: normal;
 }
 
 .tabs a {
-  height: 41px;
+  box-sizing: border-box;
+  height: 100%;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;

@@ -8,6 +8,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parent.parent
 TLS = ROOT / "deploy" / "tls"
@@ -47,31 +48,28 @@ def main():
                 "-addext", "basicConstraints=critical,CA:TRUE,pathlen:0",
                 "-addext", "keyUsage=critical,keyCertSign,cRLSign")
     elif not (TLS / "ca.key").exists() or not (TLS / "ca.crt").exists():
-        raise ValueError("Отсутствует ключ или сертификат локального центра. Восстановите deploy/tls из резервной копии.")
-    extensions = TLS / "server.ext"
-    extensions.write_text(f"subjectAltName=IP:{ip}\nbasicConstraints=critical,CA:FALSE\n"
-                          "keyUsage=critical,digitalSignature,keyEncipherment\n"
-                          "extendedKeyUsage=serverAuth\n")
-    try:
+        raise ValueError("Неполная пара ключа и сертификата локального центра в deploy/tls.")
+    with TemporaryDirectory(dir=TLS) as temporary:
+        extensions = Path(temporary) / "server.ext"
+        request = Path(temporary) / "server.csr"
+        extensions.write_text(f"subjectAltName=IP:{ip}\nbasicConstraints=critical,CA:FALSE\n"
+                              "keyUsage=critical,digitalSignature,keyEncipherment\n"
+                              "extendedKeyUsage=serverAuth\n")
         openssl("req", "-new", "-newkey", "rsa:2048", "-nodes", "-sha256",
-                "-subj", f"/CN={ip}", "-keyout", "server.key", "-out", "server.csr")
-        openssl("x509", "-req", "-in", "server.csr", "-CA", "ca.crt", "-CAkey", "ca.key",
-                "-CAcreateserial", "-days", "365", "-sha256", "-extfile", "server.ext", "-out", "server.crt")
-    finally:
-        extensions.unlink(missing_ok=True)
-        (TLS / "server.csr").unlink(missing_ok=True)
+                "-subj", f"/CN={ip}", "-keyout", "server.key", "-out", str(request))
+        openssl("x509", "-req", "-in", str(request), "-CA", "ca.crt", "-CAkey", "ca.key",
+                "-CAcreateserial", "-days", "365", "-sha256", "-extfile", str(extensions), "-out", "server.crt")
     # The directory is private on the host; only these two files are mounted into nginx.
     (TLS / "server.crt").chmod(0o644)
     (TLS / "server.key").chmod(0o644)
     password = values.get("DB_PASSWORD")
-    if not password or password == "replace-with-a-long-random-password":
+    if not password:
         password = secrets.token_hex(32)
     env_path.write_text(f"SERVER_IP={ip}\nDB_PASSWORD={password}\n")
     env_path.chmod(0o600)
     print(f"Адрес тренажёра: https://{ip}")
     print("Далее выполните:")
-    python = "py -3" if os.name == "nt" else "python3"
-    print(f"  1. {python} deploy/start.py")
+    print("  1. docker compose up -d --build")
     print("  2. docker compose exec backend create-admin (при первой установке)")
     print("  3. Установите deploy/tls/ca.crt на рабочих местах (README.md, пункт 3.3).")
 

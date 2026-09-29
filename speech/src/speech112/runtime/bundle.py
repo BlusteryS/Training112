@@ -11,7 +11,6 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, ValidationError
 
-from speech112.runtime.conversation_controls import CONTACT_REPLY
 from speech112.speech_text import validate_speech_text
 
 MAX_DOCUMENT_BYTES = 262_144
@@ -61,7 +60,7 @@ def validate_document(document: dict[str, Any]) -> None:
         for variant in response.get("compact_variants", ()):
             render(variant, document["facts"])
     for kind in ("greeting", "clarification", "check_in", "contact"):
-        for variant in document.get(kind, CONTACT_REPLY):
+        for variant in document[kind]:
             render(variant, document["facts"])
 @dataclass(frozen=True, slots=True)
 class ScenarioBundle:
@@ -96,5 +95,5 @@ class ScenarioBundle:
         templates = [v for r in document["responses"]
                      for v in (*r["variants"], *r.get("compact_variants", ()))]
         templates += [v for k in ("greeting", "clarification", "check_in") for v in document[k]]
-        templates += list(document.get("contact", CONTACT_REPLY))
+        templates += document["contact"]
         return tuple(dict.fromkeys(render(v, document["facts"]) for v in templates))

@@ -8,33 +8,12 @@ from speech112.runtime.context_input import operator_text
 
 def prepare():
     root = Path(__file__).with_name("splits")
-    targets = {
-        "address": ["адрес", "точный адрес", "улицу и номер дома"],
-        "name": ["ваше имя", "как вас зовут", "имя заявителя"],
-        "phone": ["номер телефона", "контактный номер", "номер для связи"],
-        "incident": ["что произошло", "что случилось", "описание происшествия"],
-        "victim_count": ["количество пострадавших", "сколько человек пострадало"],
-        "age": ["ваш возраст", "сколько вам лет"],
-        "vehicle": ["марку автомобиля", "номер машины"],
-        "description": ["приметы человека", "описание подозреваемого"],
-        "weapon": ["какое оружие", "вид оружия"],
-        "fire": ["что горит", "место возгорания"],
-        "breathing": ["дышит ли пострадавший", "состояние дыхания"],
-        "consciousness": ["в сознании ли человек", "состояние сознания"],
-    }
-    histories = [
-        [],
-        ["что случилось", "В подъезде пахнет дымом. Источник я не вижу."],
-        ["как вас зовут", "Меня зовут Алексей."],
-        ["где вы находитесь", "Улица Полевая, дом восемь."],
-    ]
+    examples = json.loads(Path(__file__).with_name("asr_stage_examples.json").read_text())
+    targets = examples["targets"]
+    histories = examples["histories"]
     for split in ("train", "dev"):
         rows = [json.loads(s) for s in (root / f"stage2-{split}.jsonl").read_text().splitlines()]
-        frames = (
-            ["повтори {}", "повторите {}", "скажите еще раз {}", "я не расслышал {} повторите"]
-            if split == "train"
-            else ["еще раз пожалуйста {}", "мне надо повторно записать {}"]
-        )
+        frames = examples["frames"][split]
         for label, objects in targets.items():
             # These repeat/object combinations are held out from training.
             if split == "train" and label in ("weapon", "fire", "breathing", "consciousness"):

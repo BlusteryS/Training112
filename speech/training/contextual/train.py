@@ -133,9 +133,7 @@ def run(args):
     torch.manual_seed(112)
     np.random.seed(112)
     random.seed(112)
-    device = torch.device(args.device)
-    if device.type == "cuda" and not torch.cuda.is_available():
-        raise ValueError("CUDA training requested but no GPU is available")
+    device = torch.device("cpu")
     out = args.output
     out.mkdir(parents=True, exist_ok=True)
     if bool(args.train_file) != bool(args.dev_file):
@@ -403,7 +401,6 @@ if __name__ == "__main__":
     p.add_argument("--balanced-sampling", action="store_true")
     p.add_argument("--objective", choices=("structured", "independent"), default="structured")
     p.add_argument("--input-format", default=CONTEXT_FORMAT)
-    p.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     p.add_argument("--train-file", type=Path)
     p.add_argument("--dev-file", type=Path)
     run(p.parse_args())

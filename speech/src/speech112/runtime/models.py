@@ -89,7 +89,7 @@ class ToneStream:
     def _decode(self, stream, frame, final):
         if final:
             # Right context is required to flush T-one's last acoustic window.
-            stream.accept_waveform(16000, np.zeros(8000, dtype=np.float32))
+            stream.accept_waveform(16000, np.zeros(16000, dtype=np.float32))
             stream.input_finished()
         else:
             stream.accept_waveform(16000, np.asarray(frame, dtype=np.float32))

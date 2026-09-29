@@ -103,9 +103,8 @@ class CachedVoice:
         divisor = gcd(rate, self.rate)
         audio = resample_poly(audio, self.rate // divisor, rate // divisor).astype(np.float32)
         self.directory.mkdir(parents=True, exist_ok=True)
-        fd, temporary = tempfile.mkstemp(suffix=".wav", dir=self.directory)
-        try:
-            os.close(fd)
+        with tempfile.TemporaryDirectory(dir=self.directory) as staging:
+            temporary = Path(staging) / "reply.wav"
             sf.write(temporary, audio, self.rate, subtype="PCM_16")
             with FileLock(str(self.root / ".quota.lock"), timeout=10):
                 used = sum(p.stat().st_size for p in self.root.glob("*/*.wav") if len(p.stem) == 64)
@@ -113,9 +112,6 @@ class CachedVoice:
                 if used - replacing + os.path.getsize(temporary) > self.max_bytes:
                     raise ValueError("Audio cache quota exceeded; remove unused prepared audio")
                 os.replace(temporary, path)
-        finally:
-            if os.path.exists(temporary):
-                os.unlink(temporary)
         # Both the first and subsequent playbacks use the exact installed PCM artifact.
         audio, _ = sf.read(path, dtype="float32")
         return self._remember(key, audio)

@@ -50,46 +50,43 @@ def install(directory: Path, *, offline: bool = False, catalog=None) -> None:
                 ):
                     raise ValueError("Packaged artifact integrity failure")
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                fd, temporary = tempfile.mkstemp(dir=destination.parent, suffix=".part")
-                try:
-                    with os.fdopen(fd, "wb") as stream:
+                with tempfile.TemporaryDirectory(dir=destination.parent) as staging:
+                    temporary = Path(staging) / relative.name
+                    with temporary.open("wb") as stream:
                         stream.write(payload)
                         stream.flush()
                         os.fsync(stream.fileno())
                     os.replace(temporary, destination)
-                finally:
-                    Path(temporary).unlink(missing_ok=True)
                 continue
             if offline:
                 raise ValueError(f"Missing or damaged model: {relative}")
             destination.parent.mkdir(parents=True, exist_ok=True)
             for attempt in range(3):
-                fd, temporary = tempfile.mkstemp(dir=destination.parent, suffix=".part")
                 try:
-                    with (
-                        os.fdopen(fd, "wb") as stream,
-                        client.stream("GET", item["url"]) as response,
-                    ):
-                        response.raise_for_status()
-                        length = 0
-                        for block in response.iter_bytes(1024 * 1024):
-                            length += len(block)
-                            if length > item["bytes"]:
-                                raise ValueError("Artifact exceeds manifest size")
-                            stream.write(block)
-                        stream.flush()
-                        os.fsync(stream.fileno())
-                    if length != item["bytes"] or digest(Path(temporary)) != item["sha256"]:
-                        raise ValueError(f"Artifact integrity failure: {relative}")
-                    os.replace(temporary, destination)
+                    with tempfile.TemporaryDirectory(dir=destination.parent) as staging:
+                        temporary = Path(staging) / relative.name
+                        with (
+                            temporary.open("wb") as stream,
+                            client.stream("GET", item["url"]) as response,
+                        ):
+                            response.raise_for_status()
+                            length = 0
+                            for block in response.iter_bytes(1024 * 1024):
+                                length += len(block)
+                                if length > item["bytes"]:
+                                    raise ValueError("Artifact exceeds manifest size")
+                                stream.write(block)
+                            stream.flush()
+                            os.fsync(stream.fileno())
+                        if length != item["bytes"] or digest(temporary) != item["sha256"]:
+                            raise ValueError(f"Artifact integrity failure: {relative}")
+                        os.replace(temporary, destination)
                     print(f"Installed {relative}", flush=True)
                     break
                 except (httpx.HTTPError, OSError):
                     if attempt == 2:
                         raise
                     time.sleep(2**attempt)
-                finally:
-                    Path(temporary).unlink(missing_ok=True)
 
 
 def main():

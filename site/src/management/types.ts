@@ -33,7 +33,7 @@ export type ScenarioDocument = {
   intents: { id: string; examples: string[] }[];
   responses: { id: string; intent: string; states: string[]; variants: string[];
     compact_variants?: string[]; next_state?: string; end_call?: boolean }[];
-  greeting: string[]; clarification: string[]; check_in: string[]; contact?: string[];
+  greeting: string[]; clarification: string[]; check_in: string[]; contact: string[];
   rubric: { id: string; kind: string; weight: number; description: string; mandatory?: boolean; field?: string; expected?: string; action?: string; seconds?: number; source?: string }[];
   acceptance_cases?: { text: string; state: string; response_id?: string; response_ids?: string[] }[];
 };
