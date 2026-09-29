@@ -25,6 +25,11 @@
   min-width: 0;
 }
 
+.actionsRight .gridHead > :last-child,
+.actionsRight .gridRow > :last-child {
+  grid-column: -2 / -1;
+}
+
 .head,
 .row {
   min-height: 48px;
@@ -66,6 +71,11 @@
 .head > * {
   padding-top: 6px;
   padding-bottom: 6px;
+}
+
+.head > .actionHead {
+  justify-content: flex-end;
+  border-left-color: #838f97;
 }
 
 .actions {

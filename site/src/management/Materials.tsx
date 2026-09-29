@@ -3,7 +3,7 @@ import { api } from '../api';
 import { ModalForm } from '../components/ModalForm';
 import { FormCard, formGrid } from './FormCard';
 import { InputField } from '../components/ui/InputField';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActionHead, deskActions, deskError } from './Desk';
 
 import { downloadMaterial, type Material } from './materialDownload';
 import { formatBytes } from '../formatBytes';
@@ -32,7 +32,7 @@ export function Materials() {
   const refresh = () => api<Material[]>('training/materials').then(setRows);
   useEffect(() => { void refresh().catch((cause: Error) => setError(cause.message)); }, []);
   return <Desk actions={<button type="button" onClick={() => { setError(''); setUploading(true); }}>Загрузить</button>}>
-    {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Файл</span><span>Размер</span><span /></>}>
+    {rows.length === 0 ? <DeskEmpty>Материалов нет</DeskEmpty> : <DeskTable actionsRight head={<><span>Название</span><span>Файл</span><span>Размер</span><span className={deskActionHead}>Действия</span></>}>
       {rows.map((row) => <DeskRow key={row.id}>
         <span>{row.title}</span>
         <span>{row.filename}</span>

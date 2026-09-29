@@ -9,7 +9,7 @@ import { incidentSources } from '../incidentSources';
 import { incidentClassifier, matchingCard, type ClassifierCard } from '../pages/incidentClassifier';
 import { ScenarioEditor, exportScenario } from './ScenarioEditor';
 import { difficultyNames, scenarioNames, type Scenario, type ScenarioDocument } from './types';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActionHead, deskActions, deskError } from './Desk';
 
 type SavedScenario = Scenario & { document: ScenarioDocument };
 type Editor = { document: ScenarioDocument; scenarioId?: string };
@@ -47,7 +47,7 @@ export function Scenarios() {
     <button type="button" disabled={busy} onClick={() => setCreating(true)}>Создать</button>
     <button type="button" disabled={busy} onClick={() => setImporting(true)}>Импорт</button>
   </>}>
-    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Сложность</span><span>Статус</span><span /></>}>
+    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable actionsRight head={<><span>Название</span><span>Сложность</span><span>Статус</span><span className={deskActionHead}>Действия</span></>}>
       {scenarios.map((item) => <DeskRow key={item.id}>
         <span>{item.title}</span>
         <span>{difficultyNames[item.difficulty ?? 'basic']}</span>

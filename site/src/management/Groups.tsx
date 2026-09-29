@@ -4,7 +4,7 @@ import { ModalForm } from '../components/ModalForm';
 import { FormCard, formCheck, formGrid } from './FormCard';
 import { InputField } from '../components/ui/InputField';
 import type { Group, Learner } from './types';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActionHead, deskActions, deskError } from './Desk';
 
 
 export function Groups() {
@@ -59,7 +59,7 @@ export function Groups() {
     }
   }
   return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Создать</button>}>
-    {groups.length === 0 ? <DeskEmpty>Групп нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Служба</span><span>Участники</span><span /></>}>
+    {groups.length === 0 ? <DeskEmpty>Групп нет</DeskEmpty> : <DeskTable actionsRight head={<><span>Название</span><span>Служба</span><span>Участники</span><span className={deskActionHead}>Действия</span></>}>
       {groups.map((item) => <DeskRow key={item.id}>
         <span>{item.name}</span>
         <span>{item.service_code}</span>

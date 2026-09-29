@@ -6,7 +6,7 @@ import { InputField } from '../components/ui/InputField';
 import { TextareaField } from '../components/ui/TextareaField';
 import { EvaluationDetails, type Evaluation } from '../components/EvaluationDetails';
 import { attemptNames, type Assignment } from './types';
-import { Desk, DeskEmpty, DeskRow, DeskTable, deskActions, deskError } from './Desk';
+import { Desk, DeskEmpty, DeskRow, DeskTable, deskActionHead, deskActions, deskError } from './Desk';
 
 
 export function Results() {
@@ -47,7 +47,7 @@ export function Results() {
   }
 
   return <Desk>
-    {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable head={<><span>Обучающийся</span><span>Занятие</span><span>Статус</span><span /></>}>
+    {rows.length === 0 ? <DeskEmpty>Результатов нет</DeskEmpty> : <DeskTable actionsRight head={<><span>Обучающийся</span><span>Занятие</span><span>Статус</span><span className={deskActionHead}>Действия</span></>}>
       {rows.map((row) => <DeskRow key={row.attempt_id}>
         <span>{row.learner_login}</span>
         <span>{row.title}</span>
