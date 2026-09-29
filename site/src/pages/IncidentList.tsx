@@ -173,12 +173,15 @@ function operatorMatch(query: string, login: string) {
   return needle === login.toLocaleLowerCase('ru') || needle === number;
 }
 
-export function IncidentList({ assignments, autoRefresh, filter, loading, onAutoRefresh, search }: {
+export function IncidentList({ assignments, autoRefresh, filter, loading, moduleId, moduleOptions, onAutoRefresh, onModuleChange, search }: {
   assignments: Assignment[];
   autoRefresh: boolean;
   filter: string;
   loading: boolean;
+  moduleId: string;
+  moduleOptions: [string, string][];
   onAutoRefresh: (value: boolean) => void;
+  onModuleChange: (value: string) => void;
   search: IncidentSearch;
 }) {
   const [status, setStatus] = useState('');
@@ -292,6 +295,10 @@ export function IncidentList({ assignments, autoRefresh, filter, loading, onAuto
     <div className={styles.toolbar}>
       <div className={styles.title}>Список происшествий</div>
       <div className={styles.controls}>
+        {moduleOptions.length > 0 && <ChoiceSelect label="Учебный модуль" value={moduleId} onChange={onModuleChange}>
+          <option value="">Все модули</option>
+          {moduleOptions.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
+        </ChoiceSelect>}
         <WorkspaceSwitch checked={autoRefresh} onChange={onAutoRefresh}>Автообновление</WorkspaceSwitch>
         <ChoiceSelect label="Что показать" value={status} onChange={setStatus}>
           <option value="">Выберите, что показать</option>

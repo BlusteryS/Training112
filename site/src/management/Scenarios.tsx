@@ -47,9 +47,10 @@ export function Scenarios() {
     <button type="button" disabled={busy} onClick={() => setCreating(true)}>Создать</button>
     <button type="button" disabled={busy} onClick={() => setImporting(true)}>Импорт</button>
   </>}>
-    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Статус</span><span /></>}>
+    {scenarios.length === 0 ? <DeskEmpty>Сценариев нет</DeskEmpty> : <DeskTable head={<><span>Название</span><span>Сложность</span><span>Статус</span><span /></>}>
       {scenarios.map((item) => <DeskRow key={item.id}>
         <span>{item.title}</span>
+        <span>{difficultyNames[item.difficulty ?? 'basic']}</span>
         <span>{scenarioNames[item.status] ?? item.status}</span>
         <span className={deskActions}>
           {item.status === 'prepared' && <button type="button" disabled={busy} onClick={() => void act(async () => {

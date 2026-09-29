@@ -7,7 +7,7 @@ import { TextareaField } from '../components/ui/TextareaField';
 import { incidentSources, moscowOkrugs } from '../incidentSources';
 import { downloadFile } from '../download';
 import { ScenarioCriterion } from './ScenarioCriterion';
-import { difficultyNames, type ScenarioDocument } from './types';
+import type { ScenarioDocument } from './types';
 import styles from './ScenarioEditor.module.css';
 
 const factNames: Record<string, string> = {
@@ -95,9 +95,6 @@ export function ScenarioEditor({ initial, editing, busy, onSave, onCancel }: {
         <SelectField label="Источник" required value={document.origin ?? ''} onChange={(event) => setDocument({ ...document, origin: event.target.value })}>
           <option value=""></option>
           {incidentSources.map((source) => <option key={source} value={source}>{source}</option>)}
-        </SelectField>
-        <SelectField label="Сложность" value={document.difficulty ?? 'basic'} onChange={(event) => setDocument({ ...document, difficulty: event.target.value })}>
-          {Object.entries(difficultyNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </SelectField>
         <TextareaField label="Инструкция" maxLength={2000} value={document.instructions ?? ''} onChange={(event) => setDocument({ ...document, instructions: event.target.value })} />
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import type { Assignment } from '../management/types';
@@ -21,6 +21,7 @@ import styles from '../App.module.css';
 export function OperatorWorkspace() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const notify = useNotification();
   const lastLoadError = useRef('');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -37,6 +38,10 @@ export function OperatorWorkspace() {
   const [query, setQuery] = useState('');
   const now = useNow();
   const [manuallyAvailable, setManuallyAvailable] = useState(() => readManualAvailability(user.id));
+  const moduleId = params.get('module_id') ?? '';
+  const moduleOptions = useMemo(() => [...new Map(assignments.flatMap((item) =>
+    item.module_id && item.module_title ? [[item.module_id, item.module_title] as const] : [])).entries()], [assignments]);
+  const visibleAssignments = moduleId ? assignments.filter((item) => item.module_id === moduleId) : assignments;
 
   useEffect(() => {
     if (!advancedOpen) return;
@@ -102,9 +107,9 @@ export function OperatorWorkspace() {
     : !speechEnabled ? 'Звонки отключены'
     : !telephonySupported ? 'Не подключен'
       : available ? 'Доступен' : 'Недоступен';
-  const incomingCall = available ? assignments.find((item) => item.mode === 'call' && item.status === 'active'
+  const incomingCall = available ? visibleAssignments.find((item) => item.mode === 'call' && item.status === 'active'
     && (!item.attempt_status || item.attempt_status === 'failed')) : undefined;
-  const cardTask = assignments.find((item) => item.mode === 'card' && item.status === 'active'
+  const cardTask = visibleAssignments.find((item) => item.mode === 'card' && item.status === 'active'
     && !['completed', 'failed'].includes(item.attempt_status ?? ''));
 
   const toggleAvailability = () => {
@@ -166,7 +171,10 @@ export function OperatorWorkspace() {
       <ActionButton onClick={() => navigate(`/card?assignment_id=${encodeURIComponent(cardTask.id)}`)}>Открыть карточку</ActionButton>
     </div>}
     <div className={styles.operatorContent}>
-      <IncidentList assignments={assignments} autoRefresh={autoRefresh} filter={query}
+      <IncidentList assignments={visibleAssignments} autoRefresh={autoRefresh} filter={query}
+        moduleId={moduleId} moduleOptions={moduleOptions} onModuleChange={(value) => {
+          setParams((current) => { const next = new URLSearchParams(current); if (value) next.set('module_id', value); else next.delete('module_id'); return next; });
+        }}
         loading={loading} onAutoRefresh={setAutoRefresh} search={search} />
     </div>
 

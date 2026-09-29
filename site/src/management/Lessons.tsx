@@ -5,7 +5,8 @@ import { FormCard, formCheck, formGrid } from './FormCard';
 import { SelectField } from '../components/ui/SelectField';
 import { InputField } from '../components/ui/InputField';
 import { TextareaField } from '../components/ui/TextareaField';
-import { attemptNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario } from './types';
+import { attemptNames, difficultyNames, lessonNames, type Assignment, type Group, type Lesson, type Scenario, type TrainingModule } from './types';
+import { ModuleCreate } from './ModuleCreate';
 import { Desk, DeskEmpty, DeskRow, DeskSection, DeskTable, deskActions, deskError } from './Desk';
 import styles from './LessonCreate.module.css';
 
@@ -13,11 +14,13 @@ type OperatorCard = { id: string; incident_code: string; address: string; servic
 
 export function Lessons() {
   const [groups, setGroups] = useState<Group[]>([]);
+  const [modules, setModules] = useState<TrainingModule[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [operatorCards, setOperatorCards] = useState<OperatorCard[]>([]);
   const [creating, setCreating] = useState(false);
+  const [creatingModule, setCreatingModule] = useState(false);
   const [confirm, setConfirm] = useState<{ id: string; action: 'start' | 'finish' } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -30,10 +33,10 @@ export function Lessons() {
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
-    void Promise.all([api<Group[]>('training/groups'), api<Scenario[]>('training/scenarios'),
+    void Promise.all([api<Group[]>('training/groups'), api<TrainingModule[]>('training/modules'), api<Scenario[]>('training/scenarios'),
       api<OperatorCard[]>('training/operator-cards')])
-      .then(([nextGroups, nextScenarios, cards]) => { if (!cancelled) {
-        setGroups(nextGroups); setScenarios(nextScenarios); setOperatorCards(cards);
+      .then(([nextGroups, nextModules, nextScenarios, cards]) => { if (!cancelled) {
+        setGroups(nextGroups); setModules(nextModules); setScenarios(nextScenarios); setOperatorCards(cards);
       } })
       .catch((cause: Error) => { if (!cancelled) setError(cause.message); });
     async function poll() {
@@ -48,10 +51,17 @@ export function Lessons() {
   const approved = scenarios.filter((item) => item.status === 'approved');
   const activeLessons = new Set(lessons.filter((lesson) => lesson.status === 'active').map((lesson) => lesson.id));
   const activeAssignments = assignments.filter((item) => activeLessons.has(item.lesson_id));
-  return <Desk actions={<button type="button" onClick={() => { setError(''); setCreating(true); }}>Назначить</button>}>
-    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable head={<><span>Сценарий или карточка</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
+  return <Desk actions={<><button type="button" disabled={!groups.length} onClick={() => setCreatingModule(true)}>Создать модуль</button>
+    <button type="button" disabled={!modules.length} onClick={() => { setError(''); setCreating(true); }}>Назначить</button></>}>
+    {modules.length > 0 && <DeskSection title="Учебные модули"><DeskTable head={<><span>Модуль</span><span>Группа</span><span>Сложность</span><span>Занятий</span></>}>
+      {modules.map((module) => <DeskRow key={module.id}><span>{module.title}</span><span>{module.group_name}</span>
+        <span>{difficultyNames[module.difficulty] ?? module.difficulty}</span>
+        <span>{lessons.filter((lesson) => lesson.module_id === module.id).length}</span></DeskRow>)}
+    </DeskTable></DeskSection>}
+    {lessons.length === 0 ? <DeskEmpty>Занятий нет</DeskEmpty> : <DeskTable head={<><span>Сценарий или карточка</span><span>Модуль</span><span>Группа</span><span>Режим</span><span>Статус</span><span /></>}>
       {lessons.map((lesson) => <DeskRow key={lesson.id}>
         <span>{lesson.title}</span>
+        <span>{lesson.module_title ?? '—'}</span>
         <span>{lesson.group_name}</span>
         <span>{lesson.mode === 'card' ? 'Карточка' : 'Звонок'}</span>
         <span>{lessonNames[lesson.status] ?? lesson.status}</span>
@@ -70,7 +80,10 @@ export function Lessons() {
         </DeskRow>)}
       </DeskTable></DeskSection>}
     {error && <div className={deskError} role="alert">{error}</div>}
-    {creating && <LessonCreate groups={groups} scenarios={approved} operatorCards={operatorCards} busy={busy}
+    {creatingModule && <ModuleCreate groups={groups} onClose={() => setCreatingModule(false)} onCreated={(module) => {
+      setModules((current) => [module, ...current]); setCreatingModule(false);
+    }} />}
+    {creating && <LessonCreate groups={groups} modules={modules} scenarios={approved} operatorCards={operatorCards} busy={busy}
       error={error} onClose={() => setCreating(false)} onSubmit={(body) => {
       setBusy(true); setError('');
       void api('training/lessons', body)
@@ -91,8 +104,9 @@ export function Lessons() {
   </Desk>;
 }
 
-function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, onSubmit }: {
+function LessonCreate({ groups, modules, scenarios, operatorCards, busy, error, onClose, onSubmit }: {
   groups: Group[];
+  modules: TrainingModule[];
   scenarios: Scenario[];
   operatorCards: OperatorCard[];
   busy: boolean;
@@ -100,7 +114,7 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
   onClose: () => void;
   onSubmit: (body: Record<string, unknown>) => void;
 }) {
-  const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
+  const [moduleId, setModuleId] = useState(modules[0]?.id ?? '');
   const [scenarioId, setScenarioId] = useState(scenarios[0]?.id ?? '');
   const [mode, setMode] = useState('call');
   const [source, setSource] = useState('manual');
@@ -121,29 +135,35 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
   const [expectedPrimary, setExpectedPrimary] = useState('accepted');
   const [outcome, setOutcome] = useState('completed');
   useEffect(() => {
-    if (!groupId && groups[0]) setGroupId(groups[0].id);
-  }, [groupId, groups]);
+    if (!moduleId && modules[0]) setModuleId(modules[0].id);
+  }, [moduleId, modules]);
   useEffect(() => {
     if (!scenarioId && scenarios[0]) setScenarioId(scenarios[0].id);
   }, [scenarioId, scenarios]);
+  const groupId = modules.find((item) => item.id === moduleId)?.group_id ?? '';
+  const selectedDifficulty = modules.find((item) => item.id === moduleId)?.difficulty;
+  const availableScenarios = scenarios.filter((item) => (item.difficulty ?? 'basic') === selectedDifficulty);
+  const selectedScenario = availableScenarios.some((item) => item.id === scenarioId)
+    ? scenarioId : availableScenarios[0]?.id ?? '';
+  const selectedGenerated = generated.filter((id) => availableScenarios.some((item) => item.id === id));
   const service = groups.find((item) => item.id === groupId)?.service_code ?? '';
   const availableCards = operatorCards.filter((item) => item.services?.split(',').some((part) => {
     const normalized = part.trim().toLowerCase().replace('служба ', '');
     return normalized === service.toLowerCase().replace('служба ', '');
   }));
-  const selectedCount = generated.length + operator.length;
-  const ready = Boolean(groupId && groups.find((item) => item.id === groupId)?.member_count
-    && (mode === 'call' ? scenarioId : source === 'pool' ? selectedCount >= 2 && selectedCount <= 30
+  const selectedCount = selectedGenerated.length + operator.length;
+  const ready = Boolean(moduleId && groupId && groups.find((item) => item.id === groupId)?.member_count
+    && (mode === 'call' ? selectedScenario : source === 'pool' ? selectedCount >= 2 && selectedCount <= 30
       : incident.trim() && phone.trim() && address.trim() && description.trim()));
   function toggle(current: string[], id: string, checked: boolean, update: (ids: string[]) => void) {
     update(checked ? [...current, id] : current.filter((item) => item !== id));
   }
   function submit() {
-    if (mode === 'call') { onSubmit({ group_id: groupId, scenario_id: scenarioId, mode }); return; }
-    const shared = { group_id: groupId, mode, expected_primary: expectedPrimary, outcome };
+    if (mode === 'call') { onSubmit({ group_id: groupId, module_id: moduleId, scenario_id: selectedScenario, mode }); return; }
+    const shared = { group_id: groupId, module_id: moduleId, mode, expected_primary: expectedPrimary, outcome };
     if (source === 'pool') {
       onSubmit({ ...shared, sources: [
-        ...generated.map((id) => ({ type: 'generated', id })),
+        ...selectedGenerated.map((id) => ({ type: 'generated', id })),
         ...operator.map((id) => ({ type: 'operator', id })),
       ] });
     } else {
@@ -155,15 +175,15 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
   return <ModalForm label="Занятие" onClose={onClose}>
 <FormCard title="Занятие" submitLabel="Назначить" busy={busy || !ready} error={error} onClose={onClose} onSubmit={submit}>
     <div className={formGrid}>
-      <SelectField label="Группа" value={groupId} onChange={(event) => setGroupId(event.target.value)}>
-        {groups.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      <SelectField label="Учебный модуль" value={moduleId} onChange={(event) => setModuleId(event.target.value)}>
+        {modules.map((item) => <option key={item.id} value={item.id}>{item.title} — {item.group_name} — {difficultyNames[item.difficulty]}</option>)}
       </SelectField>
       <SelectField label="Режим" value={mode} onChange={(event) => setMode(event.target.value)}>
         <option value="call">Звонок оператора 112</option>
         <option value="card">Карточка диспетчера ДДС</option>
       </SelectField>
-      {mode === 'call' ? <SelectField label="Сценарий звонка" value={scenarioId} onChange={(event) => setScenarioId(event.target.value)}>
-        {scenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+      {mode === 'call' ? <SelectField label="Сценарий звонка" value={selectedScenario} onChange={(event) => setScenarioId(event.target.value)}>
+        {availableScenarios.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
       </SelectField> : <>
         <SelectField label="Источник карточки" value={source} onChange={(event) => setSource(event.target.value)}>
           <option value="manual">Заполнить карточку</option>
@@ -173,8 +193,8 @@ function LessonCreate({ groups, scenarios, operatorCards, busy, error, onClose, 
           <div className={styles.hint}>Выберите минимум две карточки. После обработки следующая выдаётся случайно; до исчерпания подборки карточки не повторяются.</div>
           <div className={styles.group}>
             <div className={styles.heading}>Подготовленные системой</div>
-            {scenarios.length === 0 && <div className={styles.hint}>Нет утверждённых сценариев.</div>}
-            {scenarios.map((item) => <label className={formCheck} key={item.id}>
+            {availableScenarios.length === 0 && <div className={styles.hint}>Нет утверждённых сценариев этой сложности.</div>}
+            {availableScenarios.map((item) => <label className={formCheck} key={item.id}>
               <input type="checkbox" checked={generated.includes(item.id)}
                 onChange={(event) => toggle(generated, item.id, event.target.checked, setGenerated)} />
               <span>{item.title}</span>
