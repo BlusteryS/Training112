@@ -2,6 +2,7 @@
 """Start the trainer with GPU reply preparation when a supported NVIDIA GPU exists."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -12,7 +13,8 @@ from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 MODEL = ROOT / "speech" / ".models" / "generator" / "Qwen_Qwen3.5-4B-Q4_K_M.gguf"
-MODEL_SHA256 = "13c16f426047e2de38cd075bdade4a7bcbc8c774384876f677740cda65f8a983"
+MODEL_SHA256 = json.loads((ROOT / "speech" / "src" / "speech112" / "contracts"
+                           / "reply-generation.json").read_text())["model_sha256"]
 MODEL_URL = (
     "https://huggingface.co/bartowski/Qwen_Qwen3.5-4B-GGUF/resolve/"
     "4168f45a16a1290d65a4ec0fa312ae917a4c15d6/"

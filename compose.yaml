@@ -85,7 +85,7 @@ services:
   worker:
     image: training112-speech:local
     restart: unless-stopped
-    command: [training112-worker]
+    command: [training112-worker, --kind, compile_scenario]
     environment:
       TRAINING_DATABASE_URL: ""
       PGHOST: db
@@ -99,6 +99,28 @@ services:
       OPENBLAS_NUM_THREADS: "1"
     volumes:
       - speech_audio:/app/.cache/audio
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    logging: *logging
+
+  evaluator:
+    image: training112-speech:local
+    restart: unless-stopped
+    command: [training112-worker, --kind, evaluate_attempt]
+    environment:
+      TRAINING_DATABASE_URL: ""
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: training112
+      PGUSER: training112
+      PGPASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      SPEECH_CONFIG: /app/config/default.toml
+      HF_HUB_OFFLINE: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
     depends_on:
       db:
         condition: service_healthy

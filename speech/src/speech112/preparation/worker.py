@@ -15,6 +15,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from speech112.config import AppConfig
 from speech112.preparation.evaluation import evaluate
 from speech112.runtime.bundle import ScenarioBundle
 
@@ -22,8 +23,9 @@ LOG = logging.getLogger(__name__)
 
 
 class JobWorker:
-    def __init__(self, dsn: str, semantic=None, prepare=None, generate=None):
+    def __init__(self, dsn: str, kind: str, semantic=None, prepare=None, generate=None):
         self.dsn, self.semantic = dsn, semantic
+        self.kind = kind
         self.prepare = prepare
         self.generate = generate
 
@@ -40,11 +42,10 @@ class JobWorker:
             if setting["value"] == "0":
                 return None
             job = db.execute("""
-                SELECT * FROM background_job WHERE state='queued' OR
-                (state='running' AND lease_until<now())
-                ORDER BY CASE kind WHEN 'evaluate_attempt' THEN 0 ELSE 1 END,created_at
-                FOR UPDATE SKIP LOCKED LIMIT 1
-                """).fetchone()
+                SELECT * FROM background_job WHERE kind=%s AND
+                (state='queued' OR (state='running' AND lease_until<now()))
+                ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1
+                """, (self.kind,)).fetchone()
             if job is None:
                 return None
             if job["tries"] >= 3:
@@ -93,7 +94,7 @@ class JobWorker:
                 scenario = db.execute(
                     "SELECT document FROM scenario WHERE id=%s", (job["scenario_id"],)
                 ).fetchone()
-            elif job["kind"] == "evaluate_attempt":
+            else:
                 attempt = db.execute(
                     "SELECT a.*,s.document FROM training_attempt a "
                     "JOIN lesson_assignment la ON la.id=a.assignment_id "
@@ -105,8 +106,6 @@ class JobWorker:
                     "SELECT * FROM attempt_event WHERE attempt_id=%s ORDER BY sequence",
                     (job["attempt_id"],),
                 ).fetchall()
-            else:
-                raise ValueError("Unknown job type")
         if job["kind"] == "compile_scenario":
             document = scenario["document"]
             if self.generate is not None:
@@ -141,12 +140,11 @@ class JobWorker:
                     db.execute(
                         (
                             "UPDATE scenario SET status=CASE WHEN approved_by IS NULL "
-                            "THEN 'prepared' ELSE 'approved' END,document=%s,artifact=%s,"
+                            "THEN 'prepared' ELSE 'approved' END,artifact=%s,"
                             "artifact_sha256=%s "
                             "WHERE id=%s AND status='preparing' "
                         ),
-                        (Jsonb(output.document), output.payload.decode(), output.digest,
-                         job["scenario_id"]),
+                        (output.payload.decode(), output.digest, job["scenario_id"]),
                     )
                 else:
                     db.execute(
@@ -207,21 +205,33 @@ class JobWorker:
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--kind", choices=("compile_scenario", "evaluate_attempt"), required=True)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    from speech112.preparation.audio import AudioPreparer
-    from speech112.preparation.reply_generator import ReplyGenerator
-    from speech112.preparation.semantic import SemanticCardEvaluator
 
-    prepare = AudioPreparer()
-    worker = JobWorker(
-        os.environ.get("TRAINING_DATABASE_URL", ""),
-        semantic=SemanticCardEvaluator(prepare.recognizer),
-        prepare=prepare,
-        generate=ReplyGenerator(os.environ["REPLY_GENERATOR_URL"])
-        if "REPLY_GENERATOR_URL" in os.environ else None,
-    )
+    dsn = os.environ.get("TRAINING_DATABASE_URL", "")
+    if args.kind == "compile_scenario":
+        from speech112.preparation.audio import AudioPreparer
+        from speech112.preparation.reply_generator import ReplyGenerator
+
+        prepare = AudioPreparer()
+        generator = (
+            ReplyGenerator(
+                os.environ["REPLY_GENERATOR_URL"],
+                Path(prepare.config.runtime.audio_cache) / "replies",
+            )
+            if "REPLY_GENERATOR_URL" in os.environ
+            else None
+        )
+        worker = JobWorker(dsn, args.kind, prepare=prepare, generate=generator)
+    else:
+        from speech112.preparation.semantic import SemanticCardEvaluator
+        from speech112.runtime.factory import make_understanding
+
+        config = AppConfig.load(Path(os.environ.get("SPEECH_CONFIG", "config/default.toml")))
+        understanding = make_understanding(config.runtime, None)
+        worker = JobWorker(dsn, args.kind, semantic=SemanticCardEvaluator(understanding))
     while True:
         worked = worker.run_once()
         if args.once:

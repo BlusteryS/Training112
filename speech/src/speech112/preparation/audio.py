@@ -1,10 +1,12 @@
 """Audio preparation in a background process before instructor approval."""
 
+import json
 import os
+from importlib.resources import files
 from pathlib import Path
 
 from speech112.config import AppConfig
-from speech112.runtime.factory import PreparationEngines, make_understanding, voice_fingerprint
+from speech112.runtime.factory import PreparationEngines, voice_fingerprint
 from speech112.runtime.voices import CachedVoice
 
 
@@ -15,10 +17,17 @@ class AudioPreparer:
         )
         self.voice = None
         self.engines = PreparationEngines()
-        self.recognizer = make_understanding(self.config.runtime, None)
+        directory = self.config.runtime.context_directory
+        metadata = (
+            Path(directory) / "context.json"
+            if directory
+            else files("speech112.learned").joinpath("contextual", "context.json")
+        )
+        self.labels = set(json.loads(metadata.read_text())["labels"])
 
     def __call__(self, bundle):
-        unsupported = {item["id"] for item in bundle.document["intents"]} - set(self.recognizer.labels)
+        unsupported = {item["id"] for item in bundle.document["intents"]} - (
+            self.labels | {"repeat", "contact", "other"})
         if unsupported:
             raise ValueError(f"Scenario contains unsupported questions: {sorted(unsupported)}")
         if self.voice is None:
